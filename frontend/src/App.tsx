@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
+import { MeshBasicMaterial } from "three";
 import { getBootstrapData } from "./api";
+import countryBorderPaths from "./assets/country-border-paths.json";
+import globeTextureUrl from "./assets/globe-premium-dark.svg";
+import indiaBoundaryPaths from "./assets/india-boundary-paths.soi.json";
 import { buildCountryFeatures, type GlobeCountryFeature } from "./geo";
 import type { BootstrapData, Country, MarketPoint, Sector, TradeFlow } from "./types";
 
@@ -9,10 +13,8 @@ interface ArcDatum {
   startLng: number;
   endLat: number;
   endLng: number;
-  color: string;
+  color: [string, string];
   label: string;
-  stroke: number;
-  altitude: number;
 }
 
 interface PointDatum {
@@ -23,14 +25,65 @@ interface PointDatum {
   radius: number;
 }
 
-const EXPORT_COLOR = "#00ffff";
-const IMPORT_COLOR = "#ff8c00";
-const STABLE_COLOR = "#2dff88";
-const AMBER_COLOR = "#ffb000";
-const RISK_COLOR = "#ff3355";
-const DIM_COLOR = "rgba(120, 136, 132, 0.16)";
-const API_IMAGE_EARTH = "//unpkg.com/three-globe/example/img/earth-night.jpg";
-const API_IMAGE_SKY = "//unpkg.com/three-globe/example/img/night-sky.png";
+interface LabelDatum {
+  lat: number;
+  lng: number;
+  text: string;
+}
+
+interface BoundaryPathPoint {
+  lat: number;
+  lng: number;
+  alt: number;
+}
+
+interface BoundaryPathDatum {
+  points: BoundaryPathPoint[];
+  area: number;
+  id?: string;
+  iso3?: string;
+  source?: string;
+}
+
+interface RenderPathPoint extends BoundaryPathPoint {
+  borderAlt: number;
+}
+
+interface RenderPathDatum extends BoundaryPathDatum {
+  points: RenderPathPoint[];
+}
+
+interface SectorTheme {
+  accent: string;
+  rgb: string;
+  onAccent: string;
+}
+
+const SECTOR_THEMES: Record<string, SectorTheme> = {
+  semiconductors: {
+    accent: "#00f5ff",
+    rgb: "0, 245, 255",
+    onAccent: "#001012",
+  },
+  hydrocarbons: {
+    accent: "#d59652",
+    rgb: "213, 150, 82",
+    onAccent: "#140b03",
+  },
+  "critical-minerals": {
+    accent: "#a8d9ad",
+    rgb: "168, 217, 173",
+    onAccent: "#06120d",
+  },
+};
+
+const FALLBACK_SECTOR_THEME = SECTOR_THEMES.semiconductors;
+const STABLE_COLOR = "#9fcdb6";
+const AMBER_COLOR = "#c6a66f";
+const RISK_COLOR = "#d28d8d";
+const API_IMAGE_EARTH = globeTextureUrl;
+const COUNTRY_BORDER_PATHS = (countryBorderPaths as { paths: BoundaryPathDatum[] }).paths;
+const INDIA_BOUNDARY_PATHS = (indiaBoundaryPaths as { paths: BoundaryPathDatum[] }).paths;
 
 function useWindowSize() {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -64,6 +117,14 @@ function formatMove(move: number) {
   return `${move > 0 ? "+" : ""}${move.toFixed(1)}%`;
 }
 
+function sectorTheme(sectorId?: string) {
+  return sectorId ? SECTOR_THEMES[sectorId] ?? FALLBACK_SECTOR_THEME : FALLBACK_SECTOR_THEME;
+}
+
+function rgba(theme: SectorTheme, alpha: number) {
+  return `rgba(${theme.rgb}, ${alpha})`;
+}
+
 function Sparkline({ points }: { points: MarketPoint[] }) {
   const values = points.map((point) => point.value);
   const min = Math.min(...values);
@@ -92,11 +153,13 @@ function Sparkline({ points }: { points: MarketPoint[] }) {
 
 function App() {
   const globeRef = useRef<any>(null);
+  const initialViewSet = useRef(false);
   const { width, height } = useWindowSize();
   const [data, setData] = useState<BootstrapData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedIso, setSelectedIso] = useState("IND");
-  const [hoverIso, setHoverIso] = useState<string | null>(null);
+  const [highlightIso, setHighlightIso] = useState<string | null>(null);
+  const [sectorHighlightsActive, setSectorHighlightsActive] = useState(false);
   const [selectedSectorId, setSelectedSectorId] = useState("semiconductors");
   const [tradeFlow, setTradeFlow] = useState<TradeFlow>("export");
 
@@ -111,30 +174,77 @@ function App() {
   const countryByIso = useMemo(() => new Map(countries.map((country) => [country.iso3, country])), [countries]);
   const selectedCountry = countryByIso.get(selectedIso) ?? countries[0];
   const selectedSector = sectors.find((sector) => sector.id === selectedSectorId) ?? sectors[0];
+  const activeTheme = sectorTheme(selectedSector?.id ?? selectedSectorId);
   const countryFeatures = useMemo(() => buildCountryFeatures(countries), [countries]);
+  const isoByNumeric = useMemo(() => new Map(countries.map((country) => [country.iso_numeric, country.iso3])), [countries]);
+  const hiddenPolygonMaterial = useMemo(
+    () =>
+      new MeshBasicMaterial({
+        visible: false,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: false,
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!globeRef.current) return;
     const controls = globeRef.current.controls?.();
     if (controls) {
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.35;
+      controls.autoRotateSpeed = 0.18;
       controls.enableDamping = true;
-      controls.dampingFactor = 0.08;
+      controls.dampingFactor = 0.055;
+      controls.rotateSpeed = 0.52;
+      controls.zoomSpeed = 0.5;
+      controls.enablePan = false;
     }
+    globeRef.current.renderer?.().setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
   }, [data]);
 
   useEffect(() => {
-    if (!selectedCountry || !globeRef.current) return;
+    if (!data || !globeRef.current || initialViewSet.current) return;
+    initialViewSet.current = true;
     globeRef.current.pointOfView?.(
       {
-        lat: selectedCountry.coordinates.lat,
-        lng: selectedCountry.coordinates.lng,
-        altitude: width < 780 ? 2.2 : 1.55,
+        lat: 20,
+        lng: 0,
+        altitude: width < 780 ? 2.35 : 1.8,
       },
-      900,
+      2000,
     );
-  }, [selectedCountry, width]);
+  }, [data, width]);
+
+  const focusCountry = (country: Country, duration = 1400) => {
+    globeRef.current?.pointOfView?.(
+      {
+        lat: country.coordinates.lat,
+        lng: country.coordinates.lng,
+        altitude: width < 780 ? 2.25 : 1.62,
+      },
+      duration,
+    );
+  };
+
+  const selectCountry = (iso3: string) => {
+    const country = countryByIso.get(iso3);
+    if (!country) return;
+    setSelectedIso(iso3);
+    setHighlightIso(iso3);
+    focusCountry(country);
+  };
+
+  const selectSector = (sectorId: string) => {
+    setSelectedSectorId(sectorId);
+    setSectorHighlightsActive(true);
+  };
+
+  const selectTradeFlow = (flow: TradeFlow) => {
+    setTradeFlow(flow);
+    setSectorHighlightsActive(true);
+  };
 
   const sectorIsoSet = useMemo(() => {
     if (!selectedSector) return new Set<string>();
@@ -152,22 +262,39 @@ function App() {
 
   const arcs = useMemo<ArcDatum[]>(() => {
     if (!selectedCountry || !selectedSector) return [];
-    const sectorArcs = selectedSector.arcs.flatMap((arc) => {
-      const source = countryByIso.get(arc.source);
-      const target = countryByIso.get(arc.target);
-      if (!source || !target) return [];
+    const arcColor: [string, string] = [rgba(activeTheme, 0.02), rgba(activeTheme, 0.82)];
+    const mutedArcColor: [string, string] = [rgba(activeTheme, 0), rgba(activeTheme, 0.42)];
+    const routeKeys = new Set<string>();
+    const addArc = (source: Country, target: Country, label: string, color: [string, string]) => {
+      const key = `${source.iso3}-${target.iso3}-${label}`;
+      if (routeKeys.has(key)) return [];
+      routeKeys.add(key);
       return [
         {
           startLat: source.coordinates.lat,
           startLng: source.coordinates.lng,
           endLat: target.coordinates.lat,
           endLng: target.coordinates.lng,
-          color: selectedSector.color,
-          label: `${source.iso3} to ${target.iso3}`,
-          stroke: 0.45 + arc.intensity,
-          altitude: 0.18 + arc.intensity * 0.22,
+          color,
+          label,
         },
       ];
+    };
+
+    const globalTradeArcs = countries.flatMap((country) =>
+      country.trade_partners.flatMap((partner) => {
+        const target = countryByIso.get(partner.iso3);
+        if (!target) return [];
+        const isSelectedRoute = country.iso3 === selectedCountry.iso3 || target.iso3 === selectedCountry.iso3;
+        return addArc(country, target, `${country.iso3} ${partner.flow} ${target.iso3}`, isSelectedRoute ? arcColor : mutedArcColor);
+      }),
+    );
+
+    const sectorArcs = selectedSector.arcs.flatMap((arc) => {
+      const source = countryByIso.get(arc.source);
+      const target = countryByIso.get(arc.target);
+      if (!source || !target) return [];
+      return addArc(source, target, `${source.iso3} sector ${target.iso3}`, arcColor);
     });
 
     const tradeArcs = selectedCountry.trade_partners
@@ -176,45 +303,33 @@ function App() {
         const target = countryByIso.get(partner.iso3);
         if (!target) return [];
         const exportMode = partner.flow === "export";
-        return [
-          {
-            startLat: exportMode ? selectedCountry.coordinates.lat : target.coordinates.lat,
-            startLng: exportMode ? selectedCountry.coordinates.lng : target.coordinates.lng,
-            endLat: exportMode ? target.coordinates.lat : selectedCountry.coordinates.lat,
-            endLng: exportMode ? target.coordinates.lng : selectedCountry.coordinates.lng,
-            color: exportMode ? EXPORT_COLOR : IMPORT_COLOR,
-            label: `${selectedCountry.iso3} ${partner.flow} link: ${partner.name}`,
-            stroke: 0.95,
-            altitude: 0.28,
-          },
-        ];
+        return addArc(
+          exportMode ? selectedCountry : target,
+          exportMode ? target : selectedCountry,
+          `${selectedCountry.iso3} ${partner.flow} link: ${partner.name}`,
+          arcColor,
+        );
       });
 
-    return [...sectorArcs, ...tradeArcs];
-  }, [countryByIso, selectedCountry, selectedSector, tradeFlow]);
+    return [...globalTradeArcs, ...sectorArcs, ...tradeArcs];
+  }, [activeTheme, countries, countryByIso, selectedCountry, selectedSector, tradeFlow]);
 
   const points = useMemo<PointDatum[]>(() => {
     if (!selectedCountry || !selectedSector) return [];
-    const nodePoints = [...selectedSector.power_nodes, ...selectedSector.consumption_nodes].flatMap((iso3) => {
-      const country = countryByIso.get(iso3);
-      if (!country) return [];
-      return [
-        {
-          lat: country.coordinates.lat,
-          lng: country.coordinates.lng,
-          label: `${country.name} node`,
-          color: selectedSector.power_nodes.includes(iso3) ? "#ffffff" : selectedSector.color,
-          radius: selectedSector.power_nodes.includes(iso3) ? 0.42 : 0.28,
-        },
-      ];
-    });
+    const nodePoints = countries.map((country) => ({
+      lat: country.coordinates.lat,
+      lng: country.coordinates.lng,
+      label: `${country.capital} node`,
+      color: activeTheme.accent,
+      radius: 0.25,
+    }));
 
     const chokepoints = selectedSector.chokepoints.map((point) => ({
       lat: point.coordinates.lat,
       lng: point.coordinates.lng,
       label: point.name,
-      color: RISK_COLOR,
-      radius: 0.34,
+      color: activeTheme.accent,
+      radius: 0.22,
     }));
 
     return [
@@ -224,36 +339,58 @@ function App() {
         lat: selectedCountry.coordinates.lat,
         lng: selectedCountry.coordinates.lng,
         label: `${selectedCountry.name} selected`,
-        color: EXPORT_COLOR,
-        radius: 0.5,
+        color: activeTheme.accent,
+        radius: 0.25,
       },
     ];
-  }, [countryByIso, selectedCountry, selectedSector]);
+  }, [activeTheme, countries, selectedCountry, selectedSector]);
 
-  const polygonColor = (feature: object) => {
-    const iso3 = (feature as GlobeCountryFeature).properties.iso3;
-    if (!iso3) return "rgba(62, 72, 68, 0.18)";
-    const country = countryByIso.get(iso3);
-    if (!country) return "rgba(62, 72, 68, 0.18)";
+  const labels = useMemo<LabelDatum[]>(() => {
+    if (!selectedSector) return [];
+    const countryLabels = countries.map((country) => ({
+      lat: country.coordinates.lat,
+      lng: country.coordinates.lng,
+      text: country.capital.toUpperCase(),
+    }));
+    const chokepointLabels = selectedSector.chokepoints.map((point) => ({
+      lat: point.coordinates.lat,
+      lng: point.coordinates.lng,
+      text: point.name.toUpperCase(),
+    }));
 
-    const selected = iso3 === selectedIso;
-    const sectorLinked = sectorIsoSet.has(iso3);
-    const tradeLinked = tradeIsoSet.has(iso3);
-    const hovered = iso3 === hoverIso;
-    const activeColor = scoreColor(country.tension_score);
+    return [...countryLabels, ...chokepointLabels];
+  }, [countries, selectedSector]);
 
-    if (selected) return `${activeColor}ee`;
-    if (tradeLinked) return tradeFlow === "export" ? "rgba(0, 255, 255, 0.9)" : "rgba(255, 140, 0, 0.9)";
-    if (sectorLinked) return `${selectedSector?.color ?? activeColor}cc`;
-    if (hovered) return `${activeColor}bb`;
-    if (selectedSector || selectedCountry) return DIM_COLOR;
-    return `${activeColor}aa`;
-  };
+  const borderPaths = useMemo<RenderPathDatum[]>(() => {
+    const liveBorderIsoSet = new Set<string>();
+    if (highlightIso) liveBorderIsoSet.add(highlightIso);
+    if (sectorHighlightsActive) {
+      sectorIsoSet.forEach((iso3) => liveBorderIsoSet.add(iso3));
+      tradeIsoSet.forEach((iso3) => liveBorderIsoSet.add(iso3));
+    }
+    const withAltitude = (path: BoundaryPathDatum, iso3?: string, source?: string): RenderPathDatum => ({
+      ...path,
+      iso3,
+      source: source ?? path.source,
+      points: path.points.map((point) => ({ ...point, borderAlt: source === "survey-of-india" ? 0.052 : 0.046 })),
+    });
+    const atlasPaths = COUNTRY_BORDER_PATHS.flatMap((path) => {
+      if (path.id === "356") return [];
+      const iso3 = path.id ? isoByNumeric.get(path.id) : undefined;
+      if (!iso3 || !liveBorderIsoSet.has(iso3)) return [];
+      return [withAltitude(path, iso3)];
+    });
+    const indiaPaths = liveBorderIsoSet.has("IND")
+      ? INDIA_BOUNDARY_PATHS.map((path) => withAltitude(path, "IND", "survey-of-india"))
+      : [];
+
+    return [...atlasPaths, ...indiaPaths];
+  }, [highlightIso, isoByNumeric, sectorHighlightsActive, sectorIsoSet, tradeIsoSet]);
 
   const handlePolygonClick = (feature: object) => {
     const iso3 = (feature as GlobeCountryFeature).properties.iso3;
     if (!iso3 || !countryByIso.has(iso3)) return;
-    setSelectedIso(iso3);
+    selectCountry(iso3);
   };
 
   if (error) {
@@ -280,69 +417,123 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main
+      className="app-shell"
+      style={
+        {
+          "--accent": activeTheme.accent,
+          "--accent-rgb": activeTheme.rgb,
+          "--accent-on": activeTheme.onAccent,
+        } as React.CSSProperties
+      }
+    >
       <div className="globe-stage" aria-label="Interactive 3D geopolitical risk globe">
         <Globe
           ref={globeRef}
           width={width}
           height={height}
+          rendererConfig={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
           globeImageUrl={API_IMAGE_EARTH}
-          backgroundImageUrl={API_IMAGE_SKY}
+          backgroundColor="#00050a"
           showAtmosphere
-          atmosphereColor="#d6fff6"
-          atmosphereAltitude={0.18}
+          atmosphereColor={activeTheme.accent}
+          atmosphereAltitude={0.15}
+          enablePointerInteraction
+          lineHoverPrecision={0.35}
+          showPointerCursor
           polygonsData={countryFeatures}
-          polygonCapColor={polygonColor}
-          polygonSideColor={() => "rgba(0, 0, 0, 0.18)"}
-          polygonStrokeColor={(feature: object) => {
-            const iso3 = (feature as GlobeCountryFeature).properties.iso3;
-            if (iso3 === selectedIso || iso3 === hoverIso) return "#ffffff";
-            if (iso3 && sectorIsoSet.has(iso3)) return selectedSector.color;
-            return "rgba(210, 255, 243, 0.18)";
-          }}
-          polygonAltitude={(feature: object) => {
-            const iso3 = (feature as GlobeCountryFeature).properties.iso3;
-            if (iso3 === selectedIso) return 0.035;
-            if (iso3 && (tradeIsoSet.has(iso3) || sectorIsoSet.has(iso3))) return 0.025;
-            return 0.008;
-          }}
+          polygonsTransitionDuration={0}
+          polygonCapMaterial={() => hiddenPolygonMaterial}
+          polygonSideMaterial={() => hiddenPolygonMaterial}
+          polygonStrokeColor={() => false}
+          polygonAltitude={0}
+          polygonCapCurvatureResolution={1}
           onPolygonClick={handlePolygonClick}
-          onPolygonHover={(feature: object | null) => {
-            const iso3 = feature ? (feature as GlobeCountryFeature).properties.iso3 : null;
-            setHoverIso(iso3 ?? null);
+          pathsData={borderPaths}
+          pathPoints="points"
+          pathPointLat={(point: object) => (point as BoundaryPathPoint).lat}
+          pathPointLng={(point: object) => (point as BoundaryPathPoint).lng}
+          pathPointAlt={(point: object) => (point as RenderPathPoint).borderAlt}
+          pathResolution={1}
+          pathColor={(path: object) => {
+            const borderPath = path as BoundaryPathDatum;
+            if (borderPath.iso3 === highlightIso) return rgba(activeTheme, 0.82);
+            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) {
+              return rgba(activeTheme, 0.56);
+            }
+            return "rgba(218, 226, 226, 0.28)";
           }}
+          pathStroke={(path: object) => {
+            const borderPath = path as BoundaryPathDatum;
+            if (borderPath.iso3 === highlightIso) return 0.56;
+            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) return 0.46;
+            if (borderPath.source === "survey-of-india") return 0.48;
+            return 0.4;
+          }}
+          pathTransitionDuration={0}
           arcsData={arcs}
           arcStartLat="startLat"
           arcStartLng="startLng"
           arcEndLat="endLat"
           arcEndLng="endLng"
-          arcColor="color"
-          arcStroke="stroke"
-          arcAltitude="altitude"
-          arcDashLength={0.45}
-          arcDashGap={0.18}
-          arcDashAnimateTime={2200}
+          arcColor={(arc: object) => (arc as ArcDatum).color}
+          arcStroke={0.12}
+          arcAltitude={0.2}
+          arcCurveResolution={32}
+          arcCircularResolution={1}
+          arcDashLength={0.4}
+          arcDashGap={4}
+          arcDashInitialGap={(arc: object) => ((arc as ArcDatum).label.length % 17) / 17}
+          arcDashAnimateTime={2600}
           pointsData={points}
           pointLat="lat"
           pointLng="lng"
           pointColor="color"
-          pointRadius="radius"
-          pointAltitude={0.045}
+          pointRadius={() => 0.25}
+          pointAltitude={0.012}
           pointLabel="label"
+          pointResolution={8}
+          pointsMerge
+          pointsTransitionDuration={0}
+          labelsData={labels}
+          labelLat="lat"
+          labelLng="lng"
+          labelText="text"
+          labelSize={0.8}
+          labelDotRadius={0.15}
+          labelIncludeDot
+          labelAltitude={0.018}
+          labelColor={() => "rgba(222, 230, 232, 0.68)"}
+          labelResolution={1}
         />
       </div>
 
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" />
+      <header className="story-overlay">
+        <p className="eyebrow">Sovereign Lens</p>
+        <h1>
+          Every place
+          <span>has a <em>story.</em></span>
+        </h1>
+        <p className="story-copy">
+          Discover how capital, energy, and influence flow between capitals. {labels.length} cities. {arcs.length} routes. One living map.
+        </p>
+        <dl className="story-metrics" aria-label="Network metrics">
           <div>
-            <strong>Sovereign Lens</strong>
-            <span>Geopolitical risk x market flow</span>
+            <dt>{labels.length}</dt>
+            <dd>Cities</dd>
           </div>
-        </div>
+          <div>
+            <dt>{arcs.length}</dt>
+            <dd>Routes</dd>
+          </div>
+          <div>
+            <dt>{sectors.length}</dt>
+            <dd>Sectors</dd>
+          </div>
+        </dl>
         <div className="status-strip">
-          <span>Structural: {data.globalPulse.last_structural_update}</span>
-          <span>Sentiment: {data.globalPulse.last_sentiment_update}</span>
+          <span>Structural {data.globalPulse.last_structural_update}</span>
+          <span>Sentiment {data.globalPulse.last_sentiment_update}</span>
         </div>
       </header>
 
@@ -352,8 +543,14 @@ function App() {
           <button
             key={sector.id}
             className={sector.id === selectedSector.id ? "sector-button active" : "sector-button"}
-            style={{ "--accent": sector.color } as React.CSSProperties}
-            onClick={() => setSelectedSectorId(sector.id)}
+            style={
+              {
+                "--sector-accent": sectorTheme(sector.id).accent,
+                "--sector-rgb": sectorTheme(sector.id).rgb,
+                "--sector-on": sectorTheme(sector.id).onAccent,
+              } as React.CSSProperties
+            }
+            onClick={() => selectSector(sector.id)}
           >
             <span>{sector.name}</span>
             <strong>{sector.sensitivity.toFixed(1)}</strong>
@@ -403,7 +600,13 @@ function App() {
             <span>{selectedCountry.tension_label}</span>
           </div>
           <div className="score-meter" aria-hidden="true">
-            <span style={{ width: `${selectedCountry.tension_score * 10}%`, background: scoreColor(selectedCountry.tension_score) }} />
+            <span
+              style={{
+                width: `${selectedCountry.tension_score * 10}%`,
+                background: scoreColor(selectedCountry.tension_score),
+                color: scoreColor(selectedCountry.tension_score),
+              }}
+            />
           </div>
         </div>
 
@@ -475,10 +678,10 @@ function App() {
 
         <section className="trade-section">
           <div className="trade-tabs">
-            <button className={tradeFlow === "export" ? "active" : ""} onClick={() => setTradeFlow("export")}>
+            <button className={tradeFlow === "export" ? "active" : ""} onClick={() => selectTradeFlow("export")}>
               Exports
             </button>
-            <button className={tradeFlow === "import" ? "active" : ""} onClick={() => setTradeFlow("import")}>
+            <button className={tradeFlow === "import" ? "active" : ""} onClick={() => selectTradeFlow("import")}>
               Imports
             </button>
           </div>
@@ -488,7 +691,7 @@ function App() {
               <button
                 key={`${partner.flow}-${partner.iso3}`}
                 className="partner-row"
-                onClick={() => countryByIso.has(partner.iso3) && setSelectedIso(partner.iso3)}
+                onClick={() => selectCountry(partner.iso3)}
               >
                 <span>{partner.name}</span>
                 <strong>{partner.share.toFixed(1)}%</strong>

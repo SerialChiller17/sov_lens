@@ -8,6 +8,9 @@ export interface GlobeCountryFeature {
   properties: {
     name?: string;
     iso3?: string;
+    source?: string;
+    sourceUrl?: string;
+    sourceRetrieved?: string;
   };
   geometry: unknown;
 }
@@ -19,12 +22,17 @@ export function buildCountryFeatures(countries: Country[]): GlobeCountryFeature[
     (countries110m as any).objects.countries,
   ) as unknown as { features: GlobeCountryFeature[] };
 
-  return collection.features.map((item) => ({
-    ...item,
-    id: String(item.id).padStart(3, "0"),
-    properties: {
-      ...item.properties,
-      iso3: byNumeric.get(String(item.id).padStart(3, "0")),
-    },
-  }));
+  return collection.features.map((item) => {
+    const id = String(item.id).padStart(3, "0");
+    const iso3 = byNumeric.get(id);
+
+    return {
+      ...item,
+      id,
+      properties: {
+        ...item.properties,
+        iso3,
+      },
+    };
+  });
 }
