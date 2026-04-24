@@ -59,6 +59,21 @@ interface SectorTheme {
   onAccent: string;
 }
 
+interface MarketTapeItem {
+  label: string;
+  value: string;
+  move: string;
+  direction: "up" | "down";
+}
+
+type PaneKey = "sectors" | "pulse" | "country";
+
+const DEFAULT_COLLAPSED_PANES: Record<PaneKey, boolean> = {
+  sectors: true,
+  pulse: true,
+  country: true,
+};
+
 const SECTOR_THEMES: Record<string, SectorTheme> = {
   semiconductors: {
     accent: "#00f5ff",
@@ -84,6 +99,21 @@ const RISK_COLOR = "#d28d8d";
 const API_IMAGE_EARTH = globeTextureUrl;
 const COUNTRY_BORDER_PATHS = (countryBorderPaths as { paths: BoundaryPathDatum[] }).paths;
 const INDIA_BOUNDARY_PATHS = (indiaBoundaryPaths as { paths: BoundaryPathDatum[] }).paths;
+const MAX_RENDER_PIXEL_RATIO = 2;
+const ATLAS_BORDER_ALTITUDE = 0.064;
+const INDIA_BORDER_ALTITUDE = 0.074;
+const SELECTED_BORDER_STROKE = 0.82;
+const LINKED_BORDER_STROKE = 0.66;
+const INDIA_BORDER_STROKE = 0.7;
+const DEFAULT_BORDER_STROKE = 0.58;
+const BOUNDARY_RENDER_ORDER = 5;
+const MARKET_TAPE_ITEMS: MarketTapeItem[] = [
+  { label: "Gold Spot", value: "$2,386.40", move: "+0.42%", direction: "up" },
+  { label: "Brent Crude", value: "$88.12", move: "-0.31%", direction: "down" },
+  { label: "S&P 500", value: "5,214.08", move: "+0.18%", direction: "up" },
+  { label: "Nasdaq 100", value: "18,084.70", move: "-0.27%", direction: "down" },
+  { label: "Nifty 50", value: "24,152.80", move: "+0.36%", direction: "up" },
+];
 
 function useWindowSize() {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -117,12 +147,47 @@ function formatMove(move: number) {
   return `${move > 0 ? "+" : ""}${move.toFixed(1)}%`;
 }
 
+function formatAlertAge(ageMinutes: number) {
+  if (ageMinutes < 1) return "Now";
+  if (ageMinutes < 60) return `${ageMinutes} min ago`;
+  const ageHours = Math.round(ageMinutes / 60);
+  if (ageHours < 24) return `${ageHours}h ago`;
+  return `${Math.round(ageHours / 24)}d ago`;
+}
+
 function sectorTheme(sectorId?: string) {
   return sectorId ? SECTOR_THEMES[sectorId] ?? FALLBACK_SECTOR_THEME : FALLBACK_SECTOR_THEME;
 }
 
 function rgba(theme: SectorTheme, alpha: number) {
   return `rgba(${theme.rgb}, ${alpha})`;
+}
+
+function stabilizeBoundaryPathMaterials(globe: any) {
+  const scene = globe?.scene?.();
+  if (!scene) return;
+
+  scene.traverse?.((object: any) => {
+    let current = object;
+    let isBoundaryPath = false;
+    while (current) {
+      if (current.__globeObjType === "path") {
+        isBoundaryPath = true;
+        break;
+      }
+      current = current.parent;
+    }
+    if (!isBoundaryPath) return;
+
+    object.renderOrder = BOUNDARY_RENDER_ORDER;
+    const materials = object.material ? (Array.isArray(object.material) ? object.material : [object.material]) : [];
+    materials.forEach((material: any) => {
+      material.depthWrite = false;
+      material.depthTest = true;
+      material.alphaToCoverage = true;
+      material.needsUpdate = true;
+    });
+  });
 }
 
 function Sparkline({ points }: { points: MarketPoint[] }) {
@@ -151,6 +216,30 @@ function Sparkline({ points }: { points: MarketPoint[] }) {
   );
 }
 
+function MarketTape({ items }: { items: MarketTapeItem[] }) {
+  const tapeItems = [...items, ...items];
+
+  return (
+    <section className="market-tape" aria-label="Market tape">
+      <div className="market-tape-viewport">
+        <div className="market-tape-track">
+          {tapeItems.map((item, index) => (
+            <div
+              key={`${item.label}-${index}`}
+              className={`market-tape-item ${item.direction}`}
+              aria-hidden={index >= items.length}
+            >
+              <span className="market-tape-label">{item.label}</span>
+              <strong>{item.value}</strong>
+              <span className="market-tape-move">{item.move}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const globeRef = useRef<any>(null);
   const initialViewSet = useRef(false);
@@ -162,6 +251,7 @@ function App() {
   const [sectorHighlightsActive, setSectorHighlightsActive] = useState(false);
   const [selectedSectorId, setSelectedSectorId] = useState("semiconductors");
   const [tradeFlow, setTradeFlow] = useState<TradeFlow>("export");
+  const [collapsedPanes, setCollapsedPanes] = useState<Record<PaneKey, boolean>>(() => ({ ...DEFAULT_COLLAPSED_PANES }));
 
   useEffect(() => {
     getBootstrapData()
@@ -201,7 +291,7 @@ function App() {
       controls.zoomSpeed = 0.5;
       controls.enablePan = false;
     }
-    globeRef.current.renderer?.().setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+    globeRef.current.renderer?.().setPixelRatio(Math.min(window.devicePixelRatio, MAX_RENDER_PIXEL_RATIO));
   }, [data]);
 
   useEffect(() => {
@@ -244,6 +334,35 @@ function App() {
   const selectTradeFlow = (flow: TradeFlow) => {
     setTradeFlow(flow);
     setSectorHighlightsActive(true);
+  };
+
+  const isPaneCollapsed = (pane: PaneKey) => collapsedPanes[pane];
+
+  const togglePane = (pane: PaneKey) => {
+    setCollapsedPanes((current) => ({
+      ...current,
+      [pane]: !current[pane],
+    }));
+  };
+
+  const paneClassName = (baseClass: string, pane: PaneKey) =>
+    `${baseClass} collapsible-pane ${isPaneCollapsed(pane) ? "is-collapsed" : "is-expanded"}`;
+
+  const paneToggle = (pane: PaneKey, label: string, meta?: string) => {
+    const collapsed = isPaneCollapsed(pane);
+    return (
+      <button
+        type="button"
+        className="pane-toggle"
+        aria-expanded={!collapsed}
+        aria-controls={`${pane}-pane-content`}
+        onClick={() => togglePane(pane)}
+      >
+        <span className="pane-toggle-icon" aria-hidden="true">{collapsed ? "+" : "-"}</span>
+        <span className="pane-toggle-label">{label}</span>
+        {meta ? <span className="pane-toggle-meta">{meta}</span> : null}
+      </button>
+    );
   };
 
   const sectorIsoSet = useMemo(() => {
@@ -372,7 +491,10 @@ function App() {
       ...path,
       iso3,
       source: source ?? path.source,
-      points: path.points.map((point) => ({ ...point, borderAlt: source === "survey-of-india" ? 0.052 : 0.046 })),
+      points: path.points.map((point) => ({
+        ...point,
+        borderAlt: source === "survey-of-india" ? INDIA_BORDER_ALTITUDE : ATLAS_BORDER_ALTITUDE,
+      })),
     });
     const atlasPaths = COUNTRY_BORDER_PATHS.flatMap((path) => {
       if (path.id === "356") return [];
@@ -386,6 +508,12 @@ function App() {
 
     return [...atlasPaths, ...indiaPaths];
   }, [highlightIso, isoByNumeric, sectorHighlightsActive, sectorIsoSet, tradeIsoSet]);
+
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const frame = window.requestAnimationFrame(() => stabilizeBoundaryPathMaterials(globeRef.current));
+    return () => window.cancelAnimationFrame(frame);
+  }, [borderPaths, activeTheme.accent]);
 
   const handlePolygonClick = (feature: object) => {
     const iso3 = (feature as GlobeCountryFeature).properties.iso3;
@@ -426,7 +554,7 @@ function App() {
           "--accent-on": activeTheme.onAccent,
         } as React.CSSProperties
       }
-    >
+      >
       <div className="globe-stage" aria-label="Interactive 3D geopolitical risk globe">
         <Globe
           ref={globeRef}
@@ -465,10 +593,12 @@ function App() {
           }}
           pathStroke={(path: object) => {
             const borderPath = path as BoundaryPathDatum;
-            if (borderPath.iso3 === highlightIso) return 0.56;
-            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) return 0.46;
-            if (borderPath.source === "survey-of-india") return 0.48;
-            return 0.4;
+            if (borderPath.iso3 === highlightIso) return SELECTED_BORDER_STROKE;
+            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) {
+              return LINKED_BORDER_STROKE;
+            }
+            if (borderPath.source === "survey-of-india") return INDIA_BORDER_STROKE;
+            return DEFAULT_BORDER_STROKE;
           }}
           pathTransitionDuration={0}
           arcsData={arcs}
@@ -508,222 +638,185 @@ function App() {
         />
       </div>
 
-      <header className="story-overlay">
-        <p className="eyebrow">Sovereign Lens</p>
-        <h1>
-          Every place
-          <span>has a <em>story.</em></span>
-        </h1>
-        <p className="story-copy">
-          Discover how capital, energy, and influence flow between capitals. {labels.length} cities. {arcs.length} routes. One living map.
-        </p>
-        <dl className="story-metrics" aria-label="Network metrics">
-          <div>
-            <dt>{labels.length}</dt>
-            <dd>Cities</dd>
-          </div>
-          <div>
-            <dt>{arcs.length}</dt>
-            <dd>Routes</dd>
-          </div>
-          <div>
-            <dt>{sectors.length}</dt>
-            <dd>Sectors</dd>
-          </div>
-        </dl>
-        <div className="status-strip">
-          <span>Structural {data.globalPulse.last_structural_update}</span>
-          <span>Sentiment {data.globalPulse.last_sentiment_update}</span>
-        </div>
-      </header>
+      <MarketTape items={MARKET_TAPE_ITEMS} />
 
-      <section className="sector-rail" aria-label="Sector overlays">
-        <p className="eyebrow">Supply chain overlay</p>
-        {sectors.map((sector) => (
-          <button
-            key={sector.id}
-            className={sector.id === selectedSector.id ? "sector-button active" : "sector-button"}
-            style={
-              {
-                "--sector-accent": sectorTheme(sector.id).accent,
-                "--sector-rgb": sectorTheme(sector.id).rgb,
-                "--sector-on": sectorTheme(sector.id).onAccent,
-              } as React.CSSProperties
-            }
-            onClick={() => selectSector(sector.id)}
-          >
-            <span>{sector.name}</span>
-            <strong>{sector.sensitivity.toFixed(1)}</strong>
-          </button>
-        ))}
+      <section className={paneClassName("sector-rail", "sectors")} aria-label="Sector overlays">
+        {paneToggle("sectors", "Supply Chain", selectedSector.name)}
+        <div id="sectors-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("sectors")}>
+          <p className="eyebrow">Supply chain overlay</p>
+          {sectors.map((sector) => (
+            <button
+              key={sector.id}
+              className={sector.id === selectedSector.id ? "sector-button active" : "sector-button"}
+              style={
+                {
+                  "--sector-accent": sectorTheme(sector.id).accent,
+                  "--sector-rgb": sectorTheme(sector.id).rgb,
+                  "--sector-on": sectorTheme(sector.id).onAccent,
+                } as React.CSSProperties
+              }
+              onClick={() => selectSector(sector.id)}
+            >
+              <span>{sector.name}</span>
+              <strong>{sector.sensitivity.toFixed(1)}</strong>
+            </button>
+          ))}
+        </div>
       </section>
 
-      <aside className="pulse-hud" aria-label="Global pulse dashboard">
-        <div className="panel-title">
-          <p className="eyebrow">Global pulse</p>
-          <strong>Last 90 minutes</strong>
-        </div>
-        <div className="alert-list">
-          {data.globalPulse.alerts.map((alert) => (
-            <article key={alert.id} className={`alert-item ${scoreClass(alert.severity === "High Risk" ? 8 : 5)}`}>
-              <span>{alert.region}</span>
-              <p>{alert.headline}</p>
-              <small>{alert.impact}</small>
-            </article>
-          ))}
-        </div>
-        <div className="movement-grid">
-          {data.marketPulse.map((movement) => (
-            <div key={movement.id} className="movement-item">
-              <strong>{movement.instrument}</strong>
-              <span className={movement.move_pct >= 0 ? "positive" : "negative"}>{formatMove(movement.move_pct)}</span>
-              <small>{movement.trigger}</small>
-            </div>
-          ))}
+      <aside className={paneClassName("pulse-hud", "pulse")} aria-label="News pulse dashboard">
+        {paneToggle("pulse", "News Pulse", "Live")}
+        <div id="pulse-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("pulse")}>
+          <div className="panel-title">
+            <p className="eyebrow">News pulse</p>
+            <strong>Last 90 minutes</strong>
+          </div>
+          <div className="alert-list">
+            {data.globalPulse.alerts.map((alert) => (
+              <article key={alert.id} className={`alert-item ${scoreClass(alert.severity === "High Risk" ? 8 : 5)}`}>
+                <div className="alert-meta">
+                  <span>{alert.region}</span>
+                  <time dateTime={`PT${alert.age_minutes}M`}>{formatAlertAge(alert.age_minutes)}</time>
+                </div>
+                <p>{alert.headline}</p>
+                <small>{alert.impact}</small>
+              </article>
+            ))}
+          </div>
+          <div className="movement-grid">
+            {data.marketPulse.map((movement) => (
+              <div key={movement.id} className="movement-item">
+                <strong>{movement.instrument}</strong>
+                <span className={movement.move_pct >= 0 ? "positive" : "negative"}>{formatMove(movement.move_pct)}</span>
+                <small>{movement.trigger}</small>
+              </div>
+            ))}
+          </div>
         </div>
       </aside>
 
-      <aside className="country-panel" aria-label="Country intelligence sidebar">
-        <div className="country-heading">
-          <img src={selectedCountry.flag} alt={`${selectedCountry.name} flag`} />
-          <div>
-            <p className="eyebrow">{selectedCountry.iso3} sovereign file</p>
-            <h1>{selectedCountry.name}</h1>
-            <span>{selectedCountry.capital}</span>
-          </div>
-        </div>
-
-        <div className="score-block">
-          <div>
-            <p className="eyebrow">Tension score</p>
-            <strong className={scoreClass(selectedCountry.tension_score)}>{selectedCountry.tension_score.toFixed(1)}</strong>
-            <span>{selectedCountry.tension_label}</span>
-          </div>
-          <div className="score-meter" aria-hidden="true">
-            <span
-              style={{
-                width: `${selectedCountry.tension_score * 10}%`,
-                background: scoreColor(selectedCountry.tension_score),
-                color: scoreColor(selectedCountry.tension_score),
-              }}
-            />
-          </div>
-        </div>
-
-        <dl className="metric-grid">
-          <div>
-            <dt>GDP</dt>
-            <dd>{compactNumber(selectedCountry.gdp_usd_bn, "B")}</dd>
-          </div>
-          <div>
-            <dt>Population</dt>
-            <dd>{compactNumber(selectedCountry.population_mn, "M")}</dd>
-          </div>
-          <div>
-            <dt>Growth</dt>
-            <dd>{formatMove(selectedCountry.gdp_growth_pct)}</dd>
-          </div>
-          <div>
-            <dt>GDP/capita</dt>
-            <dd>${selectedCountry.gdp_per_capita_usd.toLocaleString()}</dd>
-          </div>
-          <div>
-            <dt>GINI</dt>
-            <dd>{selectedCountry.gini.toFixed(1)}</dd>
-          </div>
-          <div>
-            <dt>FX vol</dt>
-            <dd>{selectedCountry.fx.volatility_24h.toFixed(1)}%</dd>
-          </div>
-        </dl>
-
-        <div className="breakdown">
-          <span>Structural {selectedCountry.tension_breakdown.structural.toFixed(1)}</span>
-          <span>Sentiment {selectedCountry.tension_breakdown.sentiment.toFixed(1)}</span>
-          <span>Live {selectedCountry.tension_breakdown.live_trigger.toFixed(1)}</span>
-        </div>
-
-        <div className="badge-row">
-          {selectedCountry.groups.map((group) => (
-            <span key={group}>{group}</span>
-          ))}
-        </div>
-
-        <section className="intelligence-section">
-          <p className="eyebrow">Industry criticality</p>
-          <ul>
-            {selectedCountry.industry_criticality.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="market-card">
-          <div className="market-heading">
+      <aside className={paneClassName("country-panel", "country")} aria-label="Country intelligence sidebar">
+        {paneToggle("country", "Country File", selectedCountry.iso3)}
+        <div id="country-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("country")}>
+          <div className="country-heading">
+            <img src={selectedCountry.flag} alt={`${selectedCountry.name} flag`} />
             <div>
-              <p className="eyebrow">Market index pulse</p>
-              <strong>{selectedCountry.market_index.name}</strong>
+              <p className="eyebrow">{selectedCountry.iso3} sovereign file</p>
+              <h1>{selectedCountry.name}</h1>
+              <span>{selectedCountry.capital}</span>
             </div>
-            <span className={selectedCountry.market_index.change_24h >= 0 ? "positive" : "negative"}>
-              {formatMove(selectedCountry.market_index.change_24h)}
-            </span>
           </div>
-          <Sparkline points={selectedCountry.market_index.series} />
-          <p className="fx-line">
-            {selectedCountry.fx.pair} {selectedCountry.fx.rate.toLocaleString()}:
-            {" "}
-            {selectedCountry.fx.trigger}
-          </p>
-        </section>
 
-        <section className="trade-section">
-          <div className="trade-tabs">
-            <button className={tradeFlow === "export" ? "active" : ""} onClick={() => selectTradeFlow("export")}>
-              Exports
-            </button>
-            <button className={tradeFlow === "import" ? "active" : ""} onClick={() => selectTradeFlow("import")}>
-              Imports
-            </button>
+          <div className="score-block">
+            <div>
+              <p className="eyebrow">Tension score</p>
+              <strong className={scoreClass(selectedCountry.tension_score)}>{selectedCountry.tension_score.toFixed(1)}</strong>
+              <span>{selectedCountry.tension_label}</span>
+            </div>
+            <div className="score-meter" aria-hidden="true">
+              <span
+                style={{
+                  width: `${selectedCountry.tension_score * 10}%`,
+                  background: scoreColor(selectedCountry.tension_score),
+                  color: scoreColor(selectedCountry.tension_score),
+                }}
+              />
+            </div>
           </div>
-          {selectedCountry.trade_partners
-            .filter((partner) => partner.flow === tradeFlow)
-            .map((partner) => (
-              <button
-                key={`${partner.flow}-${partner.iso3}`}
-                className="partner-row"
-                onClick={() => selectCountry(partner.iso3)}
-              >
-                <span>{partner.name}</span>
-                <strong>{partner.share.toFixed(1)}%</strong>
-                <small>{partner.thesis}</small>
-              </button>
+
+          <dl className="metric-grid">
+            <div>
+              <dt>GDP</dt>
+              <dd>{compactNumber(selectedCountry.gdp_usd_bn, "B")}</dd>
+            </div>
+            <div>
+              <dt>Population</dt>
+              <dd>{compactNumber(selectedCountry.population_mn, "M")}</dd>
+            </div>
+            <div>
+              <dt>Growth</dt>
+              <dd>{formatMove(selectedCountry.gdp_growth_pct)}</dd>
+            </div>
+            <div>
+              <dt>GDP/capita</dt>
+              <dd>${selectedCountry.gdp_per_capita_usd.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>GINI</dt>
+              <dd>{selectedCountry.gini.toFixed(1)}</dd>
+            </div>
+            <div>
+              <dt>FX vol</dt>
+              <dd>{selectedCountry.fx.volatility_24h.toFixed(1)}%</dd>
+            </div>
+          </dl>
+
+          <div className="breakdown">
+            <span>Structural {selectedCountry.tension_breakdown.structural.toFixed(1)}</span>
+            <span>Sentiment {selectedCountry.tension_breakdown.sentiment.toFixed(1)}</span>
+            <span>Live {selectedCountry.tension_breakdown.live_trigger.toFixed(1)}</span>
+          </div>
+
+          <div className="badge-row">
+            {selectedCountry.groups.map((group) => (
+              <span key={group}>{group}</span>
             ))}
-        </section>
+          </div>
 
-        <blockquote>{selectedCountry.contrarian_insight}</blockquote>
+          <section className="intelligence-section">
+            <p className="eyebrow">Industry criticality</p>
+            <ul>
+              {selectedCountry.industry_criticality.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="market-card">
+            <div className="market-heading">
+              <div>
+                <p className="eyebrow">Market index pulse</p>
+                <strong>{selectedCountry.market_index.name}</strong>
+              </div>
+              <span className={selectedCountry.market_index.change_24h >= 0 ? "positive" : "negative"}>
+                {formatMove(selectedCountry.market_index.change_24h)}
+              </span>
+            </div>
+            <Sparkline points={selectedCountry.market_index.series} />
+            <p className="fx-line">
+              {selectedCountry.fx.pair} {selectedCountry.fx.rate.toLocaleString()}:
+              {" "}
+              {selectedCountry.fx.trigger}
+            </p>
+          </section>
+
+          <section className="trade-section">
+            <div className="trade-tabs">
+              <button className={tradeFlow === "export" ? "active" : ""} onClick={() => selectTradeFlow("export")}>
+                Exports
+              </button>
+              <button className={tradeFlow === "import" ? "active" : ""} onClick={() => selectTradeFlow("import")}>
+                Imports
+              </button>
+            </div>
+            {selectedCountry.trade_partners
+              .filter((partner) => partner.flow === tradeFlow)
+              .map((partner) => (
+                <button
+                  key={`${partner.flow}-${partner.iso3}`}
+                  className="partner-row"
+                  onClick={() => selectCountry(partner.iso3)}
+                >
+                  <span>{partner.name}</span>
+                  <strong>{partner.share.toFixed(1)}%</strong>
+                  <small>{partner.thesis}</small>
+                </button>
+              ))}
+          </section>
+
+          <blockquote>{selectedCountry.contrarian_insight}</blockquote>
+        </div>
       </aside>
-
-      <section className="sector-panel" aria-label="Selected sector intelligence">
-        <div>
-          <p className="eyebrow">Active sector</p>
-          <h2>{selectedSector.name}</h2>
-        </div>
-        <p>{selectedSector.brief}</p>
-        <div className="sector-facts">
-          <span>{selectedSector.market_value}</span>
-          <span>{selectedSector.systemic_multiplier}</span>
-          <span>{selectedSector.equity_proxy}</span>
-        </div>
-        <strong>{selectedSector.alpha}</strong>
-      </section>
-
-      <footer className="legend-bar">
-        <span><i className="legend stable" />Stable 1-3</span>
-        <span><i className="legend amber" />Developing 4-6</span>
-        <span><i className="legend risk" />High Risk 7-10</span>
-        <span><i className="legend export" />Exports</span>
-        <span><i className="legend import" />Imports</span>
-      </footer>
     </main>
   );
 }
