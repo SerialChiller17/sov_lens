@@ -234,15 +234,15 @@ function openPane(name: RegExp | string) {
 describe("Sovereign Lens app", () => {
   it("renders the globe-first intelligence workspace", async () => {
     render(<App />);
-    expect(await screen.findByRole("button", { name: /News Pulse Live/i })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: /Supply Chain Semiconductors/i })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: /Country File IND/i })).toHaveAttribute("aria-expanded", "false");
+    expect(await screen.findByRole("button", { name: /Conflict Pulse Live/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Sectors At Risk Semiconductors/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Country File IND/i })).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByRole("button", { name: /Sovereign Lens Overview/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Active Sector/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Legend/i })).not.toBeInTheDocument();
 
-    openPane(/News Pulse Live/i);
-    expect(screen.getByText("42 min ago")).toBeInTheDocument();
+    expect(screen.getAllByText("Red Sea").length).toBeGreaterThan(0);
+    expect(screen.getByRole("complementary", { name: /News pulse dashboard/i })).toBeInTheDocument();
   });
 
   it("opens a different country sidebar from a globe click", async () => {
@@ -259,13 +259,42 @@ describe("Sovereign Lens app", () => {
 
   it("switches sector overlay content", async () => {
     render(<App />);
-    await screen.findByRole("button", { name: /Supply Chain Semiconductors/i });
+    await screen.findByRole("button", { name: /Sectors At Risk Semiconductors/i });
 
-    openPane(/Supply Chain Semiconductors/i);
+    openPane(/Sectors At Risk Semiconductors/i);
     fireEvent.click(screen.getByRole("button", { name: /^Hydrocarbons\s+8\.5$/i }));
 
-    expect(screen.getByRole("button", { name: /Supply Chain Hydrocarbons/i })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Sectors At Risk Hydrocarbons/i })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("button", { name: /^Hydrocarbons\s+8\.5$/i })).toHaveClass("active");
+  });
+
+  it("opens a compact conflict brief from the pulse panel", async () => {
+    render(<App />);
+    await screen.findByRole("button", { name: /Conflict Pulse Live/i });
+
+    openPane(/Conflict Pulse Live/i);
+    fireEvent.click(screen.getByRole("button", { name: /Red Sea High Maritime security threats 12m ago/i }));
+
+    expect(screen.getByRole("complementary", { name: /Red Sea conflict brief/i })).toBeInTheDocument();
+    expect(screen.getByText("Reported humanitarian impact")).toBeInTheDocument();
+    expect(screen.getByText("Oil · Freight · Insurance · India energy imports")).toBeInTheDocument();
+  });
+
+  it("keeps global tape items and changes the lower lens row", async () => {
+    render(<App />);
+    await screen.findByRole("button", { name: /Sectors At Risk Semiconductors/i });
+
+    expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NVIDIA").length).toBeGreaterThan(0);
+
+    openPane(/Sectors At Risk Semiconductors/i);
+    fireEvent.click(screen.getByRole("button", { name: /^Hydrocarbons\s+8\.5$/i }));
+
+    expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Shipping Insurance").length).toBeGreaterThan(0);
+    expect(screen.queryByText("NVIDIA")).not.toBeInTheDocument();
   });
 
   it("switches trade partner mode", async () => {
