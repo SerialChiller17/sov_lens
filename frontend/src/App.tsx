@@ -6,7 +6,7 @@ import countryBorderPaths from "./assets/country-border-paths.json";
 import globeTextureUrl from "./assets/globe-premium-dark.svg";
 import indiaBoundaryPaths from "./assets/india-boundary-paths.soi.json";
 import { buildCountryFeatures, type GlobeCountryFeature } from "./geo";
-import type { BootstrapData, Country, MarketPoint, PulseAlert, Sector, TradeFlow } from "./types";
+import type { BootstrapData, Coordinates, Country, MarketPoint, PulseAlert, Sector, TradeFlow } from "./types";
 
 interface ArcDatum {
   startLat: number;
@@ -123,6 +123,40 @@ interface ConflictDatum {
 interface ConflictVisualDatum extends ConflictDatum {
   selected: boolean;
   muted: boolean;
+}
+
+interface NewsSectorLink {
+  id: string;
+  label: string;
+  signal: string;
+}
+
+interface GeotaggedNewsItem {
+  id: string;
+  conflictId: string;
+  title: string;
+  location: string;
+  region: string;
+  lat: number;
+  lng: number;
+  severity: ConflictSeverity;
+  time: string;
+  source: string;
+  summary: string;
+  aiInsight: string;
+  marketRead: string;
+  sectors: NewsSectorLink[];
+}
+
+interface NewsVisualDatum extends GeotaggedNewsItem {
+  selected: boolean;
+  hovered: boolean;
+}
+
+interface ScreenNewsPin extends NewsVisualDatum {
+  x: number;
+  y: number;
+  visible: boolean;
 }
 
 type PaneKey = "sectors" | "pulse" | "country";
@@ -359,6 +393,116 @@ const ACTIVE_CONFLICTS: ConflictDatum[] = [
   },
 ];
 
+const DEFAULT_NEWS_ID = "red-sea-freight";
+
+const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
+  {
+    id: DEFAULT_NEWS_ID,
+    conflictId: "red-sea",
+    title: "Red Sea security posture keeps freight insurance bid",
+    location: "Bab el-Mandeb corridor",
+    region: "Red Sea",
+    lat: 16.8,
+    lng: 41.6,
+    severity: "High",
+    time: "12m ago",
+    source: "Shipping advisories / regional monitors",
+    summary: "Rerouting remains the base case for exposed cargo while insurers keep war-risk premia elevated.",
+    aiInsight:
+      "The pressure point is not a single vessel delay. The route premium flows into landed energy costs, Asia-Europe inventory planning, and India-facing import buffers before physical scarcity appears.",
+    marketRead: "Freight, crude optionality, and insurance spreads are the first signals to watch.",
+    sectors: [
+      { id: "hydrocarbons", label: "Hydrocarbons", signal: "Route premium" },
+      { id: "semiconductors", label: "Semiconductors", signal: "Asia-Europe lead times" },
+      { id: "critical-minerals", label: "Critical Minerals", signal: "Battery inputs in transit" },
+    ],
+  },
+  {
+    id: "taiwan-air-maritime",
+    conflictId: "taiwan-strait",
+    title: "Taiwan Strait activity widens chip continuity hedge",
+    location: "Taiwan Strait",
+    region: "Indo-Pacific",
+    lat: 24.2,
+    lng: 119.7,
+    severity: "Elevated",
+    time: "25m ago",
+    source: "Regional defense releases / market monitors",
+    summary: "Air and maritime activity is keeping Taiwan-linked suppliers and Korea memory names under a wider risk lens.",
+    aiInsight:
+      "The investable read-through is broader than Taiwan beta. A short disruption window can hit substrate allocation, Japan specialty chemicals, Korea memory pricing, and US AI server delivery schedules.",
+    marketRead: "TAIEX, SOXX, KRW, and supplier lead-time commentary should move first.",
+    sectors: [
+      { id: "semiconductors", label: "Semiconductors", signal: "Foundry concentration" },
+      { id: "critical-minerals", label: "Critical Minerals", signal: "Electronics inputs" },
+      { id: "hydrocarbons", label: "Hydrocarbons", signal: "LNG route risk" },
+    ],
+  },
+  {
+    id: "eastern-med-fragile",
+    conflictId: "gaza-israel",
+    title: "Eastern Mediterranean talks stay fragile",
+    location: "Gaza / Israel",
+    region: "Eastern Mediterranean",
+    lat: 31.5,
+    lng: 34.5,
+    severity: "High",
+    time: "38m ago",
+    source: "UN / regional conflict trackers",
+    summary: "Border operations and fragile talks continue to hold regional energy, defense, and FX channels in focus.",
+    aiInsight:
+      "The risk is a transmission chain. Diplomatic breakdown can push regional FX hedging, defense procurement expectations, and Eastern Mediterranean gas optionality without an immediate oil supply shock.",
+    marketRead: "Watch Gulf FX, defense baskets, LNG headlines, and shipping insurance.",
+    sectors: [
+      { id: "hydrocarbons", label: "Hydrocarbons", signal: "Gas optionality" },
+      { id: "semiconductors", label: "Semiconductors", signal: "Defense electronics" },
+      { id: "critical-minerals", label: "Critical Minerals", signal: "Battery supply redundancy" },
+    ],
+  },
+  {
+    id: "ukraine-infrastructure",
+    conflictId: "ukraine",
+    title: "Ukraine infrastructure risk keeps Europe energy hedge alive",
+    location: "Ukraine / Black Sea",
+    region: "Eastern Europe",
+    lat: 49,
+    lng: 31,
+    severity: "Elevated",
+    time: "1h ago",
+    source: "Official releases / humanitarian trackers",
+    summary: "Infrastructure exposure remains the key channel for gas, grain, and European industrial sentiment.",
+    aiInsight:
+      "The direct battlefield read matters less to markets than the asset class it threatens. Power assets, Black Sea grain routes, and European gas storage expectations keep the risk premium sticky.",
+    marketRead: "European gas, wheat, defense primes, and EUR industrials carry the cleanest signal.",
+    sectors: [
+      { id: "hydrocarbons", label: "Hydrocarbons", signal: "Gas storage sensitivity" },
+      { id: "critical-minerals", label: "Critical Minerals", signal: "Industrial input security" },
+      { id: "semiconductors", label: "Semiconductors", signal: "Defense demand" },
+    ],
+  },
+  {
+    id: "myanmar-border",
+    conflictId: "myanmar",
+    title: "Myanmar border pressure disrupts rare-earth logistics",
+    location: "Northern Myanmar",
+    region: "Southeast Asia",
+    lat: 21.9,
+    lng: 95.9,
+    severity: "Watch",
+    time: "3h ago",
+    source: "Conflict tracker / humanitarian monitors",
+    summary: "Border pressure is keeping rare-earth and land-route logistics fragile across the Thailand and China corridor.",
+    aiInsight:
+      "This is a low-noise, high-leverage node. If border throughput deteriorates, battery and magnet supply chains feel it through processing bottlenecks before broad commodity screens react.",
+    marketRead: "Rare earth processors, Thailand logistics, and China battery inputs are the early tells.",
+    sectors: [
+      { id: "critical-minerals", label: "Critical Minerals", signal: "Rare-earth logistics" },
+      { id: "semiconductors", label: "Semiconductors", signal: "Magnet and tool inputs" },
+      { id: "hydrocarbons", label: "Hydrocarbons", signal: "Regional transport costs" },
+    ],
+  },
+];
+
 interface EventArchiveRow {
   id: string;
   eventType: string;
@@ -493,6 +637,18 @@ function formatAlertAge(ageMinutes: number) {
 
 function sectorTheme(sectorId?: string) {
   return sectorId ? SECTOR_THEMES[sectorId] ?? FALLBACK_SECTOR_THEME : FALLBACK_SECTOR_THEME;
+}
+
+function angularDistanceDegrees(a: Coordinates, b: Coordinates) {
+  const toRad = Math.PI / 180;
+  const lat1 = a.lat * toRad;
+  const lat2 = b.lat * toRad;
+  const deltaLat = (b.lat - a.lat) * toRad;
+  const deltaLng = (b.lng - a.lng) * toRad;
+  const hav =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return (2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav))) / toRad;
 }
 
 function rgba(theme: SectorTheme, alpha: number) {
@@ -919,6 +1075,172 @@ function CompactConflictCard({ conflict, onClose }: { conflict: ConflictDatum; o
   );
 }
 
+function GlobeNewsPins({
+  pins,
+  onHover,
+  onSelect,
+}: {
+  pins: ScreenNewsPin[];
+  onHover: (id: string | null) => void;
+  onSelect: (news: GeotaggedNewsItem) => void;
+}) {
+  return (
+    <div className="news-globe-pin-layer" aria-label="Geotagged news locations">
+      {pins.map((pin) => (
+        <button
+          key={pin.id}
+          type="button"
+          className={[
+            "news-location-pin",
+            `severity-${severityClass(pin.severity)}`,
+            pin.selected ? "is-selected" : "",
+            pin.hovered ? "is-hovered" : "",
+            pin.visible ? "" : "is-hidden",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          style={{ left: pin.x, top: pin.y }}
+          aria-label={`Open news insight: ${pin.title}`}
+          onClick={() => onSelect(pin)}
+          onMouseEnter={() => onHover(pin.id)}
+          onMouseLeave={() => onHover(null)}
+        >
+          <span className="news-pin-dot" aria-hidden="true" />
+          <span className="news-pin-card">
+            <small>
+              {pin.region} - {pin.time}
+            </small>
+            <strong>{pin.title}</strong>
+            <span>{pin.summary}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AiInsightPanel({
+  news,
+  sectors,
+  selectedSectorId,
+  onSectorSelect,
+}: {
+  news: GeotaggedNewsItem;
+  sectors: Sector[];
+  selectedSectorId: string;
+  onSectorSelect: (sectorId: string) => void;
+}) {
+  const knownSectors = new Set(sectors.map((sector) => sector.id));
+
+  return (
+    <aside className="ai-insight-panel" aria-label="AI insight explainer">
+      <div className="insight-kicker-row">
+        <p className="eyebrow">AI Insight</p>
+        <span className={`severity-pill severity-${severityClass(news.severity)}`}>{news.severity}</span>
+      </div>
+      <h1>{news.location}</h1>
+      <h2>{news.title}</h2>
+      <p className="insight-summary">{news.aiInsight}</p>
+
+      <dl className="insight-signal-grid">
+        <div>
+          <dt>Region</dt>
+          <dd>{news.region}</dd>
+        </div>
+        <div>
+          <dt>Updated</dt>
+          <dd>{news.time}</dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{news.source}</dd>
+        </div>
+      </dl>
+
+      <div className="market-readout">
+        <span>Market read</span>
+        <p>{news.marketRead}</p>
+      </div>
+
+      <section className="connected-sectors" aria-label="Connected sectors">
+        <header>
+          <span>Connected sectors</span>
+        </header>
+        <div className="connected-sector-list">
+          {news.sectors.map((sector) => {
+            const canActivate = knownSectors.has(sector.id);
+            return (
+              <button
+                key={`${news.id}-${sector.id}`}
+                type="button"
+                className={sector.id === selectedSectorId ? "is-active" : undefined}
+                onClick={() => {
+                  if (canActivate) onSectorSelect(sector.id);
+                }}
+              >
+                <strong>{sector.label}</strong>
+                <span>{sector.signal}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </aside>
+  );
+}
+
+function RelatedNewsPanel({
+  items,
+  selectedNewsId,
+  hoveredNewsId,
+  onSelect,
+  onHover,
+}: {
+  items: GeotaggedNewsItem[];
+  selectedNewsId: string;
+  hoveredNewsId: string | null;
+  onSelect: (news: GeotaggedNewsItem) => void;
+  onHover: (id: string | null) => void;
+}) {
+  return (
+    <aside className="related-news-panel" aria-label="Related geotagged news">
+      <header>
+        <div>
+          <p className="eyebrow">Live News Feed</p>
+          <h2>Related News</h2>
+        </div>
+        <span>{items.length} active</span>
+      </header>
+
+      <div className="related-news-list">
+        {items.map((item) => (
+          <article key={item.id} className={item.id === selectedNewsId ? "is-selected" : undefined}>
+            <button
+              type="button"
+              className={[`severity-${severityClass(item.severity)}`, item.id === hoveredNewsId ? "is-hovered" : ""]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => onSelect(item)}
+              onMouseEnter={() => onHover(item.id)}
+              onMouseLeave={() => onHover(null)}
+            >
+              <span className={`news-card-dot severity-${severityClass(item.severity)}`} aria-hidden="true" />
+              <span className="news-card-copy">
+                <small>
+                  {item.region} - {item.time}
+                </small>
+                <strong>{item.title}</strong>
+                <span>{item.summary}</span>
+              </span>
+              <span className="news-card-location">{item.location}</span>
+            </button>
+          </article>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
 function DashboardGlyph({ kind }: { kind: DashboardIconKind }) {
   switch (kind) {
     case "globe":
@@ -1016,6 +1338,9 @@ function App() {
   const [activeLensMode, setActiveLensMode] = useState<LensMode>("country");
   const [tradeFlow, setTradeFlow] = useState<TradeFlow>("export");
   const [selectedConflictId, setSelectedConflictId] = useState<string | null>("red-sea");
+  const [selectedNewsId, setSelectedNewsId] = useState(DEFAULT_NEWS_ID);
+  const [hoveredNewsId, setHoveredNewsId] = useState<string | null>(null);
+  const [screenNewsPins, setScreenNewsPins] = useState<ScreenNewsPin[]>([]);
   const [collapsedPanes, setCollapsedPanes] = useState<Record<PaneKey, boolean>>(() => ({ ...DEFAULT_COLLAPSED_PANES }));
   const [activeView, setActiveView] = useState<AppView>(() => routeToView(window.location.pathname));
 
@@ -1037,11 +1362,16 @@ function App() {
   const selectedCountry = countryByIso.get(selectedIso) ?? countries[0];
   const selectedSector = sectors.find((sector) => sector.id === selectedSectorId) ?? sectors[0];
   const selectedConflict = ACTIVE_CONFLICTS.find((conflict) => conflict.id === selectedConflictId);
+  const selectedNews = GEO_NEWS_FEED.find((news) => news.id === selectedNewsId) ?? GEO_NEWS_FEED[0];
   const countryLeadSector = selectedCountry?.industry_criticality[0] ?? selectedSector?.name ?? "Strategic sectors";
   const activeTheme = sectorTheme(selectedSector?.id ?? selectedSectorId);
   const activeTapeBasket = MARKET_TAPE_BY_SECTOR[selectedSector?.id ?? selectedSectorId] ?? GLOBAL_MARKET_TAPE;
   const countryFeatures = useMemo(() => buildCountryFeatures(countries), [countries]);
   const isoByNumeric = useMemo(() => new Map(countries.map((country) => [country.iso_numeric, country.iso3])), [countries]);
+  const newsByConflictId = useMemo(() => {
+    const entries = GEO_NEWS_FEED.map((news) => [news.conflictId, news] as const);
+    return new Map(entries);
+  }, []);
   useEffect(() => {
     if (!globeRef.current) return;
     const controls = globeRef.current.controls?.();
@@ -1110,7 +1440,30 @@ function App() {
     );
   };
 
+  const focusNewsLocation = (news: GeotaggedNewsItem, duration = 1300) => {
+    globeRef.current?.pointOfView?.(
+      {
+        lat: news.lat,
+        lng: news.lng,
+        altitude: width < 780 ? 1.9 : 1.32,
+      },
+      duration,
+    );
+  };
+
+  const selectNews = (news: GeotaggedNewsItem) => {
+    setSelectedNewsId(news.id);
+    setSelectedConflictId(news.conflictId);
+    setHoveredNewsId(null);
+    focusNewsLocation(news);
+  };
+
   const selectConflict = (conflict: ConflictDatum) => {
+    const linkedNews = newsByConflictId.get(conflict.id);
+    if (linkedNews) {
+      selectNews(linkedNews);
+      return;
+    }
     setSelectedConflictId(conflict.id);
     focusConflict(conflict);
   };
@@ -1307,6 +1660,59 @@ function App() {
     [selectedConflictId],
   );
 
+  const newsVisuals = useMemo<NewsVisualDatum[]>(
+    () =>
+      GEO_NEWS_FEED.map((news) => ({
+        ...news,
+        selected: news.id === selectedNews.id,
+        hovered: news.id === hoveredNewsId,
+      })),
+    [hoveredNewsId, selectedNews.id],
+  );
+
+  useEffect(() => {
+    let frameId = 0;
+    const intervalId = window.setInterval(() => {
+      const globe = globeRef.current;
+      if (!globe) return;
+
+      const pov = globe.pointOfView?.() ?? { lat: 0, lng: 0 };
+      const nextPins = newsVisuals.map((news) => {
+        const coords = globe.getScreenCoords?.(news.lat, news.lng, news.selected ? 0.18 : 0.12) ?? { x: -100, y: -100 };
+        const visible = angularDistanceDegrees({ lat: news.lat, lng: news.lng }, { lat: pov.lat, lng: pov.lng }) < 98;
+        return {
+          ...news,
+          x: Number.isFinite(coords.x) ? coords.x : -100,
+          y: Number.isFinite(coords.y) ? coords.y : -100,
+          visible,
+        };
+      });
+      setScreenNewsPins(nextPins);
+    }, 120);
+
+    frameId = window.requestAnimationFrame(() => {
+      const globe = globeRef.current;
+      if (!globe) return;
+      const pov = globe.pointOfView?.() ?? { lat: 0, lng: 0 };
+      setScreenNewsPins(
+        newsVisuals.map((news) => {
+          const coords = globe.getScreenCoords?.(news.lat, news.lng, news.selected ? 0.18 : 0.12) ?? { x: -100, y: -100 };
+          return {
+            ...news,
+            x: Number.isFinite(coords.x) ? coords.x : -100,
+            y: Number.isFinite(coords.y) ? coords.y : -100,
+            visible: angularDistanceDegrees({ lat: news.lat, lng: news.lng }, { lat: pov.lat, lng: pov.lng }) < 98,
+          };
+        }),
+      );
+    });
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [height, newsVisuals, width]);
+
   const conflictRings = useMemo<RingDatum[]>(
     () =>
       ACTIVE_CONFLICTS.filter((conflict) => conflict.severity !== "Watch" || conflict.id === selectedConflictId).flatMap((conflict) => {
@@ -1456,12 +1862,13 @@ function App() {
           ref={globeRef}
           width={width}
           height={height}
+          globeOffset={width > 980 ? [-Math.round(width * 0.12), 18] : [0, 12]}
           rendererConfig={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
           globeImageUrl={API_IMAGE_EARTH}
           backgroundColor="rgba(0, 5, 10, 0)"
           showAtmosphere
-          atmosphereColor={activeTheme.accent}
-          atmosphereAltitude={0.15}
+          atmosphereColor="#a9c7c8"
+          atmosphereAltitude={0.13}
           enablePointerInteraction
           lineHoverPrecision={0.35}
           showPointerCursor
@@ -1531,6 +1938,10 @@ function App() {
             const conflict = object as ConflictVisualDatum;
             return `${conflict.name}: ${conflict.severity}`;
           }}
+          onObjectHover={(object: object | null) => {
+            const conflict = object as ConflictVisualDatum | null;
+            setHoveredNewsId(conflict ? newsByConflictId.get(conflict.id)?.id ?? null : null);
+          }}
           onObjectClick={(object: object) => selectConflict(object as ConflictDatum)}
           ringsData={conflictRings}
           ringLat="lat"
@@ -1560,6 +1971,7 @@ function App() {
           }}
           labelResolution={1}
         />
+        <GlobeNewsPins pins={screenNewsPins} onHover={setHoveredNewsId} onSelect={selectNews} />
       </div>
 
       <header className="home-dashboard-topbar" aria-label="Sovereign Lens navigation">
@@ -1585,6 +1997,21 @@ function App() {
       </header>
 
       <MarketTape basket={activeTapeBasket} />
+
+      <AiInsightPanel
+        news={selectedNews}
+        sectors={sectors}
+        selectedSectorId={selectedSector?.id ?? selectedSectorId}
+        onSectorSelect={selectSector}
+      />
+
+      <RelatedNewsPanel
+        items={GEO_NEWS_FEED}
+        selectedNewsId={selectedNews.id}
+        hoveredNewsId={hoveredNewsId}
+        onSelect={selectNews}
+        onHover={setHoveredNewsId}
+      />
     </main>
   );
 }

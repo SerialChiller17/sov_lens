@@ -4,7 +4,7 @@ import App from "./App";
 import type { BootstrapData } from "./types";
 
 vi.mock("react-globe.gl", () => ({
-  default: ({ polygonsData = [], onPolygonClick }: any) => (
+  default: ({ polygonsData = [], onPolygonClick, objectsData = [], onObjectClick, onObjectHover }: any) => (
     <div data-testid="globe">
       {polygonsData
         .filter((feature: any) => feature.properties.iso3)
@@ -17,6 +17,17 @@ vi.mock("react-globe.gl", () => ({
             {feature.properties.iso3}
           </button>
         ))}
+      {objectsData.map((object: any) => (
+        <button
+          key={object.id}
+          data-testid={`object-${object.id}`}
+          onClick={() => onObjectClick?.(object)}
+          onMouseEnter={() => onObjectHover?.(object, null)}
+          onMouseLeave={() => onObjectHover?.(null, object)}
+        >
+          {object.name}
+        </button>
+      ))}
     </div>
   ),
 }));
@@ -225,19 +236,19 @@ beforeEach(() => {
 });
 
 describe("Sovereign Lens app", () => {
-  it("renders the reference-aligned intelligence panels around the globe", async () => {
+  it("renders the geotagged news intelligence layout around the globe", async () => {
     render(<App />);
 
-    expect(await screen.findByRole("button", { name: /Conflict Pulse/i })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("button", { name: /Sectors At Risk/i })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("button", { name: /Country File/i })).toHaveAttribute("aria-expanded", "true");
+    expect(await screen.findByRole("complementary", { name: /AI insight explainer/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bab el-Mandeb corridor" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: /Related geotagged news/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Hydrocarbons Route premium/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Open News Pulse dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: /Search countries, sectors, or conflicts/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "India" })).toBeInTheDocument();
-    expect(screen.getByText("New Delhi")).toBeInTheDocument();
     expect(screen.getByTestId("polygon-IND")).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: /News pulse dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: /Red Sea conflict brief/i })).toBeInTheDocument();
+    expect(screen.getByTestId("object-red-sea")).toBeInTheDocument();
   });
 
   it("opens the global events dashboard from the top news control", async () => {
@@ -252,58 +263,61 @@ describe("Sovereign Lens app", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Lens" }));
 
-    await waitFor(() => expect(screen.getByRole("button", { name: /Country File/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("complementary", { name: /AI insight explainer/i })).toBeInTheDocument());
     expect(window.location.pathname).toBe("/");
   });
 
-  it("updates the country summary card from a globe click", async () => {
+  it("updates the AI insight from a globe location click", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: "India" });
+    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
 
-    fireEvent.click(await screen.findByTestId("polygon-USA"));
+    fireEvent.click(await screen.findByTestId("object-taiwan-strait"));
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "United States" })).toBeInTheDocument());
-    expect(screen.getByText("Washington, D.C.")).toBeInTheDocument();
-    expect(screen.getByText("$28.8T")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Taiwan Strait" })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Taiwan Strait activity widens chip continuity hedge/i })).toBeInTheDocument();
+    expect(screen.getByText(/TAIEX, SOXX, KRW/i)).toBeInTheDocument();
   });
 
-  it("uses the sector panel to switch the active sector", async () => {
+  it("uses connected sector buttons to switch the active sector", async () => {
     render(<App />);
-    await screen.findByRole("button", { name: /Sectors At Risk/i });
+    await screen.findByRole("complementary", { name: /AI insight explainer/i });
 
-    const hydrocarbons = screen.getByRole("button", { name: /Hydrocarbons/i });
+    const hydrocarbons = screen.getByRole("button", { name: /Hydrocarbons Route premium/i });
     fireEvent.click(hydrocarbons);
 
-    expect(hydrocarbons).toHaveClass("active");
+    expect(hydrocarbons).toHaveClass("is-active");
     expect(screen.getAllByText("Shipping Insurance").length).toBeGreaterThan(0);
     expect(screen.queryByText("NVIDIA")).not.toBeInTheDocument();
   });
 
-  it("uses the pulse panel and shows the compact conflict brief", async () => {
+  it("uses the related news cards to select the active location", async () => {
     render(<App />);
-    expect(await screen.findByRole("button", { name: /Conflict Pulse/i })).toHaveAttribute("aria-expanded", "true");
+    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
 
-    fireEvent.click(screen.getByRole("button", { name: /Red Sea/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Ukraine infrastructure risk keeps Europe energy hedge alive/i }));
 
-    expect(screen.getByRole("complementary", { name: /Red Sea conflict brief/i })).toBeInTheDocument();
-    expect(screen.getByText("Impact")).toBeInTheDocument();
-    expect(screen.getByText("Latest")).toBeInTheDocument();
-    expect(screen.getByText("Market channels")).toBeInTheDocument();
-    expect(screen.getByText("Updated")).toBeInTheDocument();
-    expect(screen.getByText("Oil · Freight · Insurance")).toBeInTheDocument();
-    expect(screen.queryByText("Reported humanitarian impact")).not.toBeInTheDocument();
-    expect(screen.queryByText("Confidence")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Ukraine / Black Sea" })).toBeInTheDocument());
+    expect(screen.getByText(/European gas, wheat, defense primes/i)).toBeInTheDocument();
+  });
+
+  it("highlights the related card when a globe marker is hovered", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
+
+    fireEvent.mouseEnter(screen.getByTestId("object-myanmar"));
+
+    expect(screen.getByRole("button", { name: /Myanmar border pressure disrupts rare-earth logistics/i })).toHaveClass("is-hovered");
   });
 
   it("keeps global tape items while swapping the sector tape items", async () => {
     render(<App />);
-    await screen.findByRole("button", { name: /Sectors At Risk/i });
+    await screen.findByRole("complementary", { name: /AI insight explainer/i });
 
     expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
     expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
     expect(screen.getAllByText("NVIDIA").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /Hydrocarbons/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Hydrocarbons Route premium/i }));
 
     expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
     expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
