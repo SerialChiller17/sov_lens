@@ -6,7 +6,7 @@ import countryBorderPaths from "./assets/country-border-paths.json";
 import globeTextureUrl from "./assets/globe-premium-dark.svg";
 import indiaBoundaryPaths from "./assets/india-boundary-paths.soi.json";
 import { buildCountryFeatures, type GlobeCountryFeature } from "./geo";
-import type { BootstrapData, Country, MarketPoint, Sector, TradeFlow } from "./types";
+import type { BootstrapData, Country, MarketPoint, PulseAlert, Sector, TradeFlow } from "./types";
 
 interface ArcDatum {
   startLat: number;
@@ -84,6 +84,15 @@ interface MarketTapeBasket {
 }
 
 type ConflictSeverity = "Watch" | "Elevated" | "High" | "Critical";
+type LensMode = "global" | "pulse" | "news" | "country" | "sectors";
+type DashboardIconKind = "globe" | "pulse" | "news" | "country" | "grid" | "audio" | "settings" | "signal" | "assist";
+
+interface LensRailItem {
+  mode: LensMode;
+  icon: DashboardIconKind;
+  title: string;
+  subtitle: string;
+}
 
 interface ConflictTransmission {
   label: string;
@@ -117,6 +126,7 @@ interface ConflictVisualDatum extends ConflictDatum {
 }
 
 type PaneKey = "sectors" | "pulse" | "country";
+type AppView = "lens" | "news";
 
 const DEFAULT_COLLAPSED_PANES: Record<PaneKey, boolean> = {
   sectors: false,
@@ -150,12 +160,12 @@ const API_IMAGE_EARTH = globeTextureUrl;
 const COUNTRY_BORDER_PATHS = (countryBorderPaths as { paths: BoundaryPathDatum[] }).paths;
 const INDIA_BOUNDARY_PATHS = (indiaBoundaryPaths as { paths: BoundaryPathDatum[] }).paths;
 const MAX_RENDER_PIXEL_RATIO = 2;
-const ATLAS_BORDER_ALTITUDE = 0.064;
-const INDIA_BORDER_ALTITUDE = 0.074;
+const ATLAS_BORDER_ALTITUDE = 0.088;
+const INDIA_BORDER_ALTITUDE = 0.098;
 const SELECTED_BORDER_STROKE = 0.82;
 const LINKED_BORDER_STROKE = 0.66;
-const INDIA_BORDER_STROKE = 0.7;
-const DEFAULT_BORDER_STROKE = 0.58;
+const INDIA_BORDER_STROKE = 0.48;
+const DEFAULT_BORDER_STROKE = 0.34;
 const BOUNDARY_RENDER_ORDER = 5;
 const GLOBAL_MARKET_TAPE: MarketTapeBasket = {
   label: "Global Market + Risk Tape",
@@ -349,6 +359,98 @@ const ACTIVE_CONFLICTS: ConflictDatum[] = [
   },
 ];
 
+interface EventArchiveRow {
+  id: string;
+  eventType: string;
+  region: string;
+  location: string;
+  leaders: string;
+  impact: string;
+  dateOccurred: string;
+  live?: boolean;
+}
+
+interface HorizonEvent {
+  id: string;
+  label: string;
+  location: string;
+  date: string;
+}
+
+const NEWS_DASHBOARD_PATH = "/news-pulse";
+
+const PREMIUM_ORANGE_THEME: SectorTheme = {
+  accent: "#e88931",
+  rgb: "232, 137, 49",
+  onAccent: "#170a02",
+};
+
+const HORIZON_EVENTS: HorizonEvent[] = [
+  { id: "opec-review", label: "OPEC+ output guidance window", location: "Vienna", date: "17 Jun 2026" },
+  { id: "g20-finance", label: "G20 finance deputies track", location: "New Delhi", date: "05 Jul 2026" },
+  { id: "cop-brief", label: "Climate finance implementation brief", location: "Brasilia", date: "11 Aug 2026" },
+];
+
+const EVENT_ARCHIVE_ROWS: EventArchiveRow[] = [
+  {
+    id: "eu-defense-pact",
+    eventType: "Geopolitical",
+    region: "Europe",
+    location: "Paris",
+    leaders: "Macron, Scholz",
+    impact: "Major treaty",
+    dateOccurred: "18 Nov 2025",
+  },
+  {
+    id: "middle-east-corridor",
+    eventType: "Resource Conflict",
+    region: "Middle East",
+    location: "Jerusalem",
+    leaders: "Multiple parties",
+    impact: "Low intensity",
+    dateOccurred: "23 Jul 2025",
+  },
+  {
+    id: "americas-trade",
+    eventType: "Trade Agreement",
+    region: "Americas",
+    location: "Mexico City",
+    leaders: "Trade envoys",
+    impact: "High economic impact",
+    dateOccurred: "14 Nov 2025",
+  },
+  {
+    id: "indo-pacific-chip",
+    eventType: "Technology Controls",
+    region: "Indo-Pacific",
+    location: "Taipei",
+    leaders: "Regulators",
+    impact: "Supply-chain premium",
+    dateOccurred: "04 Dec 2025",
+  },
+  {
+    id: "africa-food",
+    eventType: "Food Security",
+    region: "Africa",
+    location: "Nairobi",
+    leaders: "Regional bloc",
+    impact: "Humanitarian watch",
+    dateOccurred: "09 Jan 2026",
+  },
+];
+
+const LENS_RAIL_ITEMS: LensRailItem[] = [
+  { mode: "global", icon: "globe", title: "Global", subtitle: "View" },
+  { mode: "pulse", icon: "pulse", title: "Conflict", subtitle: "Pulse" },
+  { mode: "news", icon: "news", title: "News", subtitle: "Pulse" },
+  { mode: "country", icon: "country", title: "Country", subtitle: "File" },
+  { mode: "sectors", icon: "grid", title: "Sector", subtitle: "Grid" },
+];
+
+function routeToView(pathname: string): AppView {
+  return pathname === NEWS_DASHBOARD_PATH ? "news" : "lens";
+}
+
 function useWindowSize() {
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
@@ -416,9 +518,13 @@ function stabilizeBoundaryPathMaterials(globe: any) {
     object.renderOrder = BOUNDARY_RENDER_ORDER;
     const materials = object.material ? (Array.isArray(object.material) ? object.material : [object.material]) : [];
     materials.forEach((material: any) => {
+      material.transparent = true;
       material.depthWrite = false;
       material.depthTest = true;
       material.alphaToCoverage = true;
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = -1;
+      material.polygonOffsetUnits = -1;
       material.needsUpdate = true;
     });
   });
@@ -478,6 +584,142 @@ function MarketTape({ basket }: { basket: MarketTapeBasket }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function archiveRowFromAlert(alert: PulseAlert, index: number): EventArchiveRow {
+  const locationByRegion: Record<string, string> = {
+    "Taiwan Strait": "Taipei / Strait",
+    "Persian Gulf": "Hormuz corridor",
+    "US, EU, China": "Washington / Brussels",
+  };
+  const leaderByRegion: Record<string, string> = {
+    "Taiwan Strait": "Regional commands",
+    "Persian Gulf": "Shipping insurers",
+    "US, EU, China": "Trade regulators",
+  };
+
+  return {
+    id: `live-${alert.id}`,
+    eventType: alert.severity === "High Risk" ? "Security Flash" : index % 2 === 0 ? "Policy Shift" : "Market Signal",
+    region: alert.region,
+    location: locationByRegion[alert.region] ?? alert.region,
+    leaders: leaderByRegion[alert.region] ?? "Analyst desk",
+    impact: alert.impact,
+    dateOccurred: formatAlertAge(alert.age_minutes),
+    live: true,
+  };
+}
+
+function NewsDashboard({ data, onBack }: { data: BootstrapData; onBack: () => void }) {
+  const archiveRows = useMemo(
+    () => [...data.globalPulse.alerts.map(archiveRowFromAlert), ...EVENT_ARCHIVE_ROWS],
+    [data.globalPulse.alerts],
+  );
+
+  return (
+    <main
+      className="events-dashboard-shell"
+      style={
+        {
+          "--accent": PREMIUM_ORANGE_THEME.accent,
+          "--accent-rgb": PREMIUM_ORANGE_THEME.rgb,
+          "--accent-on": PREMIUM_ORANGE_THEME.onAccent,
+        } as React.CSSProperties
+      }
+    >
+      <header className="events-dashboard-topbar">
+        <button type="button" className="events-wordmark" onClick={onBack}>
+          <span>Global</span>
+          <strong>Events</strong>
+          <span>Pulse</span>
+        </button>
+        <span className="events-topbar-rule" aria-hidden="true" />
+        <p>Worldwide event analysis</p>
+        <button type="button" className="events-back-button" onClick={onBack}>
+          Lens
+        </button>
+        <label className="events-search">
+          <span className="sr-only">Search events, regions, or topics</span>
+          <input type="search" placeholder="Search events, regions, or topics..." />
+          <span className="events-search-icon" aria-hidden="true" />
+        </label>
+      </header>
+
+      <section className="events-panel events-history-panel" aria-label="Upcoming events">
+        <div>
+          <h2>Upcoming Events</h2>
+          <p>Significant global political or economic milestones to watch next</p>
+        </div>
+        <div className="upcoming-events-list">
+          {HORIZON_EVENTS.map((event) => (
+            <article key={event.id} className="upcoming-event-card">
+              <time>{event.date}</time>
+              <strong>{event.label}</strong>
+              <small>{event.location}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="events-globe-stage" aria-label="Global events map">
+        <div className="events-globe">
+          <div className="events-globe-map" style={{ backgroundImage: `url(${API_IMAGE_EARTH})` }} />
+          <span className="events-map-node node-north-america" aria-hidden="true" />
+          <span className="events-map-node node-caribbean" aria-hidden="true" />
+          <span className="events-map-node node-south-america" aria-hidden="true" />
+          <span className="events-map-node node-atlantic" aria-hidden="true" />
+          <span className="events-map-node node-europe" aria-hidden="true" />
+          <span className="events-map-node node-asia" aria-hidden="true" />
+        </div>
+        <article className="events-map-callout">
+          <time>Nov 10, 2024</time>
+          <h1>G20 Summit: Climate Deal Reached</h1>
+          <p>Rio de Janeiro, Brazil</p>
+        </article>
+      </section>
+
+      <section className="events-panel events-archive-panel" aria-label="Global event archive">
+        <header>
+          <div>
+            <h2>Global Event Archive</h2>
+            <p>A comprehensive list of recent global events, from diplomatic summits to natural disasters</p>
+          </div>
+          <div className="archive-sort-controls" aria-label="Archive sort order">
+            <button type="button">Newest</button>
+            <button type="button">Oldest</button>
+          </div>
+        </header>
+
+        <div className="events-table-wrap">
+          <table>
+            <caption className="sr-only">Global event archive</caption>
+            <thead>
+              <tr>
+                <th>Event Type</th>
+                <th>Region</th>
+                <th>Location</th>
+                <th>Key Leaders</th>
+                <th>Impact Level</th>
+                <th>Date Occurred</th>
+              </tr>
+            </thead>
+            <tbody>
+              {archiveRows.map((row) => (
+                <tr key={row.id} className={row.live ? "is-live" : undefined}>
+                  <td>{row.eventType}</td>
+                  <td>{row.region}</td>
+                  <td>{row.location}</td>
+                  <td>{row.leaders}</td>
+                  <td>{row.impact}</td>
+                  <td>{row.dateOccurred}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -641,6 +883,126 @@ function ConflictCard({ conflict, onClose }: { conflict: ConflictDatum; onClose:
   );
 }
 
+function CompactConflictCard({ conflict, onClose }: { conflict: ConflictDatum; onClose: () => void }) {
+  return (
+    <aside className={`conflict-card severity-${severityClass(conflict.severity)}`} aria-label={`${conflict.name} conflict brief`}>
+      <button type="button" className="conflict-card-close" aria-label="Close conflict brief" onClick={onClose}>
+        x
+      </button>
+      <div className="conflict-card-heading">
+        <div>
+          <p className="eyebrow">{conflict.region}</p>
+          <h2>{conflict.name}</h2>
+          <span>{conflict.shortDescription}</span>
+        </div>
+        <strong>{conflict.severity}</strong>
+      </div>
+      <dl className="conflict-card-grid">
+        <div>
+          <dt>Impact</dt>
+          <dd>{conflict.reportedImpact}</dd>
+        </div>
+        <div>
+          <dt>Latest</dt>
+          <dd>{conflict.latest}</dd>
+        </div>
+        <div>
+          <dt>Market channels</dt>
+          <dd>{conflict.marketChannels.slice(0, 3).join(" · ")}</dd>
+        </div>
+        <div>
+          <dt>Updated</dt>
+          <dd>{conflict.updated}</dd>
+        </div>
+      </dl>
+    </aside>
+  );
+}
+
+function DashboardGlyph({ kind }: { kind: DashboardIconKind }) {
+  switch (kind) {
+    case "globe":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M3.5 12h17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <path d="M12 3.5c2.6 2.4 4 5.3 4 8.5s-1.4 6.1-4 8.5c-2.6-2.4-4-5.3-4-8.5s1.4-6.1 4-8.5Z" fill="none" stroke="currentColor" strokeWidth="1.4" />
+          <path d="M6.4 7.8c1.7 1 3.6 1.5 5.6 1.5s3.9-.5 5.6-1.5M6.4 16.2c1.7-1 3.6-1.5 5.6-1.5s3.9.5 5.6 1.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      );
+    case "pulse":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.5 13h4.6l2-5.5 3.1 10 2.2-6h7.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M18.7 7.6c.9-1.2 2.9-1.4 4-.1 1.1 1.2.8 3.1-.3 4.1l-2.8 2.5-2.8-2.5c-1.1-1-.9-2.9-.3-4.1" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "news":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 4.5h12.5a1.5 1.5 0 0 1 1.5 1.5v11.5a2 2 0 0 1-2 2H7a3 3 0 0 1-3-3V6a1.5 1.5 0 0 1 1-1.4Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M8 8h7M8 11h7M8 14h4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <rect x="13.5" y="13.2" width="3.4" height="3.4" rx="0.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      );
+    case "country":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 18.5h8M6.2 14.8h11.6M7.5 11.1h9M10 4.5v2.7M12 3.2v3.4M14 4.1v3.1" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M6.8 19.2h10.4a1.2 1.2 0 0 0 1.1-1.7l-2.4-5.4H8.1l-2.4 5.4a1.2 1.2 0 0 0 1.1 1.7Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
+    case "grid":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 6h14M5 12h14M5 18h14M6 5v14M12 5v14M18 5v14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+      );
+    case "audio":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 8 7.2 10.3H4.8v3.4h2.4L10 16V8Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M13.5 9.2a4.1 4.1 0 0 1 0 5.6M16.2 7a7.2 7.2 0 0 1 0 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m12 3 1.4 2.4 2.8.5-.5 2.8 2 2-2 2 .5 2.8-2.8.5L12 21l-1.4-2.4-2.8-.5.5-2.8-2-2 2-2-.5-2.8 2.8-.5L12 3Z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+      );
+    case "signal":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 18.5V13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <path d="M8.3 10.6a4.3 4.3 0 0 1 7.4 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M5.5 8a7.8 7.8 0 0 1 13 0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="12" cy="19.2" r="1.2" fill="currentColor" />
+        </svg>
+      );
+    case "assist":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3.8c4 0 7.2 2.8 7.2 6.4 0 2.4-1.3 4.2-3.4 5.3v3.5l-3.3-2.1h-.5c-4 0-7.2-2.8-7.2-6.4S8 3.8 12 3.8Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          <circle cx="9.3" cy="10.2" r="0.9" fill="currentColor" />
+          <circle cx="12" cy="10.2" r="0.9" fill="currentColor" />
+          <circle cx="14.7" cy="10.2" r="0.9" fill="currentColor" />
+        </svg>
+      );
+  }
+}
+
+function formatUsdScale(valueBn: number) {
+  if (valueBn >= 1000) return `$${(valueBn / 1000).toFixed(1)}T`;
+  return `$${valueBn.toFixed(0)}B`;
+}
+
+function formatPopulationScale(valueMn: number) {
+  if (valueMn >= 1000) return `${(valueMn / 1000).toFixed(1)}B`;
+  return `${valueMn.toFixed(0)}M`;
+}
+
 function App() {
   const globeRef = useRef<any>(null);
   const initialViewSet = useRef(false);
@@ -651,14 +1013,22 @@ function App() {
   const [highlightIso, setHighlightIso] = useState<string | null>(null);
   const [sectorHighlightsActive, setSectorHighlightsActive] = useState(false);
   const [selectedSectorId, setSelectedSectorId] = useState("semiconductors");
+  const [activeLensMode, setActiveLensMode] = useState<LensMode>("country");
   const [tradeFlow, setTradeFlow] = useState<TradeFlow>("export");
   const [selectedConflictId, setSelectedConflictId] = useState<string | null>("red-sea");
   const [collapsedPanes, setCollapsedPanes] = useState<Record<PaneKey, boolean>>(() => ({ ...DEFAULT_COLLAPSED_PANES }));
+  const [activeView, setActiveView] = useState<AppView>(() => routeToView(window.location.pathname));
 
   useEffect(() => {
     getBootstrapData()
       .then(setData)
       .catch((err: Error) => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => setActiveView(routeToView(window.location.pathname));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const countries = data?.countries ?? [];
@@ -667,6 +1037,7 @@ function App() {
   const selectedCountry = countryByIso.get(selectedIso) ?? countries[0];
   const selectedSector = sectors.find((sector) => sector.id === selectedSectorId) ?? sectors[0];
   const selectedConflict = ACTIVE_CONFLICTS.find((conflict) => conflict.id === selectedConflictId);
+  const countryLeadSector = selectedCountry?.industry_criticality[0] ?? selectedSector?.name ?? "Strategic sectors";
   const activeTheme = sectorTheme(selectedSector?.id ?? selectedSectorId);
   const activeTapeBasket = MARKET_TAPE_BY_SECTOR[selectedSector?.id ?? selectedSectorId] ?? GLOBAL_MARKET_TAPE;
   const countryFeatures = useMemo(() => buildCountryFeatures(countries), [countries]);
@@ -742,6 +1113,31 @@ function App() {
   const selectConflict = (conflict: ConflictDatum) => {
     setSelectedConflictId(conflict.id);
     focusConflict(conflict);
+  };
+
+  const navigateToNewsDashboard = () => {
+    setActiveView("news");
+    if (window.location.pathname !== NEWS_DASHBOARD_PATH) {
+      window.history.pushState({}, "", NEWS_DASHBOARD_PATH);
+    }
+  };
+
+  const navigateToLensDashboard = () => {
+    setActiveView("lens");
+    if (window.location.pathname !== "/") {
+      window.history.pushState({}, "", "/");
+    }
+  };
+
+  const activateLensMode = (mode: LensMode) => {
+    if (mode === "news") {
+      navigateToNewsDashboard();
+      return;
+    }
+    setActiveLensMode(mode);
+    if (mode === "pulse" && !selectedConflictId) {
+      setSelectedConflictId(ACTIVE_CONFLICTS[0]?.id ?? null);
+    }
   };
 
   const isPaneCollapsed = (pane: PaneKey) => collapsedPanes[pane];
@@ -974,12 +1370,6 @@ function App() {
   }, [countries, priorityConflictIds, selectedConflictId, selectedSector]);
 
   const borderPaths = useMemo<RenderPathDatum[]>(() => {
-    const liveBorderIsoSet = new Set<string>();
-    if (highlightIso) liveBorderIsoSet.add(highlightIso);
-    if (sectorHighlightsActive) {
-      sectorIsoSet.forEach((iso3) => liveBorderIsoSet.add(iso3));
-      tradeIsoSet.forEach((iso3) => liveBorderIsoSet.add(iso3));
-    }
     const withAltitude = (path: BoundaryPathDatum, iso3?: string, source?: string): RenderPathDatum => ({
       ...path,
       iso3,
@@ -992,21 +1382,19 @@ function App() {
     const atlasPaths = COUNTRY_BORDER_PATHS.flatMap((path) => {
       if (path.id === "356") return [];
       const iso3 = path.id ? isoByNumeric.get(path.id) : undefined;
-      if (!iso3 || !liveBorderIsoSet.has(iso3)) return [];
+      if (!iso3) return [];
       return [withAltitude(path, iso3)];
     });
-    const indiaPaths = liveBorderIsoSet.has("IND")
-      ? INDIA_BOUNDARY_PATHS.map((path) => withAltitude(path, "IND", "survey-of-india"))
-      : [];
+    const indiaPaths = INDIA_BOUNDARY_PATHS.map((path) => withAltitude(path, "IND", "survey-of-india"));
 
     return [...atlasPaths, ...indiaPaths];
-  }, [highlightIso, isoByNumeric, sectorHighlightsActive, sectorIsoSet, tradeIsoSet]);
+  }, [isoByNumeric]);
 
   useEffect(() => {
     if (!globeRef.current) return;
     const frame = window.requestAnimationFrame(() => stabilizeBoundaryPathMaterials(globeRef.current));
     return () => window.cancelAnimationFrame(frame);
-  }, [borderPaths, activeTheme.accent]);
+  }, [borderPaths]);
 
   const handlePolygonClick = (feature: object) => {
     const iso3 = (feature as GlobeCountryFeature).properties.iso3;
@@ -1026,7 +1414,22 @@ function App() {
     );
   }
 
-  if (!data || !selectedCountry || !selectedSector) {
+  if (!data) {
+    return (
+      <main className="app-shell">
+        <div className="loading-panel">
+          <span className="pulse-dot" />
+          <p>Calibrating sovereign risk layers</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (activeView === "news") {
+    return <NewsDashboard data={data} onBack={navigateToLensDashboard} />;
+  }
+
+  if (!selectedCountry || !selectedSector) {
     return (
       <main className="app-shell">
         <div className="loading-panel">
@@ -1042,9 +1445,9 @@ function App() {
       className="app-shell"
       style={
         {
-          "--accent": activeTheme.accent,
-          "--accent-rgb": activeTheme.rgb,
-          "--accent-on": activeTheme.onAccent,
+          "--accent": PREMIUM_ORANGE_THEME.accent,
+          "--accent-rgb": PREMIUM_ORANGE_THEME.rgb,
+          "--accent-on": PREMIUM_ORANGE_THEME.onAccent,
         } as React.CSSProperties
       }
       >
@@ -1066,7 +1469,7 @@ function App() {
           polygonsTransitionDuration={0}
           polygonCapColor={() => "rgba(58, 79, 86, 0.72)"}
           polygonSideColor={() => "rgba(3, 16, 20, 0.34)"}
-          polygonStrokeColor={() => "rgba(135, 165, 169, 0.34)"}
+          polygonStrokeColor={() => "rgba(135, 165, 169, 0)"}
           polygonAltitude={0.012}
           polygonCapCurvatureResolution={1}
           onPolygonClick={handlePolygonClick}
@@ -1159,202 +1562,29 @@ function App() {
         />
       </div>
 
+      <header className="home-dashboard-topbar" aria-label="Sovereign Lens navigation">
+        <div className="home-wordmark" aria-label="Sovereign Lens">
+          <span>Sovereign</span>
+          <strong>Lens</strong>
+        </div>
+        <span className="home-topbar-rule" aria-hidden="true" />
+        <p>Geopolitical risk command</p>
+        <button
+          type="button"
+          className="home-news-button"
+          aria-label="Open News Pulse dashboard"
+          onClick={navigateToNewsDashboard}
+        >
+          News Pulse
+        </button>
+        <label className="home-search">
+          <span className="sr-only">Search countries, sectors, or conflicts</span>
+          <input type="search" placeholder="Search countries, sectors, or conflicts..." />
+          <span className="events-search-icon" aria-hidden="true" />
+        </label>
+      </header>
+
       <MarketTape basket={activeTapeBasket} />
-
-      <section className={paneClassName("sector-rail sectors-risk-panel", "sectors")} aria-label="Sectors at risk">
-        {paneToggle("sectors", "Sectors At Risk", selectedSector.name)}
-        <div id="sectors-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("sectors")}>
-          <p className="eyebrow">Sector exposure</p>
-          {sectors.map((sector) => (
-            <button
-              key={sector.id}
-              className={sector.id === selectedSector.id ? "sector-button active" : "sector-button"}
-              style={
-                {
-                  "--sector-accent": sectorTheme(sector.id).accent,
-                  "--sector-rgb": sectorTheme(sector.id).rgb,
-                  "--sector-on": sectorTheme(sector.id).onAccent,
-                } as React.CSSProperties
-              }
-              onClick={() => selectSector(sector.id)}
-            >
-              <span>{sector.name}</span>
-              <strong>{sector.sensitivity.toFixed(1)}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <aside className={paneClassName("pulse-hud conflict-pulse-panel", "pulse")} aria-label="Conflict pulse dashboard">
-        {paneToggle("pulse", "Conflict Pulse", "Live")}
-        <div id="pulse-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("pulse")}>
-          <div className="panel-title">
-            <p className="eyebrow">Active conflicts</p>
-            <strong>Live</strong>
-          </div>
-          <div className="conflict-list">
-            {ACTIVE_CONFLICTS.slice(0, 4).map((conflict) => (
-              <button
-                key={conflict.id}
-                type="button"
-                className={`conflict-row severity-${severityClass(conflict.severity)} ${
-                  selectedConflictId === conflict.id ? "active" : ""
-                }`}
-                onClick={() => selectConflict(conflict)}
-              >
-                <span>{conflict.name}</span>
-                <strong>{conflict.severity}</strong>
-                <small>{conflict.shortDescription}</small>
-                <time>{conflict.updated}</time>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="conflict-view-all">View all conflicts</button>
-        </div>
-      </aside>
-
-      <aside className="news-pulse-panel" aria-label="News pulse dashboard">
-        <div className="panel-title">
-          <p className="eyebrow">News pulse</p>
-          <strong>Live</strong>
-        </div>
-        <div className="news-list">
-          {data.globalPulse.alerts.slice(0, 3).map((alert) => (
-            <article key={alert.id} className={`news-row ${scoreClass(alert.severity === "High Risk" ? 8 : 5)}`}>
-              <div>
-                <span>{alert.region}</span>
-                <p>{alert.headline}</p>
-              </div>
-              <time>{formatAlertAge(alert.age_minutes)}</time>
-            </article>
-          ))}
-        </div>
-      </aside>
-
-      {selectedConflict ? <ConflictCard conflict={selectedConflict} onClose={() => setSelectedConflictId(null)} /> : null}
-
-      <aside className={paneClassName("country-panel", "country")} aria-label="Country intelligence sidebar">
-        {paneToggle("country", "Country File", selectedCountry.iso3)}
-        <div id="country-pane-content" className="pane-content pane-scroll" hidden={isPaneCollapsed("country")}>
-          <div className="country-heading">
-            <img src={selectedCountry.flag} alt={`${selectedCountry.name} flag`} />
-            <div>
-              <p className="eyebrow">{selectedCountry.iso3} sovereign file</p>
-              <h1>{selectedCountry.name}</h1>
-              <span>{selectedCountry.capital}</span>
-            </div>
-          </div>
-
-          <div className="score-block">
-            <div>
-              <p className="eyebrow">Tension score</p>
-              <strong className={scoreClass(selectedCountry.tension_score)}>{selectedCountry.tension_score.toFixed(1)}</strong>
-              <span>{selectedCountry.tension_label}</span>
-            </div>
-            <div className="score-meter" aria-hidden="true">
-              <span
-                style={{
-                  width: `${selectedCountry.tension_score * 10}%`,
-                  background: scoreColor(selectedCountry.tension_score),
-                  color: scoreColor(selectedCountry.tension_score),
-                }}
-              />
-            </div>
-          </div>
-
-          <dl className="metric-grid">
-            <div>
-              <dt>GDP</dt>
-              <dd>{compactNumber(selectedCountry.gdp_usd_bn, "B")}</dd>
-            </div>
-            <div>
-              <dt>Population</dt>
-              <dd>{compactNumber(selectedCountry.population_mn, "M")}</dd>
-            </div>
-            <div>
-              <dt>Growth</dt>
-              <dd>{formatMove(selectedCountry.gdp_growth_pct)}</dd>
-            </div>
-            <div>
-              <dt>GDP/capita</dt>
-              <dd>${selectedCountry.gdp_per_capita_usd.toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt>GINI</dt>
-              <dd>{selectedCountry.gini.toFixed(1)}</dd>
-            </div>
-            <div>
-              <dt>FX vol</dt>
-              <dd>{selectedCountry.fx.volatility_24h.toFixed(1)}%</dd>
-            </div>
-          </dl>
-
-          <div className="breakdown">
-            <span>Structural {selectedCountry.tension_breakdown.structural.toFixed(1)}</span>
-            <span>Sentiment {selectedCountry.tension_breakdown.sentiment.toFixed(1)}</span>
-            <span>Live {selectedCountry.tension_breakdown.live_trigger.toFixed(1)}</span>
-          </div>
-
-          <div className="badge-row">
-            {selectedCountry.groups.map((group) => (
-              <span key={group}>{group}</span>
-            ))}
-          </div>
-
-          <section className="intelligence-section">
-            <p className="eyebrow">Industry criticality</p>
-            <ul>
-              {selectedCountry.industry_criticality.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="market-card">
-            <div className="market-heading">
-              <div>
-                <p className="eyebrow">Market index pulse</p>
-                <strong>{selectedCountry.market_index.name}</strong>
-              </div>
-              <span className={selectedCountry.market_index.change_24h >= 0 ? "positive" : "negative"}>
-                {formatMove(selectedCountry.market_index.change_24h)}
-              </span>
-            </div>
-            <Sparkline points={selectedCountry.market_index.series} />
-            <p className="fx-line">
-              {selectedCountry.fx.pair} {selectedCountry.fx.rate.toLocaleString()}:
-              {" "}
-              {selectedCountry.fx.trigger}
-            </p>
-          </section>
-
-          <section className="trade-section">
-            <div className="trade-tabs">
-              <button className={tradeFlow === "export" ? "active" : ""} onClick={() => selectTradeFlow("export")}>
-                Exports
-              </button>
-              <button className={tradeFlow === "import" ? "active" : ""} onClick={() => selectTradeFlow("import")}>
-                Imports
-              </button>
-            </div>
-            {selectedCountry.trade_partners
-              .filter((partner) => partner.flow === tradeFlow)
-              .map((partner) => (
-                <button
-                  key={`${partner.flow}-${partner.iso3}`}
-                  className="partner-row"
-                  onClick={() => selectCountry(partner.iso3)}
-                >
-                  <span>{partner.name}</span>
-                  <strong>{partner.share.toFixed(1)}%</strong>
-                  <small>{partner.thesis}</small>
-                </button>
-              ))}
-          </section>
-
-          <blockquote>{selectedCountry.contrarian_insight}</blockquote>
-        </div>
-      </aside>
     </main>
   );
 }
