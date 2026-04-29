@@ -6864,13 +6864,63 @@ button {
 .monitor-background-grid {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
+  overflow: hidden;
   pointer-events: none;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
-  background-size: 5.5rem 5.5rem;
-  mask-image: radial-gradient(circle at 40% 52%, black 0%, rgba(0, 0, 0, 0.62) 42%, transparent 82%);
+    radial-gradient(circle at 34% 46%, rgba(255, 242, 209, 0.07), transparent 21rem),
+    linear-gradient(rgba(255, 255, 255, 0.052) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.052) 1px, transparent 1px),
+    linear-gradient(rgba(255, 242, 209, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 242, 209, 0.026) 1px, transparent 1px);
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    2.75rem 2.75rem,
+    2.75rem 2.75rem;
+  background-size:
+    auto,
+    5.5rem 5.5rem,
+    5.5rem 5.5rem,
+    16.5rem 16.5rem,
+    16.5rem 16.5rem;
+  opacity: 0.86;
+  mask-image: radial-gradient(circle at 40% 52%, black 0%, rgba(0, 0, 0, 0.72) 48%, transparent 86%);
+}
+
+.monitor-background-grid::before,
+.monitor-background-grid::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.monitor-background-grid::before {
+  right: -18%;
+  bottom: -38%;
+  left: -18%;
+  height: 72%;
+  background-image:
+    linear-gradient(rgba(255, 242, 209, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 242, 209, 0.045) 1px, transparent 1px);
+  background-size: 5.8rem 5.8rem;
+  mask-image: linear-gradient(180deg, transparent 0%, black 34%, rgba(0, 0, 0, 0.78) 68%, transparent 100%);
+  opacity: 0.42;
+  transform: perspective(48rem) rotateX(62deg) translateY(4rem);
+  transform-origin: 50% 100%;
+}
+
+.monitor-background-grid::after {
+  inset: -12% -14%;
+  background:
+    radial-gradient(ellipse at 34% 48%, transparent 0 30%, rgba(255, 255, 255, 0.038) 30.2% 30.55%, transparent 30.8%),
+    radial-gradient(ellipse at 34% 48%, transparent 0 43%, rgba(255, 242, 209, 0.028) 43.2% 43.5%, transparent 43.8%),
+    linear-gradient(118deg, transparent 0 43%, rgba(255, 255, 255, 0.035) 43.25% 43.55%, transparent 43.85% 100%);
+  mask-image: radial-gradient(circle at 36% 48%, black 0%, rgba(0, 0, 0, 0.64) 42%, transparent 76%);
+  mix-blend-mode: screen;
+  opacity: 0.74;
+  transform: rotate(-2deg);
 }
 
 .global-monitor-shell::before,
