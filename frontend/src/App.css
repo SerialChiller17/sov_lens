@@ -7263,6 +7263,7 @@ button {
   border: 1px solid rgba(255, 242, 209, 0.18);
   border-radius: 50%;
   opacity: 0;
+  padding: 0;
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(255, 248, 226, 0.12), rgba(255, 248, 226, 0.03) 48%, rgba(0, 0, 0, 0.28)),
@@ -7276,6 +7277,7 @@ button {
   transition:
     opacity 180ms ease,
     transform 180ms ease;
+  cursor: pointer;
 }
 
 .monitor-scroll-cue span {
@@ -7290,7 +7292,26 @@ button {
 .monitor-intelligence-panel:hover .monitor-scroll-cue,
 .monitor-intelligence-panel:focus-within .monitor-scroll-cue {
   opacity: 0.92;
+  pointer-events: auto;
   transform: translate(-50%, 0) scale(1);
+}
+
+.monitor-scroll-cue:focus-visible,
+.portfolio-scroll-cue:focus-visible {
+  outline: 1px solid rgba(255, 248, 226, 0.42);
+  outline-offset: 3px;
+}
+
+.monitor-scroll-cue:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.monitor-intelligence-panel:hover .monitor-scroll-cue:disabled,
+.monitor-intelligence-panel:focus-within .monitor-scroll-cue:disabled {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.45rem) scale(0.96);
 }
 
 .monitor-panel-card,
@@ -7798,7 +7819,7 @@ button {
   align-content: start;
   gap: clamp(0.82rem, 1.55vh, 1.15rem);
   margin: calc(clamp(-0.55rem, -0.8vh, -0.25rem) + 0.2cm) 0 0 clamp(-1.25rem, -1.6vw, -0.72rem);
-  padding: clamp(0.15rem, 0.45vh, 0.35rem) 0.62rem 0;
+  padding: clamp(0.42rem, 0.7vh, 0.62rem) 0.62rem 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -7821,7 +7842,11 @@ button {
   min-width: 0;
 }
 
-.monitor-ai-header span,
+.monitor-ai-header {
+  overflow: visible;
+}
+
+.monitor-ai-header > span,
 .monitor-ai-response > span {
   display: block;
   color: rgba(255, 255, 255, 0.42);
@@ -7841,6 +7866,238 @@ button {
   font-weight: 500;
   line-height: 1.04;
   text-shadow: 0 0.14rem 0.85rem rgba(0, 0, 0, 0.46);
+}
+
+.monitor-ai-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  overflow: visible;
+}
+
+.insight-companion {
+  position: relative;
+  display: block;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  contain: layout style;
+  overflow: visible;
+  perspective: 7rem;
+}
+
+.insight-companion::after {
+  position: absolute;
+  left: 50%;
+  bottom: -0.34rem;
+  width: 1.42rem;
+  height: 0.36rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.48);
+  filter: blur(0.38rem);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.insight-companion-float {
+  position: absolute;
+  inset: 0;
+  display: block;
+  animation: insight-companion-float 3s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.insight-companion-pulse-shell,
+.insight-companion-purr-shell {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.insight-companion-pulse-shell {
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    filter 520ms cubic-bezier(0.18, 0.92, 0.2, 1),
+    transform 620ms cubic-bezier(0.18, 0.92, 0.2, 1);
+}
+
+.insight-companion-purr-shell {
+  transform: translate3d(var(--purr-x, 0px), var(--purr-y, 0px), 0) rotate(var(--purr-rotate, 0deg));
+  transition: transform 420ms cubic-bezier(0.16, 0.88, 0.18, 1);
+}
+
+.insight-companion.is-purring .insight-companion-pulse-shell {
+  animation: insight-companion-purr-breathe 1.55s cubic-bezier(0.2, 0.95, 0.18, 1) infinite;
+  filter:
+    drop-shadow(0 0 0.34rem rgba(255, 253, 240, 0.2))
+    drop-shadow(0 0 0.75rem rgba(255, 242, 209, 0.1));
+}
+
+.insight-companion.is-purring .insight-companion-purr-shell {
+  transition: none;
+}
+
+.insight-companion-body {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(255, 253, 240, 0.86);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 26%, #ffffff 0 10%, rgba(255, 255, 255, 0.96) 19%, #fffdf0 56%, #e8ddc6 100%),
+    #fffdf0;
+  box-shadow:
+    inset 0.34rem 0.26rem 0.52rem rgba(255, 255, 255, 0.82),
+    inset -0.42rem -0.48rem 0.72rem rgba(162, 141, 107, 0.32),
+    inset 0 0 0.08rem rgba(255, 253, 240, 0.95),
+    0 0.24rem 0.62rem rgba(0, 0, 0, 0.32),
+    0 0 0.8rem rgba(255, 253, 240, 0.12);
+  transform-style: preserve-3d;
+}
+
+.insight-companion-body::before,
+.insight-companion-body::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.insight-companion-body::before {
+  inset: 0.14rem 0.28rem auto;
+  height: 42%;
+  border-radius: 50% 50% 42% 42%;
+  background:
+    radial-gradient(ellipse at 34% 28%, rgba(255, 255, 255, 0.92), transparent 35%),
+    linear-gradient(110deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.1) 64%, transparent 100%);
+  filter: blur(0.03rem);
+  opacity: 0.78;
+  transform: rotate(-10deg);
+}
+
+.insight-companion-body::after {
+  right: 0.22rem;
+  bottom: 0.22rem;
+  width: 42%;
+  height: 48%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 58% 72%, rgba(138, 117, 83, 0.22), transparent 65%);
+  filter: blur(0.04rem);
+  opacity: 0.7;
+}
+
+.insight-companion.is-spinning .insight-companion-body {
+  animation: insight-companion-spin 1.3s cubic-bezier(0.18, 0.92, 0.16, 1) both;
+}
+
+.insight-companion-eye-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.insight-companion-eyes {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  display: flex;
+  gap: 0.36rem;
+  align-items: center;
+  justify-content: center;
+  transform: translate(calc(-50% + var(--eye-x, 0px)), calc(-50% + var(--eye-y, 0px)));
+  will-change: transform;
+}
+
+.insight-companion.is-looking .insight-companion-eyes {
+  transition: transform 150ms cubic-bezier(0.16, 1.42, 0.34, 1);
+}
+
+.insight-companion.is-settling .insight-companion-eyes {
+  transition: transform 880ms cubic-bezier(0.22, 0.88, 0.28, 1);
+}
+
+.insight-companion-eye {
+  position: relative;
+  display: block;
+  width: 0.3rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 38% 26%, rgba(255, 255, 255, 0.42) 0 12%, transparent 18%),
+    #1a1a1a;
+  box-shadow:
+    inset 0 -0.08rem 0.08rem rgba(0, 0, 0, 0.34),
+    0 0.03rem 0.08rem rgba(82, 60, 38, 0.32);
+  transform-origin: 50% 50%;
+  transition: transform 75ms ease-in-out;
+}
+
+.insight-companion.is-blinking .insight-companion-eye {
+  transform: scaleY(0.02);
+}
+
+@keyframes insight-companion-float {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes insight-companion-purr-breathe {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  28% {
+    transform: translate3d(0, -0.08px, 0) scale(1.027);
+  }
+
+  47% {
+    transform: translate3d(0, 0.02px, 0) scale(1.014);
+  }
+
+  67% {
+    transform: translate3d(0, -0.04px, 0) scale(1.031);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes insight-companion-spin {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  58% {
+    transform: rotateY(330deg) scale(1.025);
+  }
+
+  78% {
+    transform: rotateY(376deg) scale(0.99);
+  }
+
+  91% {
+    transform: rotateY(354deg) scale(1.006);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
 }
 
 .monitor-ai-response {
@@ -8252,6 +8509,1002 @@ button {
 .global-portfolio-button strong {
   color: rgba(255, 248, 226, 0.92);
   font-weight: 600;
+}
+
+.global-portfolio-button.is-active {
+  border-color: rgba(255, 242, 209, 0.24);
+  color: rgba(255, 250, 235, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 242, 209, 0.12), rgba(255, 242, 209, 0.038)),
+    rgba(10, 10, 9, 0.72);
+}
+
+.portfolio-app {
+  height: 100vh;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: #f4f1e9;
+  background:
+    radial-gradient(circle at 17% 28%, rgba(255, 242, 209, 0.12), transparent 22rem),
+    radial-gradient(circle at 76% 16%, rgba(255, 255, 255, 0.06), transparent 18rem),
+    linear-gradient(120deg, #020202 0%, #0b0b0a 48%, #030303 100%);
+}
+
+.portfolio-app::before,
+.portfolio-app::after {
+  display: none;
+}
+
+.portfolio-app .market-tape {
+  top: 1.9rem;
+  right: clamp(0.75rem, 1.4vw, 1.25rem);
+  left: clamp(0.75rem, 1.4vw, 1.25rem);
+  z-index: 8;
+  min-width: 24rem;
+  grid-template-columns: 8.15rem minmax(0, 1fr);
+  border-color: rgba(255, 242, 209, 0.11);
+  border-radius: 8px;
+  color: #f7f4eb;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.94), rgba(21, 20, 18, 0.78), rgba(0, 0, 0, 0.94)),
+    rgba(10, 10, 9, 0.76);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 235, 0.075),
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 42px rgba(255, 242, 209, 0.045);
+  backdrop-filter: blur(18px);
+}
+
+.portfolio-app .market-tape-status {
+  border-right-color: rgba(255, 242, 209, 0.1);
+  color: rgba(238, 231, 214, 0.68);
+}
+
+.portfolio-app .market-tape-status span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid rgba(255, 242, 209, 0.24);
+  background:
+    radial-gradient(circle at 38% 32%, rgba(255, 250, 235, 0.96) 0 12%, rgba(255, 242, 209, 0.95) 42%, rgba(174, 151, 97, 0.82) 100%);
+  box-shadow:
+    0 0 0.18rem rgba(255, 242, 209, 0.72),
+    0 0 0.72rem rgba(255, 242, 209, 0.38);
+}
+
+.portfolio-screen {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(26rem, 39vw);
+  gap: clamp(1rem, 2vw, 1.6rem);
+  min-height: 100%;
+  padding: 6.6rem clamp(1rem, 2.35vw, 2.7rem) 1.3rem;
+  isolation: isolate;
+}
+
+.portfolio-scroll-cue {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(0.72rem, 1.4vh, 1.05rem);
+  z-index: 16;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid rgba(255, 242, 209, 0.18);
+  border-radius: 50%;
+  opacity: 0;
+  padding: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 226, 0.12), rgba(255, 248, 226, 0.03) 48%, rgba(0, 0, 0, 0.28)),
+    rgba(9, 9, 8, 0.66);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 235, 0.18),
+    inset 0 -0.16rem 0.34rem rgba(0, 0, 0, 0.42),
+    0 0.45rem 1.1rem rgba(0, 0, 0, 0.42),
+    0 0 1.2rem rgba(255, 242, 209, 0.08);
+  transform: translate(-50%, 0.45rem) scale(0.96);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+  cursor: pointer;
+}
+
+.portfolio-scroll-cue span {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-right: 2px solid rgba(255, 248, 226, 0.84);
+  border-bottom: 2px solid rgba(255, 248, 226, 0.84);
+  filter: drop-shadow(0 0 0.45rem rgba(255, 242, 209, 0.28));
+  transform: translateY(-0.12rem) rotate(45deg);
+}
+
+.portfolio-app:hover .portfolio-scroll-cue,
+.portfolio-app:focus-within .portfolio-scroll-cue {
+  opacity: 0.92;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.portfolio-background-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 242, 209, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 242, 209, 0.026) 1px, transparent 1px);
+  background-size: 5.5rem 5.5rem;
+  mask-image: radial-gradient(circle at 42% 44%, black 0%, rgba(0, 0, 0, 0.72) 46%, transparent 86%);
+}
+
+.portfolio-dashboard,
+.portfolio-ai-panel {
+  min-width: 0;
+}
+
+.portfolio-dashboard {
+  display: grid;
+  align-content: start;
+  gap: 0.78rem;
+}
+
+.portfolio-section-header,
+.portfolio-panel-heading,
+.portfolio-ai-panel header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.portfolio-section-header span,
+.portfolio-section-header strong,
+.portfolio-panel-heading span,
+.portfolio-ai-panel header span,
+.portfolio-ai-block > span {
+  color: rgba(238, 231, 214, 0.46);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-section-header h1 {
+  margin: 0.32rem 0 0;
+  color: rgba(255, 250, 235, 0.95);
+  font-size: clamp(1.6rem, 2.7vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.portfolio-section-header strong {
+  border: 1px solid rgba(255, 242, 209, 0.16);
+  border-radius: 999px;
+  padding: 0.28rem 0.5rem;
+  color: rgba(255, 242, 209, 0.7);
+  background: rgba(255, 242, 209, 0.045);
+}
+
+.portfolio-value-panel,
+.portfolio-glass-panel,
+.portfolio-ai-panel,
+.portfolio-ai-block article,
+.portfolio-ai-block button {
+  border: 1px solid rgba(255, 242, 209, 0.105);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 242, 209, 0.055), transparent 44%),
+    linear-gradient(180deg, rgba(24, 23, 20, 0.72), rgba(7, 7, 6, 0.68));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 235, 0.08),
+    0 22px 58px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(18px) saturate(1.04);
+}
+
+.portfolio-value-panel {
+  position: relative;
+  display: grid;
+  gap: clamp(0.82rem, 1.45vw, 1.16rem);
+  overflow: hidden;
+  padding: clamp(1rem, 1.75vw, 1.38rem);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255, 242, 209, 0.11), transparent 28%),
+    radial-gradient(circle at 72% 18%, rgba(158, 227, 181, 0.08), transparent 30%),
+    radial-gradient(circle at 92% 86%, rgba(231, 162, 162, 0.06), transparent 28%),
+    linear-gradient(145deg, rgba(255, 242, 209, 0.062), transparent 46%),
+    linear-gradient(180deg, rgba(24, 23, 20, 0.76), rgba(7, 7, 6, 0.7));
+}
+
+.portfolio-value-panel::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(158, 227, 181, 0.36), rgba(215, 194, 122, 0.22), transparent);
+  content: "";
+}
+
+.portfolio-value-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.portfolio-value-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+.portfolio-current-value,
+.portfolio-metric {
+  display: grid;
+  gap: 0.44rem;
+}
+
+.portfolio-current-value span,
+.portfolio-metric span {
+  color: rgba(238, 231, 214, 0.5);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.58rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-current-value strong {
+  color: rgba(255, 250, 235, 0.96);
+  font-size: clamp(2.1rem, 4.25vw, 4.15rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: 0;
+  text-shadow:
+    0 0 1.15rem rgba(158, 227, 181, 0.14),
+    0 0 2.1rem rgba(215, 194, 122, 0.08);
+}
+
+.portfolio-value-divider {
+  display: block;
+  height: 1px;
+  background:
+    linear-gradient(90deg, rgba(255, 242, 209, 0.02), rgba(255, 242, 209, 0.18), rgba(255, 242, 209, 0.02)),
+    repeating-linear-gradient(90deg, transparent 0 0.35rem, rgba(255, 242, 209, 0.22) 0.35rem 0.42rem);
+  opacity: 0.86;
+}
+
+.portfolio-metric-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: clamp(0.8rem, 2.4vw, 1.45rem);
+}
+
+.portfolio-metric:nth-child(2) {
+  text-align: center;
+}
+
+.portfolio-metric:nth-child(3) {
+  text-align: right;
+}
+
+.portfolio-metric strong {
+  color: rgba(255, 250, 235, 0.82);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(0.82rem, 1.22vw, 1.16rem);
+  font-weight: 650;
+  line-height: 1.08;
+}
+
+.portfolio-metric.is-positive strong {
+  color: #9ee3b5;
+  text-shadow: 0 0 0.92rem rgba(158, 227, 181, 0.16);
+}
+
+.portfolio-metric.is-negative strong {
+  color: #e7a2a2;
+  text-shadow: 0 0 0.92rem rgba(231, 162, 162, 0.13);
+}
+
+.portfolio-ai-block small,
+.portfolio-ai-block em {
+  border: 1px solid rgba(255, 242, 209, 0.13);
+  border-radius: 999px;
+  padding: 0.18rem 0.42rem;
+  color: rgba(255, 242, 209, 0.68);
+  background: rgba(255, 242, 209, 0.04);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.48rem;
+  font-style: normal;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 0.78rem;
+}
+
+.portfolio-glass-panel {
+  min-width: 0;
+  padding: 0.78rem;
+}
+
+.portfolio-performance-panel {
+  background:
+    radial-gradient(circle at 86% 24%, rgba(116, 229, 156, 0.12), transparent 24%),
+    radial-gradient(circle at 20% 18%, rgba(236, 215, 110, 0.07), transparent 30%),
+    linear-gradient(145deg, rgba(255, 242, 209, 0.055), transparent 44%),
+    linear-gradient(180deg, rgba(24, 23, 20, 0.72), rgba(7, 7, 6, 0.68));
+}
+
+.portfolio-dashboard-grid .portfolio-glass-panel:nth-child(2) {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(215, 194, 122, 0.1), transparent 28%),
+    radial-gradient(circle at 86% 82%, rgba(231, 162, 162, 0.065), transparent 32%),
+    linear-gradient(145deg, rgba(255, 242, 209, 0.055), transparent 44%),
+    linear-gradient(180deg, rgba(24, 23, 20, 0.72), rgba(7, 7, 6, 0.68));
+}
+
+.portfolio-composition-panel {
+  display: grid;
+  align-content: start;
+  overflow: visible;
+}
+
+.portfolio-panel-heading strong {
+  color: rgba(255, 250, 235, 0.82);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.portfolio-performance-stack {
+  position: relative;
+  min-height: clamp(15rem, 24vw, 17rem);
+}
+
+.portfolio-performance-chart {
+  width: 100%;
+  height: clamp(14.8rem, 23vw, 16.8rem);
+  margin-top: 0.12rem;
+  overflow: visible;
+}
+
+.portfolio-chart-grid {
+  stroke: rgba(255, 242, 209, 0.105);
+  stroke-dasharray: 2 2.2;
+  stroke-width: 0.34;
+}
+
+.portfolio-chart-baseline,
+.portfolio-chart-active-guide {
+  fill: none;
+  stroke: rgba(255, 242, 209, 0.14);
+  stroke-dasharray: 1.5 2.2;
+  stroke-width: 0.36;
+}
+
+.portfolio-chart-active-guide {
+  stroke: rgba(255, 253, 240, 0.2);
+}
+
+.portfolio-chart-area {
+  fill: url(#portfolioPerformanceArea);
+}
+
+.portfolio-chart-benchmark-line,
+.portfolio-chart-line-glass,
+.portfolio-chart-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.portfolio-chart-benchmark-line {
+  stroke: rgba(255, 253, 240, 0.34);
+  stroke-dasharray: 1 2.25;
+  stroke-width: 0.72;
+}
+
+.portfolio-chart-benchmark-label {
+  fill: rgba(255, 253, 240, 0.48);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.portfolio-chart-line-glass {
+  stroke: rgba(116, 229, 156, 0.18);
+  stroke-width: 2.65;
+  filter: blur(0.015rem);
+}
+
+.portfolio-chart-line {
+  stroke: url(#portfolioPerformanceLine);
+  stroke-width: 1.08;
+  filter:
+    drop-shadow(0 0 0.18rem rgba(116, 229, 156, 0.26))
+    drop-shadow(0 0 0.5rem rgba(236, 215, 110, 0.12));
+}
+
+.portfolio-chart-axis-label {
+  fill: rgba(238, 231, 214, 0.36);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.22rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.portfolio-chart-hitbox {
+  fill: transparent;
+  cursor: crosshair;
+  pointer-events: all;
+}
+
+.portfolio-performance-callout {
+  position: absolute;
+  top: clamp(0.36rem, calc(var(--trace-top, 24%) - 1.85rem), calc(100% - 4.95rem));
+  left: clamp(0.46rem, calc(var(--trace-left, 78%) - 4rem), calc(100% - 12.2rem));
+  z-index: 2;
+  display: grid;
+  gap: 0.24rem;
+  width: min(11.75rem, calc(100% - 0.92rem));
+  border: 1px solid rgba(255, 253, 240, 0.13);
+  border-radius: 8px;
+  padding: 0.48rem 0.56rem;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 240, 0.105), rgba(116, 229, 156, 0.055) 44%, rgba(0, 0, 0, 0.24)),
+    rgba(13, 15, 13, 0.68);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 253, 240, 0.12),
+    0 0.8rem 1.8rem rgba(0, 0, 0, 0.38),
+    0 0 1.2rem rgba(116, 229, 156, 0.08);
+  backdrop-filter: blur(16px) saturate(1.08);
+  pointer-events: none;
+  user-select: none;
+  transition:
+    top 140ms cubic-bezier(0.22, 0.9, 0.28, 1),
+    left 140ms cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+.portfolio-performance-callout div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.portfolio-performance-callout span,
+.portfolio-performance-callout strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.portfolio-performance-callout span {
+  color: rgba(238, 231, 214, 0.44);
+  font-size: 0.39rem;
+}
+
+.portfolio-performance-callout strong {
+  color: rgba(255, 250, 235, 0.82);
+  font-size: clamp(0.46rem, 0.66vw, 0.58rem);
+  font-weight: 700;
+  text-align: right;
+}
+
+.portfolio-performance-callout .is-positive strong {
+  color: #9ee3b5;
+}
+
+.portfolio-performance-callout .is-negative strong {
+  color: #e7a2a2;
+}
+
+.portfolio-donut-composition {
+  display: grid;
+  gap: 0.72rem;
+  margin-top: 0.55rem;
+}
+
+.portfolio-donut-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(13.6rem, 86%);
+  aspect-ratio: 1;
+  margin: 0.35rem auto 0;
+}
+
+.portfolio-donut-stage::before,
+.portfolio-donut-stage::after {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  content: "";
+}
+
+.portfolio-donut-stage::before {
+  inset: 18%;
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255, 253, 240, 0.032), transparent 34%),
+    radial-gradient(circle at 58% 70%, rgba(102, 234, 215, 0.026), transparent 42%),
+    radial-gradient(circle, rgba(0, 0, 0, 0.14), transparent 66%);
+}
+
+.portfolio-donut-stage::after {
+  display: none;
+}
+
+.portfolio-donut-chart {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter:
+    drop-shadow(0 1.05rem 1.15rem rgba(0, 0, 0, 0.3))
+    drop-shadow(0 0 0.55rem rgba(255, 253, 240, 0.045));
+}
+
+.portfolio-donut-track,
+.portfolio-donut-segment,
+.portfolio-donut-segment-sheen {
+  fill: none;
+}
+
+.portfolio-donut-track {
+  stroke-width: 8.6;
+  stroke: rgba(255, 242, 209, 0.075);
+}
+
+.portfolio-donut-segment-shell {
+  outline: none;
+  transform-box: fill-box;
+  transform-origin: 56px 56px;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+.portfolio-donut-segment {
+  opacity: 0.94;
+  stroke-linecap: butt;
+  stroke-width: 8.4;
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease,
+    stroke-width 180ms ease;
+  filter:
+    drop-shadow(0 0.08rem 0.08rem rgba(0, 0, 0, 0.34))
+    drop-shadow(0 0 0.22rem rgba(255, 253, 240, 0.07));
+}
+
+.portfolio-donut-segment-sheen {
+  opacity: 0.3;
+  stroke: rgba(255, 253, 240, 0.38);
+  stroke-linecap: butt;
+  stroke-width: 1.15;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    stroke-width 180ms ease;
+}
+
+.portfolio-donut-segment-shell:hover,
+.portfolio-donut-segment-shell:focus-visible {
+  outline: none;
+}
+
+.portfolio-donut-segment-shell:hover .portfolio-donut-segment,
+.portfolio-donut-segment-shell:focus-visible .portfolio-donut-segment,
+.portfolio-donut-segment-shell.is-active .portfolio-donut-segment {
+  opacity: 1;
+  stroke-width: 8.95;
+  filter:
+    drop-shadow(0 0.1rem 0.12rem rgba(0, 0, 0, 0.36))
+    drop-shadow(0 0 0.34rem var(--segment-aura))
+    drop-shadow(0 0 0.72rem rgba(255, 253, 240, 0.08));
+}
+
+.portfolio-donut-segment-shell:hover .portfolio-donut-segment-sheen,
+.portfolio-donut-segment-shell:focus-visible .portfolio-donut-segment-sheen,
+.portfolio-donut-segment-shell.is-active .portfolio-donut-segment-sheen {
+  opacity: 0.5;
+  stroke-width: 1.35;
+}
+
+.portfolio-donut-center {
+  position: absolute;
+  inset: 29%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.18rem;
+  border: 1px solid rgba(255, 242, 209, 0.06);
+  border-radius: 50%;
+  text-align: center;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 242, 209, 0.05), transparent 66%),
+    rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 0 1.1rem rgba(0, 0, 0, 0.38);
+}
+
+.portfolio-donut-center span,
+.portfolio-donut-center small {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.portfolio-donut-center span {
+  color: rgba(238, 231, 214, 0.52);
+  font-size: 0.48rem;
+  line-height: 1;
+}
+
+.portfolio-donut-center strong {
+  color: rgba(255, 250, 235, 0.94);
+  font-size: clamp(0.98rem, 1.55vw, 1.28rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.portfolio-donut-mix-lines {
+  display: grid;
+  gap: 0.08rem;
+  width: min(6rem, 92%);
+}
+
+.portfolio-donut-center small {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(238, 231, 214, 0.46);
+  font-size: clamp(0.34rem, 0.58vw, 0.43rem);
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-allocation-list {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.72rem;
+}
+
+.portfolio-allocation-list > div {
+  --allocation-fade: rgba(255, 242, 209, 0.2);
+  --allocation-fill: rgba(255, 242, 209, 0.76);
+  --allocation-glow: rgba(255, 242, 209, 0.16);
+  --allocation-label: rgba(238, 231, 214, 0.72);
+
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr) 3.1rem;
+  align-items: center;
+  gap: 0.48rem;
+  color: rgba(238, 231, 214, 0.72);
+  font-size: 0.62rem;
+}
+
+.portfolio-allocation-list > div.risk-high {
+  --allocation-fade: rgba(231, 162, 162, 0.16);
+  --allocation-fill: rgba(231, 162, 162, 0.82);
+  --allocation-glow: rgba(231, 162, 162, 0.22);
+  --allocation-label: rgba(231, 162, 162, 0.86);
+}
+
+.portfolio-allocation-list > div.risk-medium {
+  --allocation-fade: rgba(215, 194, 122, 0.16);
+  --allocation-fill: rgba(215, 194, 122, 0.82);
+  --allocation-glow: rgba(215, 194, 122, 0.2);
+  --allocation-label: rgba(215, 194, 122, 0.88);
+}
+
+.portfolio-allocation-list > div.risk-low {
+  --allocation-fade: rgba(158, 227, 181, 0.15);
+  --allocation-fill: rgba(158, 227, 181, 0.8);
+  --allocation-glow: rgba(158, 227, 181, 0.22);
+  --allocation-label: rgba(158, 227, 181, 0.84);
+}
+
+.portfolio-allocation-list span,
+.portfolio-allocation-list strong {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.portfolio-allocation-list > div > span {
+  color: var(--allocation-label);
+}
+
+.portfolio-allocation-list > div > strong {
+  color: rgba(238, 231, 214, 0.78);
+}
+
+.portfolio-allocation-list div div {
+  height: 0.46rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(255, 242, 209, 0.085), rgba(255, 242, 209, 0.045)),
+    rgba(255, 242, 209, 0.055);
+}
+
+.portfolio-allocation-list i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--allocation-fill), var(--allocation-fade));
+  box-shadow: 0 0 0.62rem var(--allocation-glow);
+}
+
+.portfolio-holdings-panel {
+  overflow: hidden;
+}
+
+.portfolio-holdings-table {
+  width: 100%;
+  margin-top: 0.66rem;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+}
+
+.portfolio-holdings-table th,
+.portfolio-holdings-table td {
+  border-top: 1px solid rgba(255, 242, 209, 0.08);
+  padding: 0.54rem 0.4rem;
+  text-align: left;
+}
+
+.portfolio-holdings-table th {
+  color: rgba(238, 231, 214, 0.44);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+}
+
+.portfolio-holdings-table td {
+  color: rgba(244, 240, 230, 0.78);
+}
+
+.portfolio-holding-row td:first-child {
+  border-left: 2px solid transparent;
+}
+
+.portfolio-holding-row.risk-high td:first-child {
+  border-left-color: rgba(231, 162, 162, 0.5);
+}
+
+.portfolio-holding-row.risk-medium td:first-child {
+  border-left-color: rgba(215, 194, 122, 0.5);
+}
+
+.portfolio-holding-row.risk-low td:first-child {
+  border-left-color: rgba(158, 227, 181, 0.48);
+}
+
+.portfolio-holdings-table td strong,
+.portfolio-holdings-table td span {
+  display: block;
+}
+
+.portfolio-holdings-table td strong {
+  color: rgba(255, 250, 235, 0.92);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.68rem;
+}
+
+.portfolio-holdings-table td span {
+  margin-top: 0.12rem;
+  color: rgba(238, 231, 214, 0.5);
+}
+
+.portfolio-holdings-table .is-positive {
+  color: #9ee3b5;
+}
+
+.portfolio-holdings-table .is-negative {
+  color: #e7a2a2;
+}
+
+.portfolio-risk-pill {
+  border: 1px solid rgba(255, 242, 209, 0.13);
+  border-radius: 999px;
+  padding: 0.16rem 0.38rem;
+  color: rgba(255, 242, 209, 0.72);
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.48rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.portfolio-risk-pill.risk-high {
+  border-color: rgba(231, 162, 162, 0.35);
+  color: #e7a2a2;
+  background: rgba(231, 162, 162, 0.075);
+}
+
+.portfolio-risk-pill.risk-medium {
+  border-color: rgba(215, 194, 122, 0.34);
+  color: #d7c27a;
+  background: rgba(215, 194, 122, 0.075);
+}
+
+.portfolio-risk-pill.risk-low {
+  border-color: rgba(158, 227, 181, 0.32);
+  color: #9ee3b5;
+  background: rgba(158, 227, 181, 0.07);
+}
+
+.portfolio-ai-panel {
+  align-self: start;
+  display: grid;
+  align-content: start;
+  gap: clamp(0.75rem, 1.4vh, 1rem);
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: clamp(0.9rem, 1.5vw, 1.25rem);
+}
+
+.portfolio-ai-panel header {
+  display: block;
+}
+
+.portfolio-ai-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.52rem;
+  min-height: 2.45rem;
+  overflow: visible;
+}
+
+.portfolio-ai-panel h2 {
+  margin: 0;
+  color: rgba(255, 250, 235, 0.94);
+  font-family: "Blacker Pro Text Condensed", "Blacker Pro", Georgia, serif;
+  font-size: clamp(1.65rem, 2.8vw, 2.55rem);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.portfolio-ai-companion {
+  flex: 0 0 38px;
+  margin-top: 0.18rem;
+}
+
+.portfolio-ai-summary {
+  display: grid;
+  gap: 0.58rem;
+  color: rgba(238, 231, 214, 0.72);
+  font-size: clamp(0.78rem, 0.96vw, 0.92rem);
+  line-height: 1.45;
+}
+
+.portfolio-ai-summary p {
+  margin: 0;
+}
+
+.portfolio-ai-block {
+  border-top: 1px solid rgba(255, 242, 209, 0.08);
+  padding-top: 0.72rem;
+}
+
+.portfolio-ai-block > div {
+  display: grid;
+  gap: 0.46rem;
+  margin-top: 0.56rem;
+}
+
+.portfolio-ai-block article,
+.portfolio-ai-block button {
+  position: relative;
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.58rem 0.64rem;
+  color: inherit;
+  text-align: left;
+}
+
+.portfolio-ai-block button {
+  cursor: pointer;
+}
+
+.portfolio-ai-block article strong,
+.portfolio-ai-block button strong {
+  color: rgba(255, 250, 235, 0.86);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.portfolio-ai-block article p,
+.portfolio-ai-block button p {
+  margin: 0;
+  color: rgba(238, 231, 214, 0.58);
+  font-size: 0.64rem;
+  line-height: 1.3;
+}
+
+.portfolio-ai-block article em {
+  position: absolute;
+  top: 0.58rem;
+  right: 0.64rem;
+}
+
+.portfolio-risk-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1180px) {
+  .portfolio-screen {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+
+  .portfolio-app {
+    height: auto;
+    overflow-y: auto;
+  }
+
+  .portfolio-ai-panel {
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 1rem;
+  }
+
+  .portfolio-scroll-cue {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .portfolio-screen {
+    padding: 6.4rem 0.8rem 1rem;
+  }
+
+  .portfolio-value-topline {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .portfolio-metric-row {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-metric:nth-child(2),
+  .portfolio-metric:nth-child(3) {
+    text-align: left;
+  }
+
+  .portfolio-dashboard-grid,
+  .portfolio-risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-holdings-panel {
+    overflow-x: auto;
+  }
+
+  .portfolio-holdings-table {
+    min-width: 42rem;
+  }
+
+  .portfolio-section-header {
+    align-items: start;
+    flex-direction: column;
+  }
 }
 
 .global-monitor-app .market-tape::before {

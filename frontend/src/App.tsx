@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getBootstrapData } from "./api";
 import globeTextureUrl from "./assets/globe-premium-dark.svg";
 import { GlobeMonitor } from "./globe-monitor/GlobeMonitor";
+import { InsightCompanion } from "./InsightCompanion";
 import type { BootstrapData, Coordinates, MarketPoint, PulseAlert, Sector } from "./types";
 
 interface SectorTheme {
@@ -95,7 +96,24 @@ interface ScreenNewsPin extends NewsVisualDatum {
 }
 
 type PaneKey = "sectors" | "pulse" | "country";
-type AppView = "lens" | "news" | "article";
+type AppView = "lens" | "news" | "article" | "portfolio";
+
+interface PortfolioHolding {
+  ticker: string;
+  name: string;
+  sector: string;
+  shares: number;
+  price: number;
+  value: number;
+  allocation: number;
+  dayMove: number;
+  risk: "Low" | "Medium" | "High";
+}
+
+interface PortfolioPerformancePoint {
+  label: string;
+  value: number;
+}
 
 const DEFAULT_COLLAPSED_PANES: Record<PaneKey, boolean> = {
   sectors: false,
@@ -141,6 +159,67 @@ const GLOBAL_MARKET_TAPE: MarketTapeBasket = {
     { label: "Nifty 50", value: "24,152.80", move: "+0.36%", direction: "up" },
   ],
 };
+
+const PORTFOLIO_HOLDINGS: PortfolioHolding[] = [
+  { ticker: "NVDA", name: "NVIDIA", sector: "Semiconductors", shares: 38, price: 875.28, value: 33260.64, allocation: 18.4, dayMove: 1.6, risk: "Medium" },
+  { ticker: "TSM", name: "Taiwan Semi", sector: "Foundry", shares: 120, price: 147.62, value: 17714.4, allocation: 9.8, dayMove: -0.7, risk: "High" },
+  { ticker: "XOM", name: "Exxon Mobil", sector: "Energy", shares: 155, price: 118.04, value: 18296.2, allocation: 10.1, dayMove: 0.4, risk: "Medium" },
+  { ticker: "LMT", name: "Lockheed Martin", sector: "Defense", shares: 28, price: 463.92, value: 12989.76, allocation: 7.2, dayMove: 0.9, risk: "Low" },
+  { ticker: "ZIM", name: "ZIM Integrated", sector: "Shipping", shares: 520, price: 21.34, value: 11096.8, allocation: 6.1, dayMove: 2.8, risk: "High" },
+  { ticker: "SPY", name: "S&P 500 ETF", sector: "Broad ETF", shares: 165, price: 521.41, value: 86032.65, allocation: 47.6, dayMove: 0.2, risk: "Low" },
+];
+
+const PORTFOLIO_MARKET_TAPE: MarketTapeBasket = {
+  label: "Portfolio Holdings Tape",
+  items: PORTFOLIO_HOLDINGS.map((holding) => ({
+    label: holding.ticker,
+    value: formatPortfolioTapePrice(holding.price),
+    move: formatSignedPortfolioMove(holding.dayMove),
+    direction: holding.dayMove >= 0 ? "up" : "down",
+  })),
+};
+
+const PORTFOLIO_INVESTED_VALUE = 184350.58;
+const PORTFOLIO_DAY_RETURN_PERCENT = 0.7;
+const PORTFOLIO_ALLOCATION_COLORS: Record<string, string> = {
+  NVDA: "#ecd76e",
+  TSM: "#ff86a8",
+  XOM: "#ffb35c",
+  LMT: "#66ead7",
+  ZIM: "#9d8cff",
+  SPY: "#74e59c",
+};
+const PORTFOLIO_DONUT_SEGMENT_GAP = 0.38;
+
+const PORTFOLIO_PERFORMANCE: PortfolioPerformancePoint[] = [
+  { label: "Jan", value: 162400 },
+  { label: "Feb", value: 166900 },
+  { label: "Mar", value: 164200 },
+  { label: "Apr", value: 171800 },
+  { label: "May", value: 176400 },
+  { label: "Jun", value: 180940 },
+];
+
+const NIFTY_50_PERFORMANCE: PortfolioPerformancePoint[] = [
+  { label: "Jan", value: 162400 },
+  { label: "Feb", value: 164150 },
+  { label: "Mar", value: 163300 },
+  { label: "Apr", value: 166850 },
+  { label: "May", value: 169450 },
+  { label: "Jun", value: 172980 },
+];
+
+const PORTFOLIO_AI_NEWS = [
+  { source: "Reuters", title: "Red Sea detours keep freight and energy risk bid", tickers: "ZIM, XOM", severity: "High" },
+  { source: "Bloomberg", title: "Taiwan supplier checks lift chip continuity premium", tickers: "NVDA, TSM", severity: "High" },
+  { source: "CNBC", title: "Defense names hold bid as budget language firms", tickers: "LMT", severity: "Medium" },
+];
+
+const PORTFOLIO_SUGGESTED_PLAYS = [
+  { label: "Trim concentration", detail: "SPY now carries almost half the account; rebalance only if mandate requires tighter single-instrument exposure.", type: "Portfolio" },
+  { label: "Watch shipping beta", detail: "Keep ZIM on alert while freight rates confirm whether the Red Sea premium is durable.", type: "Stock" },
+  { label: "Add ETF buffer", detail: "Use broad ETF or mutual fund exposure for calmer beta if chip headlines stay binary.", type: "ETF / Fund" },
+];
 
 const MARKET_TAPE_BY_SECTOR: Record<string, MarketTapeBasket> = {
   hydrocarbons: {
@@ -474,6 +553,7 @@ interface HorizonEvent {
 
 const NEWS_DASHBOARD_PATH = "/news-pulse";
 const NEWS_ARTICLE_PREFIX = `${NEWS_DASHBOARD_PATH}/`;
+const PORTFOLIO_PATH = "/portfolio";
 
 const PREMIUM_ORANGE_THEME: SectorTheme = {
   accent: "#e88931",
@@ -545,6 +625,7 @@ const LENS_RAIL_ITEMS: LensRailItem[] = [
 
 function routeToView(pathname: string): AppView {
   if (pathname.startsWith(NEWS_ARTICLE_PREFIX)) return "article";
+  if (pathname === PORTFOLIO_PATH) return "portfolio";
   return pathname === NEWS_DASHBOARD_PATH ? "news" : "lens";
 }
 
@@ -660,17 +741,25 @@ function Sparkline({ points }: { points: MarketPoint[] }) {
   );
 }
 
-function MarketTape({ basket }: { basket: MarketTapeBasket }) {
+function MarketTape({
+  basket,
+  includeGlobalItems = true,
+  statusLabel = "Live Markets",
+}: {
+  basket: MarketTapeBasket;
+  includeGlobalItems?: boolean;
+  statusLabel?: string;
+}) {
   const globalLabels = new Set(GLOBAL_MARKET_TAPE.items.map((item) => item.label));
   const lensItems = basket.items.filter((item) => !globalLabels.has(item.label));
-  const items = [...GLOBAL_MARKET_TAPE.items, ...lensItems];
+  const items = includeGlobalItems ? [...GLOBAL_MARKET_TAPE.items, ...lensItems] : basket.items;
   const tapeItems = [...items, ...items];
 
   return (
     <section className="market-tape" aria-label="Market and risk tape">
       <div className="market-tape-status">
         <span aria-hidden="true" />
-        <strong>Live Markets</strong>
+        <strong>{statusLabel}</strong>
       </div>
       <div className="market-tape-viewport" aria-label="Global and active lens market tape">
         <div className="market-tape-track">
@@ -691,14 +780,20 @@ function MarketTape({ basket }: { basket: MarketTapeBasket }) {
   );
 }
 
-function GlobalBrandNav({ onHome }: { onHome: () => void }) {
+function GlobalBrandNav({ activeView, onHome, onPortfolio }: { activeView: AppView; onHome: () => void; onPortfolio: () => void }) {
   return (
     <nav className="global-brand-nav" aria-label="Primary navigation">
       <button type="button" className="global-brand-button" onClick={onHome} aria-label="Go to Sovereign Lens home">
         <span>Sovereign</span>
         <strong>Lens</strong>
       </button>
-      <button type="button" className="global-portfolio-button" aria-label="Open your portfolio">
+      <button
+        type="button"
+        className={`global-portfolio-button${activeView === "portfolio" ? " is-active" : ""}`}
+        aria-label="Open your portfolio"
+        aria-current={activeView === "portfolio" ? "page" : undefined}
+        onClick={onPortfolio}
+      >
         <span>Your</span>
         <strong>Portfolio</strong>
       </button>
@@ -1355,6 +1450,429 @@ function formatPopulationScale(valueMn: number) {
   return `${valueMn.toFixed(0)}M`;
 }
 
+function formatPortfolioCurrency(value: number) {
+  return value.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+function formatPortfolioTapePrice(value: number) {
+  return value.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatSignedPortfolioCurrency(value: number) {
+  return `${value > 0 ? "+" : ""}${formatPortfolioCurrency(value)}`;
+}
+
+function formatSignedPortfolioMove(value: number) {
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function formatSignedPortfolioPercent(value: number) {
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function PortfolioPerformanceChart({ points, benchmarkPoints }: { points: PortfolioPerformancePoint[]; benchmarkPoints: PortfolioPerformancePoint[] }) {
+  const [activeIndex, setActiveIndex] = useState(points.length - 1);
+  const values = [...points, ...benchmarkPoints].map((point) => point.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, 1);
+
+  const chartCoordinates = (series: PortfolioPerformancePoint[]) =>
+    series.map((point, index) => ({
+      ...point,
+      x: 7 + (index / Math.max(series.length - 1, 1)) * 86,
+      y: 56 - ((point.value - min) / range) * 42,
+    }));
+
+  const coordinates = chartCoordinates(points);
+  const benchmarkCoordinates = chartCoordinates(benchmarkPoints);
+  const chartPath = (series: typeof coordinates) =>
+    series.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+
+  const path = chartPath(coordinates);
+  const benchmarkPath = chartPath(benchmarkCoordinates);
+  const areaPath = `${path} L 93 59 L 7 59 Z`;
+  const safeActiveIndex = Math.min(Math.max(activeIndex, 0), points.length - 1);
+  const activePoint = coordinates[safeActiveIndex] ?? coordinates[coordinates.length - 1];
+  const activeBenchmarkPoint = benchmarkCoordinates[safeActiveIndex] ?? benchmarkCoordinates[benchmarkCoordinates.length - 1];
+  const latestBenchmarkPoint = benchmarkCoordinates[benchmarkCoordinates.length - 1];
+  const activeGainLoss = activePoint.value - PORTFOLIO_INVESTED_VALUE;
+  const activeGainLossPercent = (activeGainLoss / PORTFOLIO_INVESTED_VALUE) * 100;
+  const activePortfolioReturnPercent = activeGainLossPercent;
+  const activeBenchmarkReturnPercent = ((activeBenchmarkPoint.value - benchmarkPoints[0].value) / benchmarkPoints[0].value) * 100;
+  const activeAlphaPercent = activePortfolioReturnPercent - activeBenchmarkReturnPercent;
+  const activeMoveClass = activeGainLoss >= 0 ? "is-positive" : "is-negative";
+  const activeAlphaClass = activeAlphaPercent >= 0 ? "is-positive" : "is-negative";
+
+  const handleChartPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const cursorX = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+    const constrainedX = Math.min(Math.max(cursorX, 7), 93);
+    const nextIndex = Math.round(((constrainedX - 7) / 86) * Math.max(points.length - 1, 1));
+    const clampedIndex = Math.min(Math.max(nextIndex, 0), points.length - 1);
+    setActiveIndex((currentIndex) => (currentIndex === clampedIndex ? currentIndex : clampedIndex));
+  };
+
+  return (
+    <div
+      className="portfolio-performance-stack"
+      style={
+        {
+          "--trace-left": `${activePoint.x.toFixed(2)}%`,
+          "--trace-top": `${((activePoint.y / 72) * 100).toFixed(2)}%`,
+        } as React.CSSProperties
+      }
+    >
+      <svg
+        className="portfolio-performance-chart"
+        viewBox="0 0 100 72"
+        role="img"
+        aria-label="Portfolio performance compared with Nifty 50"
+        onPointerMove={handleChartPointerMove}
+        onPointerLeave={() => setActiveIndex(points.length - 1)}
+      >
+        <defs>
+          <linearGradient id="portfolioPerformanceArea" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgba(116, 229, 156, 0.2)" />
+            <stop offset="64%" stopColor="rgba(236, 215, 110, 0.08)" />
+            <stop offset="100%" stopColor="rgba(255, 242, 209, 0.012)" />
+          </linearGradient>
+          <linearGradient id="portfolioPerformanceLine" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="#ecd76e" />
+            <stop offset="48%" stopColor="#fff2d1" />
+            <stop offset="100%" stopColor="#74e59c" />
+          </linearGradient>
+        </defs>
+        <path className="portfolio-chart-grid" d="M 7 16 H 93 M 7 35 H 93 M 7 54 H 93" />
+        <path className="portfolio-chart-baseline" d="M 7 59 H 93" />
+        <path className="portfolio-chart-area" d={areaPath} />
+        <path className="portfolio-chart-benchmark-line" d={benchmarkPath} />
+        <text className="portfolio-chart-benchmark-label" x="90.8" y={Math.max(12, latestBenchmarkPoint.y - 2.2).toFixed(2)} textAnchor="end">
+          Nifty 50
+        </text>
+        <path className="portfolio-chart-line-glass" d={path} />
+        <path className="portfolio-chart-line" d={path} />
+        <path className="portfolio-chart-active-guide" d={`M ${activePoint.x.toFixed(2)} 14 V 59`} />
+        <text className="portfolio-chart-axis-label" x="7" y="67">
+          Jan
+        </text>
+        <text className="portfolio-chart-axis-label" x="93" y="67" textAnchor="end">
+          Jun
+        </text>
+        <rect className="portfolio-chart-hitbox" x="0" y="0" width="100" height="72" />
+      </svg>
+
+      <div className="portfolio-performance-callout" aria-label={`${activePoint.label} portfolio performance summary`}>
+        <div>
+          <span>Portfolio Value</span>
+          <strong>{formatPortfolioCurrency(activePoint.value)}</strong>
+        </div>
+        <div className={activeMoveClass}>
+          <span>Gain/Loss</span>
+          <strong>
+            {formatSignedPortfolioCurrency(activeGainLoss)} ({formatSignedPortfolioPercent(activeGainLossPercent)})
+          </strong>
+        </div>
+        <div className={activeAlphaClass}>
+          <span>Alpha vs Nifty</span>
+          <strong>{formatSignedPortfolioPercent(activeAlphaPercent)}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHolding[] }) {
+  const topHolding = [...holdings].sort((a, b) => b.allocation - a.allocation)[0];
+  const [activeTicker, setActiveTicker] = useState<string | null>(null);
+  const totalAllocation = holdings.reduce((sum, holding) => sum + holding.allocation, 0);
+  const activeHolding = activeTicker ? holdings.find((holding) => holding.ticker === activeTicker) ?? null : null;
+  const fundAllocation = holdings
+    .filter((holding) => /etf|fund/i.test(holding.sector) || /etf|fund/i.test(holding.name))
+    .reduce((sum, holding) => sum + holding.allocation, 0);
+  const equityAllocation = Math.max(totalAllocation - fundAllocation, 0);
+  let cumulativeAllocation = 0;
+
+  const segments = holdings.map((holding) => {
+    const normalizedShare = (holding.allocation / totalAllocation) * 100;
+    const segmentGap = Math.min(PORTFOLIO_DONUT_SEGMENT_GAP, normalizedShare * 0.22);
+    const visibleShare = Math.max(normalizedShare - segmentGap, 0.1);
+    const start = cumulativeAllocation;
+    cumulativeAllocation += normalizedShare;
+    const midAngle = ((start + normalizedShare / 2) / 100) * Math.PI * 2 - Math.PI / 2;
+    const isActive = holding.ticker === activeTicker;
+    const lift = isActive ? 1.65 : 0;
+
+    return {
+      holding,
+      color: PORTFOLIO_ALLOCATION_COLORS[holding.ticker] ?? "#fff2d1",
+      dashArray: `${visibleShare} ${100 - visibleShare}`,
+      dashOffset: -(start + segmentGap / 2),
+      liftX: Math.cos(midAngle) * lift,
+      liftY: Math.sin(midAngle) * lift,
+      isActive,
+    };
+  });
+
+  return (
+    <div className="portfolio-donut-composition" onMouseLeave={() => setActiveTicker(null)} onBlur={() => setActiveTicker(null)}>
+      <div className="portfolio-donut-stage">
+        <svg className="portfolio-donut-chart" viewBox="0 0 112 112" role="img" aria-label="Interactive stock allocation donut chart">
+          <circle className="portfolio-donut-track" cx="56" cy="56" r="42" />
+          {segments.map((segment) => (
+            <g
+              key={segment.holding.ticker}
+              className={`portfolio-donut-segment-shell${segment.isActive ? " is-active" : ""}`}
+              tabIndex={0}
+              aria-label={`${segment.holding.name} ${segment.holding.allocation.toFixed(1)} percent of portfolio`}
+              onMouseEnter={() => setActiveTicker(segment.holding.ticker)}
+              onFocus={() => setActiveTicker(segment.holding.ticker)}
+              style={
+                {
+                  transform: `translate(${segment.liftX.toFixed(2)}px, ${segment.liftY.toFixed(2)}px)`,
+                } as React.CSSProperties
+              }
+            >
+              <circle
+                className="portfolio-donut-segment"
+                cx="56"
+                cy="56"
+                r="42"
+                pathLength={100}
+                transform="rotate(-90 56 56)"
+                style={
+                  {
+                    stroke: segment.color,
+                    strokeDasharray: segment.dashArray,
+                    strokeDashoffset: segment.dashOffset,
+                    "--segment-aura": segment.color,
+                  } as React.CSSProperties
+                }
+              />
+              <circle
+                className="portfolio-donut-segment-sheen"
+                cx="56"
+                cy="56"
+                r="42"
+                pathLength={100}
+                transform="rotate(-90 56 56)"
+                style={
+                  {
+                    strokeDasharray: segment.dashArray,
+                    strokeDashoffset: segment.dashOffset,
+                  } as React.CSSProperties
+                }
+              />
+            </g>
+          ))}
+        </svg>
+        <div className="portfolio-donut-center" aria-live="polite">
+          {activeHolding ? (
+            <>
+              <span>{activeHolding.ticker}</span>
+              <strong>{activeHolding.allocation.toFixed(1)}%</strong>
+              <small>{activeHolding.name}</small>
+            </>
+          ) : (
+            <div className="portfolio-donut-mix-lines">
+              <small>Equity {equityAllocation.toFixed(0)}%</small>
+              <small>Fund {fundAllocation.toFixed(0)}%</small>
+            </div>
+          )}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+
+function PortfolioScreen({ onHome, onPortfolio }: { onHome: () => void; onPortfolio: () => void }) {
+  const portfolioAppRef = useRef<HTMLElement | null>(null);
+  const totalValue = PORTFOLIO_HOLDINGS.reduce((sum, holding) => sum + holding.value, 0);
+  const oneDayReturn = totalValue * (PORTFOLIO_DAY_RETURN_PERCENT / 100);
+  const totalReturn = totalValue - PORTFOLIO_INVESTED_VALUE;
+  const totalReturnPercent = (totalReturn / PORTFOLIO_INVESTED_VALUE) * 100;
+  const topHolding = [...PORTFOLIO_HOLDINGS].sort((a, b) => b.allocation - a.allocation)[0];
+  const highRiskHoldings = PORTFOLIO_HOLDINGS.filter((holding) => holding.risk === "High");
+
+  const scrollPortfolioDown = () => {
+    const portfolioApp = portfolioAppRef.current;
+    if (!portfolioApp) return;
+
+    portfolioApp.scrollBy({
+      top: Math.max(portfolioApp.clientHeight * 0.72, 360),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <main ref={portfolioAppRef} className="app-shell portfolio-app">
+      <GlobalBrandNav activeView="portfolio" onHome={onHome} onPortfolio={onPortfolio} />
+      <MarketTape basket={PORTFOLIO_MARKET_TAPE} includeGlobalItems={false} statusLabel="Live Prices" />
+
+      <section className="portfolio-screen" aria-label="Synced portfolio screen">
+        <div className="portfolio-background-grid" aria-hidden="true" />
+
+        <section className="portfolio-dashboard" aria-label="Portfolio dashboard">
+          <header className="portfolio-section-header">
+            <div>
+              <span>Synced Portfolio</span>
+              <h1>Your Portfolio</h1>
+            </div>
+            <strong>Synced 2m ago</strong>
+          </header>
+
+          <div className="portfolio-value-panel">
+            <div className="portfolio-value-topline">
+              <div className="portfolio-current-value">
+                <span>Current Portfolio Value</span>
+                <strong>{formatPortfolioCurrency(totalValue)}</strong>
+              </div>
+            </div>
+
+            <span className="portfolio-value-divider" aria-hidden="true" />
+
+            <div className="portfolio-metric-row">
+              <div className="portfolio-metric">
+                <span>Invested value</span>
+                <strong>{formatPortfolioCurrency(PORTFOLIO_INVESTED_VALUE)}</strong>
+              </div>
+              <div className="portfolio-metric is-positive">
+                <span>1D returns</span>
+                <strong>
+                  {formatSignedPortfolioCurrency(oneDayReturn)} ({formatSignedPortfolioPercent(PORTFOLIO_DAY_RETURN_PERCENT)})
+                </strong>
+              </div>
+              <div className="portfolio-metric is-negative">
+                <span>Total returns</span>
+                <strong>
+                  {formatSignedPortfolioCurrency(totalReturn)} ({formatSignedPortfolioPercent(totalReturnPercent)})
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="portfolio-dashboard-grid">
+            <article className="portfolio-glass-panel portfolio-performance-panel">
+              <div className="portfolio-panel-heading">
+                <span>Performance</span>
+                <strong>6M trajectory</strong>
+              </div>
+              <PortfolioPerformanceChart points={PORTFOLIO_PERFORMANCE} benchmarkPoints={NIFTY_50_PERFORMANCE} />
+            </article>
+
+            <article className="portfolio-glass-panel portfolio-composition-panel">
+              <div className="portfolio-panel-heading">
+                <span>Composition</span>
+                <strong>Allocation</strong>
+              </div>
+              <PortfolioCompositionDonut holdings={PORTFOLIO_HOLDINGS} />
+            </article>
+          </div>
+
+          <article className="portfolio-glass-panel portfolio-holdings-panel">
+            <div className="portfolio-panel-heading">
+              <span>Holdings</span>
+              <strong>Stock-wise value</strong>
+            </div>
+            <table className="portfolio-holdings-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Sector</th>
+                  <th>Value</th>
+                  <th>Alloc.</th>
+                  <th>Move</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PORTFOLIO_HOLDINGS.map((holding) => (
+                  <tr key={holding.ticker} className={`portfolio-holding-row risk-${holding.risk.toLowerCase()}`}>
+                    <td>
+                      <strong>{holding.ticker}</strong>
+                      <span>{holding.name}</span>
+                    </td>
+                    <td>{holding.sector}</td>
+                    <td>{formatPortfolioCurrency(holding.value)}</td>
+                    <td>{holding.allocation.toFixed(1)}%</td>
+                    <td className={holding.dayMove >= 0 ? "is-positive" : "is-negative"}>{formatSignedPortfolioMove(holding.dayMove)}</td>
+                    <td>
+                      <em className={`portfolio-risk-pill risk-${holding.risk.toLowerCase()}`}>{holding.risk}</em>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+        </section>
+
+        <aside className="portfolio-ai-panel" aria-label="Portfolio AI intelligence">
+          <header>
+            <div className="portfolio-ai-title-row">
+              <h2>portfolio AI</h2>
+              <InsightCompanion className="portfolio-ai-companion" />
+            </div>
+          </header>
+
+          <div className="portfolio-ai-summary">
+            <p>
+              Your account is synced. The main live risk is concentrated in freight, energy, and Taiwan-linked semiconductor exposure.
+            </p>
+            <p>
+              {topHolding.ticker} is the largest allocation at {topHolding.allocation.toFixed(1)}%, while {highRiskHoldings.map((holding) => holding.ticker).join(" and ")} carry the highest news sensitivity.
+            </p>
+          </div>
+
+          <section className="portfolio-ai-block" aria-label="News affecting portfolio">
+            <span>News Affecting Portfolio</span>
+            <div>
+              {PORTFOLIO_AI_NEWS.map((item) => (
+                <article key={item.title}>
+                  <small>{item.source}</small>
+                  <strong>{item.title}</strong>
+                  <p>{item.tickers}</p>
+                  <em>{item.severity}</em>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="portfolio-ai-block" aria-label="High risk stocks">
+            <span>High-Risk Stocks</span>
+            <div className="portfolio-risk-grid">
+              {highRiskHoldings.map((holding) => (
+                <article key={holding.ticker}>
+                  <strong>{holding.ticker}</strong>
+                  <p>{holding.sector} / {holding.allocation.toFixed(1)}% allocation</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="portfolio-ai-block" aria-label="Suggested plays">
+            <span>Suggested Plays</span>
+            <div>
+              {PORTFOLIO_SUGGESTED_PLAYS.map((play) => (
+                <button key={play.label} type="button">
+                  <strong>{play.label}</strong>
+                  <p>{play.detail}</p>
+                  <small>{play.type}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        </aside>
+
+        <button type="button" className="portfolio-scroll-cue" aria-label="Scroll portfolio screen down" onClick={scrollPortfolioDown}>
+          <span />
+        </button>
+      </section>
+    </main>
+  );
+}
+
 function App() {
   const [data, setData] = useState<BootstrapData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1409,6 +1927,13 @@ function App() {
     }
   };
 
+  const navigateToPortfolio = () => {
+    setActiveView("portfolio");
+    if (window.location.pathname !== PORTFOLIO_PATH) {
+      window.history.pushState({}, "", PORTFOLIO_PATH);
+    }
+  };
+
   if (error) {
     return (
       <main className="app-shell error-shell">
@@ -1449,9 +1974,13 @@ function App() {
     );
   }
 
+  if (activeView === "portfolio") {
+    return <PortfolioScreen onHome={navigateToLensDashboard} onPortfolio={navigateToPortfolio} />;
+  }
+
   return (
     <main className="app-shell global-monitor-app">
-      <GlobalBrandNav onHome={navigateToLensDashboard} />
+      <GlobalBrandNav activeView={activeView} onHome={navigateToLensDashboard} onPortfolio={navigateToPortfolio} />
       <MarketTape basket={GLOBAL_MARKET_TAPE} />
       <GlobeMonitor />
     </main>

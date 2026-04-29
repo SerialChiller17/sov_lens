@@ -270,6 +270,18 @@ describe("Sovereign Lens app", () => {
     expect(screen.queryByRole("button", { name: /Open event details: Red Sea Shipping Risk/i })).not.toBeInTheDocument();
   });
 
+  it("opens the synced portfolio screen from the top navigation", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open your portfolio/i }));
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Synced portfolio screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/Current Portfolio Value/i);
+    expect(screen.getByRole("complementary", { name: /Portfolio AI intelligence/i })).toHaveTextContent(/News Affecting Portfolio/i);
+    expect(window.location.pathname).toBe("/portfolio");
+  });
+
   it("opens the global events dashboard from a direct route", async () => {
     window.history.pushState({}, "", "/news-pulse");
     render(<App />);

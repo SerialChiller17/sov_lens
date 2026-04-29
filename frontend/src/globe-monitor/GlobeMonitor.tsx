@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import createGlobe, { type Globe, type Marker } from "cobe";
+import { InsightCompanion, dispatchInsightCompanionLookAt } from "../InsightCompanion";
 import { MONITOR_EVENT_DETAILS } from "./mockDetails";
 import { GLOBE_MONITOR_EVENTS, IMPACT_RANK, MONITOR_FILTERS } from "./mockEvents";
 import type { GlobeMonitorEvent, MonitorEventCategory, MonitorEventDetail } from "./types";
@@ -13,6 +14,7 @@ const LABEL_SAFE_BOTTOM = 18;
 const LABEL_SAFE_EDGE = 12;
 const LABEL_BOX_WIDTH = 116;
 const LABEL_BOX_HEIGHT = 38;
+const HOTSPOT_SAFE_EDGE = 34;
 
 interface ProjectedPosition {
   x: number;
@@ -138,8 +140,8 @@ function GlobeHotspotLayer({
   const phiRef = useRef(-0.78);
   const pointerStartRef = useRef<number | null>(null);
   const dragStartPhiRef = useRef(0);
-  const [isPointerActive, setIsPointerActive] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const isPointerActiveRef = useRef(false);
+  const isPausedRef = useRef(false);
   const [projectedPositions, setProjectedPositions] = useState<Record<string, ProjectedPosition>>({});
   const { ref: stageRef, size } = useElementSize<HTMLDivElement>();
 
@@ -160,6 +162,17 @@ function GlobeHotspotLayer({
       })),
     [events, hoveredEventId, selectedEventIds],
   );
+
+  const eventsRef = useRef(events);
+  const markersRef = useRef(markers);
+
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
+
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -191,7 +204,7 @@ function GlobeHotspotLayer({
       opacity: 0.96,
       scale,
       offset: [0, 0],
-      markers,
+      markers: markersRef.current,
       context: {
         alpha: true,
         antialias: true,
@@ -202,7 +215,7 @@ function GlobeHotspotLayer({
     globeRef.current = globe;
 
     const render = () => {
-      if (!isPointerActive && !isPaused) {
+      if (!isPointerActiveRef.current && !isPausedRef.current) {
         phiRef.current += 0.0016;
       }
       frameCount += 1;
@@ -214,11 +227,11 @@ function GlobeHotspotLayer({
         theta,
         scale,
         offset: [0, 0],
-        markers,
+        markers: markersRef.current,
       });
 
       if (frameCount % 2 === 0) {
-        setProjectedPositions(projectEvents(events, width, height, phiRef.current, theta, scale));
+        setProjectedPositions(projectEvents(eventsRef.current, width, height, phiRef.current, theta, scale));
       }
 
       frame = window.requestAnimationFrame(render);
@@ -231,12 +244,21 @@ function GlobeHotspotLayer({
       globe.destroy();
       if (globeRef.current === globe) globeRef.current = null;
     };
-  }, [events, isPaused, isPointerActive, markers, size.height, size.width]);
+  }, [size.height, size.width]);
+
+  const directCompanionTowardGlobe = (target: HTMLDivElement, clientX?: number, clientY?: number, duration = 60000) => {
+    const rect = target.getBoundingClientRect();
+    dispatchInsightCompanionLookAt({
+      clientX: clientX ?? rect.left + rect.width * 0.5,
+      clientY: clientY ?? rect.top + rect.height * 0.5,
+      duration,
+    });
+  };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     pointerStartRef.current = event.clientX;
     dragStartPhiRef.current = phiRef.current;
-    setIsPointerActive(true);
+    isPointerActiveRef.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -248,7 +270,7 @@ function GlobeHotspotLayer({
 
   const endPointerInteraction = (event: React.PointerEvent<HTMLDivElement>) => {
     pointerStartRef.current = null;
-    setIsPointerActive(false);
+    isPointerActiveRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -258,9 +280,12 @@ function GlobeHotspotLayer({
     <div
       ref={stageRef}
       className="monitor-globe-stage"
-      onMouseEnter={() => setIsPaused(true)}
+      onMouseEnter={(event) => {
+        isPausedRef.current = true;
+        directCompanionTowardGlobe(event.currentTarget);
+      }}
       onMouseLeave={() => {
-        setIsPaused(false);
+        isPausedRef.current = false;
         onHover(null);
       }}
       onPointerDown={handlePointerDown}
@@ -282,7 +307,7 @@ function GlobeHotspotLayer({
             ]
               .filter(Boolean)
               .join(" ")}
-            style={hotspotPositionStyle(event, projectedPositions[event.id])}
+            style={hotspotPositionStyle(event, projectedPositions[event.id], size)}
             aria-label={`Open event details: ${event.title}`}
             aria-pressed={selectedEventIds.includes(event.id)}
             onClick={() => onToggle(event)}
@@ -321,11 +346,19 @@ function GlobeHotspotLayer({
   );
 }
 
-function hotspotPositionStyle(event: GlobeMonitorEvent, position: ProjectedPosition | undefined) {
+function hotspotPositionStyle(
+  event: GlobeMonitorEvent,
+  position: ProjectedPosition | undefined,
+  stageSize?: { width: number; height: number },
+) {
+  const hasSafeStage = Boolean(stageSize && stageSize.width > HOTSPOT_SAFE_EDGE * 2 && stageSize.height > HOTSPOT_SAFE_EDGE * 2);
+  const safeX = position && hasSafeStage ? clampNumber(position.x, HOTSPOT_SAFE_EDGE, stageSize!.width - HOTSPOT_SAFE_EDGE) : position?.x;
+  const safeY = position && hasSafeStage ? clampNumber(position.y, HOTSPOT_SAFE_EDGE, stageSize!.height - HOTSPOT_SAFE_EDGE) : position?.y;
+
   return {
     "--anchor-visible": `${position?.visible === false ? 0 : 0.98}`,
-    "--screen-x": position ? `${position.x.toFixed(2)}px` : undefined,
-    "--screen-y": position ? `${position.y.toFixed(2)}px` : undefined,
+    "--screen-x": typeof safeX === "number" ? `${safeX.toFixed(2)}px` : undefined,
+    "--screen-y": typeof safeY === "number" ? `${safeY.toFixed(2)}px` : undefined,
     "--fallback-x": `${event.fallbackPosition?.x ?? 50}%`,
     "--fallback-y": `${event.fallbackPosition?.y ?? 50}%`,
     "--label-x": `${event.labelOffset?.x ?? 0}px`,
@@ -388,10 +421,49 @@ function IntelligencePanel({
 }) {
   const filterOptions = useMemo(() => ["All", ...MONITOR_FILTERS] as MonitorFilter[], []);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isScrollCueEnabled, setIsScrollCueEnabled] = useState(false);
+  const aiHudRef = useRef<HTMLElement | null>(null);
 
   const selectFilter = (filter: MonitorFilter) => {
     onFilterChange(filter);
     setIsFilterMenuOpen(false);
+  };
+
+  useEffect(() => {
+    const aiHud = aiHudRef.current;
+    if (!aiHud) return;
+
+    const updateScrollCue = () => {
+      setIsScrollCueEnabled(aiHud.scrollHeight - aiHud.clientHeight - aiHud.scrollTop > 2);
+    };
+
+    updateScrollCue();
+    aiHud.addEventListener("scroll", updateScrollCue, { passive: true });
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(updateScrollCue);
+      observer.observe(aiHud);
+      Array.from(aiHud.children).forEach((child) => observer?.observe(child));
+    }
+
+    const frame = window.requestAnimationFrame(updateScrollCue);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      aiHud.removeEventListener("scroll", updateScrollCue);
+      observer?.disconnect();
+    };
+  }, [activeDetail]);
+
+  const scrollAiHudDown = () => {
+    const aiHud = aiHudRef.current;
+    if (!aiHud) return;
+
+    aiHud.scrollBy({
+      top: Math.max(aiHud.clientHeight * 0.72, 220),
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -433,9 +505,12 @@ function IntelligencePanel({
         </div>
       </section>
 
-      <section className="monitor-ai-hud" aria-label="Sovereign AI analysis">
+      <section ref={aiHudRef} className="monitor-ai-hud" aria-label="Sovereign AI analysis">
         <div className="monitor-ai-header">
-          <h2>sovereign AI</h2>
+          <div className="monitor-ai-title-row">
+            <h2>sovereign AI</h2>
+            <InsightCompanion />
+          </div>
         </div>
 
         <div className="monitor-ai-response" aria-label="AI response">
@@ -516,9 +591,17 @@ function IntelligencePanel({
         ) : null}
       </section>
 
-      <div className="monitor-scroll-cue" aria-hidden="true">
+      <button
+        type="button"
+        className="monitor-scroll-cue"
+        aria-label="Scroll Sovereign AI panel down"
+        aria-hidden={!isScrollCueEnabled}
+        disabled={!isScrollCueEnabled}
+        tabIndex={isScrollCueEnabled ? 0 : -1}
+        onClick={scrollAiHudDown}
+      >
         <span />
-      </div>
+      </button>
     </aside>
   );
 }
