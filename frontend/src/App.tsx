@@ -1,69 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import Globe from "react-globe.gl";
-import * as THREE from "three";
+import { useEffect, useMemo, useState } from "react";
 import { getBootstrapData } from "./api";
-import countryBorderPaths from "./assets/country-border-paths.json";
 import globeTextureUrl from "./assets/globe-premium-dark.svg";
-import indiaBoundaryPaths from "./assets/india-boundary-paths.soi.json";
-import { buildCountryFeatures, type GlobeCountryFeature } from "./geo";
-import type { BootstrapData, Coordinates, Country, MarketPoint, PulseAlert, Sector, TradeFlow } from "./types";
-
-interface ArcDatum {
-  startLat: number;
-  startLng: number;
-  endLat: number;
-  endLng: number;
-  color: [string, string];
-  label: string;
-  stroke?: number;
-}
-
-interface PointDatum {
-  lat: number;
-  lng: number;
-  label: string;
-  color: string;
-  radius: number;
-}
-
-interface LabelDatum {
-  lat: number;
-  lng: number;
-  text: string;
-  kind?: "country" | "chokepoint" | "conflict";
-  selected?: boolean;
-}
-
-interface RingDatum {
-  lat: number;
-  lng: number;
-  color: string | string[];
-  maxRadius: number;
-  repeatPeriod: number;
-  propagationSpeed: number;
-}
-
-interface BoundaryPathPoint {
-  lat: number;
-  lng: number;
-  alt: number;
-}
-
-interface BoundaryPathDatum {
-  points: BoundaryPathPoint[];
-  area: number;
-  id?: string;
-  iso3?: string;
-  source?: string;
-}
-
-interface RenderPathPoint extends BoundaryPathPoint {
-  borderAlt: number;
-}
-
-interface RenderPathDatum extends BoundaryPathDatum {
-  points: RenderPathPoint[];
-}
+import { GlobeMonitor } from "./globe-monitor/GlobeMonitor";
+import type { BootstrapData, Coordinates, MarketPoint, PulseAlert, Sector } from "./types";
 
 interface SectorTheme {
   accent: string;
@@ -120,11 +59,6 @@ interface ConflictDatum {
   transmission: ConflictTransmission[];
 }
 
-interface ConflictVisualDatum extends ConflictDatum {
-  selected: boolean;
-  muted: boolean;
-}
-
 interface NewsSectorLink {
   id: string;
   label: string;
@@ -145,6 +79,7 @@ interface GeotaggedNewsItem {
   summary: string;
   aiInsight: string;
   marketRead: string;
+  imageUrl: string;
   sectors: NewsSectorLink[];
 }
 
@@ -160,7 +95,7 @@ interface ScreenNewsPin extends NewsVisualDatum {
 }
 
 type PaneKey = "sectors" | "pulse" | "country";
-type AppView = "lens" | "news";
+type AppView = "lens" | "news" | "article";
 
 const DEFAULT_COLLAPSED_PANES: Record<PaneKey, boolean> = {
   sectors: false,
@@ -191,16 +126,9 @@ const STABLE_COLOR = "#9fcdb6";
 const AMBER_COLOR = "#c6a66f";
 const RISK_COLOR = "#d28d8d";
 const API_IMAGE_EARTH = globeTextureUrl;
-const COUNTRY_BORDER_PATHS = (countryBorderPaths as { paths: BoundaryPathDatum[] }).paths;
-const INDIA_BOUNDARY_PATHS = (indiaBoundaryPaths as { paths: BoundaryPathDatum[] }).paths;
 const MAX_RENDER_PIXEL_RATIO = 2;
-const ATLAS_BORDER_ALTITUDE = 0.088;
-const INDIA_BORDER_ALTITUDE = 0.098;
-const SELECTED_BORDER_STROKE = 0.82;
-const LINKED_BORDER_STROKE = 0.66;
-const INDIA_BORDER_STROKE = 0.48;
-const DEFAULT_BORDER_STROKE = 0.34;
-const BOUNDARY_RENDER_ORDER = 5;
+const PIN_PROJECTION_INTERVAL_MS = 120;
+const PIN_POSITION_EPSILON = 0.75;
 const GLOBAL_MARKET_TAPE: MarketTapeBasket = {
   label: "Global Market + Risk Tape",
   items: [
@@ -395,6 +323,24 @@ const ACTIVE_CONFLICTS: ConflictDatum[] = [
 
 const DEFAULT_NEWS_ID = "red-sea-freight";
 
+function newsImageDataUri(primary: string, secondary: string, accent: string, motif: "shipping" | "strait" | "city" | "grid" | "border") {
+  const motifPath = {
+    shipping: `<path d="M48 132h352l-42 48H92z" fill="${accent}" opacity=".38"/><path d="M112 112h164l28 20H92z" fill="#f6efe8" opacity=".72"/><path d="M82 184c48-18 94-18 138 0s90 18 138 0" fill="none" stroke="#fff" stroke-opacity=".42" stroke-width="8" stroke-linecap="round"/>`,
+    strait: `<path d="M120 56c64 64 46 136 0 224" fill="none" stroke="#f7efe7" stroke-opacity=".42" stroke-width="28" stroke-linecap="round"/><path d="M320 36c-78 88-46 160 10 240" fill="none" stroke="${accent}" stroke-opacity=".48" stroke-width="22" stroke-linecap="round"/><circle cx="238" cy="154" r="28" fill="#fff" opacity=".62"/>`,
+    city: `<path d="M72 254h336" stroke="#fff" stroke-opacity=".34" stroke-width="8"/><path d="M104 124h48v130h-48zM174 82h64v172h-64zM260 112h50v142h-50zM330 62h44v192h-44z" fill="#f9f1e7" opacity=".52"/><circle cx="306" cy="90" r="46" fill="${accent}" opacity=".34"/>`,
+    grid: `<path d="M76 78h306v172H76z" fill="#0b0e10" opacity=".42"/><path d="M96 102h266M96 132h266M96 162h266M96 192h266M96 222h266M130 92v166M178 92v166M226 92v166M274 92v166M322 92v166" stroke="#fff" stroke-opacity=".22" stroke-width="4"/><path d="M96 222l78-60 52 28 94-78 42 26" fill="none" stroke="${accent}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`,
+    border: `<path d="M92 88c74-34 132-24 174 30 48 62 96 64 142 8" fill="none" stroke="#fff" stroke-opacity=".42" stroke-width="14" stroke-linecap="round"/><path d="M84 218c68-50 128-50 180 0 44 42 92 42 146 0" fill="none" stroke="${accent}" stroke-opacity=".55" stroke-width="12" stroke-linecap="round"/><circle cx="224" cy="160" r="54" fill="#fff" opacity=".18"/>`,
+  }[motif];
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="${primary}"/><stop offset=".58" stop-color="${secondary}"/><stop offset="1" stop-color="#080a0c"/></linearGradient><radialGradient id="r" cx=".72" cy=".28" r=".55"><stop offset="0" stop-color="${accent}" stop-opacity=".72"/><stop offset=".52" stop-color="${accent}" stop-opacity=".18"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient></defs><rect width="480" height="300" fill="url(#g)"/><rect width="480" height="300" fill="url(#r)"/><path d="M0 242c78-38 154-42 228-12s158 22 252-28v98H0z" fill="#050607" opacity=".42"/>${motifPath}<g opacity=".22">${Array.from({ length: 36 }, (_, index) => {
+    const x = 34 + (index % 12) * 36;
+    const y = 38 + Math.floor(index / 12) * 78;
+    return `<circle cx="${x}" cy="${y}" r="2.4" fill="#fff"/>`;
+  }).join("")}</g></svg>`;
+
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
   {
     id: DEFAULT_NEWS_ID,
@@ -411,6 +357,7 @@ const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
     aiInsight:
       "The pressure point is not a single vessel delay. The route premium flows into landed energy costs, Asia-Europe inventory planning, and India-facing import buffers before physical scarcity appears.",
     marketRead: "Freight, crude optionality, and insurance spreads are the first signals to watch.",
+    imageUrl: newsImageDataUri("#172023", "#513028", "#e96048", "shipping"),
     sectors: [
       { id: "hydrocarbons", label: "Hydrocarbons", signal: "Route premium" },
       { id: "semiconductors", label: "Semiconductors", signal: "Asia-Europe lead times" },
@@ -432,6 +379,7 @@ const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
     aiInsight:
       "The investable read-through is broader than Taiwan beta. A short disruption window can hit substrate allocation, Japan specialty chemicals, Korea memory pricing, and US AI server delivery schedules.",
     marketRead: "TAIEX, SOXX, KRW, and supplier lead-time commentary should move first.",
+    imageUrl: newsImageDataUri("#101f28", "#273d46", "#dc9d52", "strait"),
     sectors: [
       { id: "semiconductors", label: "Semiconductors", signal: "Foundry concentration" },
       { id: "critical-minerals", label: "Critical Minerals", signal: "Electronics inputs" },
@@ -453,6 +401,7 @@ const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
     aiInsight:
       "The risk is a transmission chain. Diplomatic breakdown can push regional FX hedging, defense procurement expectations, and Eastern Mediterranean gas optionality without an immediate oil supply shock.",
     marketRead: "Watch Gulf FX, defense baskets, LNG headlines, and shipping insurance.",
+    imageUrl: newsImageDataUri("#1d1918", "#4a342f", "#e96048", "city"),
     sectors: [
       { id: "hydrocarbons", label: "Hydrocarbons", signal: "Gas optionality" },
       { id: "semiconductors", label: "Semiconductors", signal: "Defense electronics" },
@@ -474,6 +423,7 @@ const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
     aiInsight:
       "The direct battlefield read matters less to markets than the asset class it threatens. Power assets, Black Sea grain routes, and European gas storage expectations keep the risk premium sticky.",
     marketRead: "European gas, wheat, defense primes, and EUR industrials carry the cleanest signal.",
+    imageUrl: newsImageDataUri("#141b20", "#263136", "#dc9d52", "grid"),
     sectors: [
       { id: "hydrocarbons", label: "Hydrocarbons", signal: "Gas storage sensitivity" },
       { id: "critical-minerals", label: "Critical Minerals", signal: "Industrial input security" },
@@ -495,6 +445,7 @@ const GEO_NEWS_FEED: GeotaggedNewsItem[] = [
     aiInsight:
       "This is a low-noise, high-leverage node. If border throughput deteriorates, battery and magnet supply chains feel it through processing bottlenecks before broad commodity screens react.",
     marketRead: "Rare earth processors, Thailand logistics, and China battery inputs are the early tells.",
+    imageUrl: newsImageDataUri("#111c17", "#253229", "#b29b67", "border"),
     sectors: [
       { id: "critical-minerals", label: "Critical Minerals", signal: "Rare-earth logistics" },
       { id: "semiconductors", label: "Semiconductors", signal: "Magnet and tool inputs" },
@@ -522,6 +473,7 @@ interface HorizonEvent {
 }
 
 const NEWS_DASHBOARD_PATH = "/news-pulse";
+const NEWS_ARTICLE_PREFIX = `${NEWS_DASHBOARD_PATH}/`;
 
 const PREMIUM_ORANGE_THEME: SectorTheme = {
   accent: "#e88931",
@@ -592,7 +544,23 @@ const LENS_RAIL_ITEMS: LensRailItem[] = [
 ];
 
 function routeToView(pathname: string): AppView {
+  if (pathname.startsWith(NEWS_ARTICLE_PREFIX)) return "article";
   return pathname === NEWS_DASHBOARD_PATH ? "news" : "lens";
+}
+
+function newsArticlePath(newsId: string) {
+  return `${NEWS_ARTICLE_PREFIX}${encodeURIComponent(newsId)}`;
+}
+
+function newsIdFromArticlePath(pathname: string) {
+  if (!pathname.startsWith(NEWS_ARTICLE_PREFIX)) return null;
+  const encodedId = pathname.slice(NEWS_ARTICLE_PREFIX.length).split("/")[0];
+  if (!encodedId) return null;
+  try {
+    return decodeURIComponent(encodedId);
+  } catch {
+    return null;
+  }
 }
 
 function useWindowSize() {
@@ -651,38 +619,18 @@ function angularDistanceDegrees(a: Coordinates, b: Coordinates) {
   return (2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav))) / toRad;
 }
 
-function rgba(theme: SectorTheme, alpha: number) {
-  return `rgba(${theme.rgb}, ${alpha})`;
-}
-
-function stabilizeBoundaryPathMaterials(globe: any) {
-  const scene = globe?.scene?.();
-  if (!scene) return;
-
-  scene.traverse?.((object: any) => {
-    let current = object;
-    let isBoundaryPath = false;
-    while (current) {
-      if (current.__globeObjType === "path") {
-        isBoundaryPath = true;
-        break;
-      }
-      current = current.parent;
-    }
-    if (!isBoundaryPath) return;
-
-    object.renderOrder = BOUNDARY_RENDER_ORDER;
-    const materials = object.material ? (Array.isArray(object.material) ? object.material : [object.material]) : [];
-    materials.forEach((material: any) => {
-      material.transparent = true;
-      material.depthWrite = false;
-      material.depthTest = true;
-      material.alphaToCoverage = true;
-      material.polygonOffset = true;
-      material.polygonOffsetFactor = -1;
-      material.polygonOffsetUnits = -1;
-      material.needsUpdate = true;
-    });
+function screenNewsPinsEqual(left: ScreenNewsPin[], right: ScreenNewsPin[]) {
+  if (left.length !== right.length) return false;
+  return left.every((leftPin, index) => {
+    const rightPin = right[index];
+    return (
+      leftPin.id === rightPin.id &&
+      leftPin.selected === rightPin.selected &&
+      leftPin.hovered === rightPin.hovered &&
+      leftPin.visible === rightPin.visible &&
+      Math.abs(leftPin.x - rightPin.x) < PIN_POSITION_EPSILON &&
+      Math.abs(leftPin.y - rightPin.y) < PIN_POSITION_EPSILON
+    );
   });
 }
 
@@ -740,6 +688,17 @@ function MarketTape({ basket }: { basket: MarketTapeBasket }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function GlobalBrandNav({ onHome }: { onHome: () => void }) {
+  return (
+    <nav className="global-brand-nav" aria-label="Primary navigation">
+      <button type="button" className="global-brand-button" onClick={onHome} aria-label="Go to Sovereign Lens home">
+        <span>Sovereign</span>
+        <strong>Lens</strong>
+      </button>
+    </nav>
   );
 }
 
@@ -879,110 +838,106 @@ function NewsDashboard({ data, onBack }: { data: BootstrapData; onBack: () => vo
   );
 }
 
+function NewsArticleView({
+  news,
+  sectors,
+  selectedSectorId,
+  onBack,
+  onOpenFeed,
+  onSectorSelect,
+}: {
+  news: GeotaggedNewsItem;
+  sectors: Sector[];
+  selectedSectorId: string;
+  onBack: () => void;
+  onOpenFeed: () => void;
+  onSectorSelect: (sectorId: string) => void;
+}) {
+  const knownSectors = new Set(sectors.map((sector) => sector.id));
+
+  return (
+    <main
+      className="news-article-shell"
+      style={
+        {
+          "--accent": PREMIUM_ORANGE_THEME.accent,
+          "--accent-rgb": PREMIUM_ORANGE_THEME.rgb,
+          "--accent-on": PREMIUM_ORANGE_THEME.onAccent,
+        } as React.CSSProperties
+      }
+    >
+      <header className="news-article-topbar">
+        <button type="button" className="events-wordmark" onClick={onBack}>
+          <span>Sovereign</span>
+          <strong>Lens</strong>
+        </button>
+        <span className="events-topbar-rule" aria-hidden="true" />
+        <p>Full news article</p>
+        <button type="button" className="events-back-button" onClick={onOpenFeed}>
+          News Feed
+        </button>
+      </header>
+
+      <article className={`news-article-card severity-${severityClass(news.severity)}`}>
+        <div className="news-article-kicker">
+          <span>{news.region}</span>
+          <time>{news.time}</time>
+          <strong>{news.severity}</strong>
+        </div>
+        <h1>{news.title}</h1>
+        <p className="news-article-location">{news.location}</p>
+
+        <div className="news-article-body">
+          <p>{news.summary}</p>
+          <p>{news.aiInsight}</p>
+          <p>{news.marketRead}</p>
+        </div>
+
+        <dl className="news-article-facts">
+          <div>
+            <dt>Source</dt>
+            <dd>{news.source}</dd>
+          </div>
+          <div>
+            <dt>Geotag</dt>
+            <dd>
+              {news.lat.toFixed(1)}, {news.lng.toFixed(1)}
+            </dd>
+          </div>
+          <div>
+            <dt>Conflict link</dt>
+            <dd>{news.conflictId.split("-").join(" ")}</dd>
+          </div>
+        </dl>
+
+        <section className="news-article-sectors" aria-label="Connected sectors">
+          <h2>Connected sectors</h2>
+          <div>
+            {news.sectors.map((sector) => (
+              <button
+                key={`${news.id}-${sector.id}`}
+                type="button"
+                className={sector.id === selectedSectorId ? "is-active" : undefined}
+                onClick={() => {
+                  if (knownSectors.has(sector.id)) onSectorSelect(sector.id);
+                }}
+              >
+                <strong>{sector.label}</strong>
+                <span>{sector.signal}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </article>
+    </main>
+  );
+}
+
 function severityClass(severity: ConflictSeverity) {
   return severity.toLowerCase();
 }
 
-function conflictRingColor(severity: ConflictSeverity) {
-  if (severity === "Critical") return ["rgba(216, 82, 72, 0.58)", "rgba(216, 82, 72, 0.2)", "rgba(216, 82, 72, 0)"];
-  if (severity === "High") return ["rgba(239, 104, 78, 0.56)", "rgba(222, 112, 72, 0.2)", "rgba(222, 112, 72, 0)"];
-  if (severity === "Elevated") return ["rgba(214, 158, 85, 0.42)", "rgba(214, 158, 85, 0.15)", "rgba(214, 158, 85, 0)"];
-  return ["rgba(189, 160, 102, 0.24)", "rgba(189, 160, 102, 0.08)", "rgba(189, 160, 102, 0)"];
-}
-
-function conflictMarkerPalette(severity: ConflictSeverity) {
-  if (severity === "Critical") return { core: "#ff5b55", ring: "#f2a061", glow: "255, 91, 85" };
-  if (severity === "High") return { core: "#ff7151", ring: "#e6a15b", glow: "255, 113, 81" };
-  if (severity === "Elevated") return { core: "#dfa458", ring: "#c79755", glow: "223, 164, 88" };
-  return { core: "#bfa064", ring: "#a88955", glow: "191, 160, 100" };
-}
-
-function createConflictMarkerTexture(conflict: ConflictVisualDatum) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const context = canvas.getContext("2d");
-  if (!context) return null;
-
-  const palette = conflictMarkerPalette(conflict.severity);
-  const center = 128;
-  const selected = conflict.selected;
-  const mutedAlpha = conflict.muted ? 0.48 : 1;
-  const glowRadius = selected ? 116 : conflict.severity === "High" || conflict.severity === "Critical" ? 82 : 58;
-  const innerRadius = selected ? 26 : conflict.severity === "Watch" ? 12 : 17;
-
-  context.clearRect(0, 0, canvas.width, canvas.height);
-
-  const glow = context.createRadialGradient(center, center, 2, center, center, glowRadius);
-  glow.addColorStop(0, `rgba(${palette.glow}, ${0.62 * mutedAlpha})`);
-  glow.addColorStop(0.34, `rgba(${palette.glow}, ${0.24 * mutedAlpha})`);
-  glow.addColorStop(1, `rgba(${palette.glow}, 0)`);
-  context.fillStyle = glow;
-  context.beginPath();
-  context.arc(center, center, glowRadius, 0, Math.PI * 2);
-  context.fill();
-
-  context.lineWidth = selected ? 5 : 3;
-  context.strokeStyle = `rgba(${palette.glow}, ${0.62 * mutedAlpha})`;
-  context.beginPath();
-  context.arc(center, center, selected ? 46 : 31, 0, Math.PI * 2);
-  context.stroke();
-
-  if (selected) {
-    context.lineWidth = 3;
-    context.strokeStyle = `rgba(${palette.glow}, ${0.36 * mutedAlpha})`;
-    context.beginPath();
-    context.arc(center, center, 70, 0, Math.PI * 2);
-    context.stroke();
-  }
-
-  context.lineWidth = 3;
-  context.strokeStyle = `rgba(${palette.glow}, ${0.72 * mutedAlpha})`;
-  context.beginPath();
-  context.arc(center, center, innerRadius, 0, Math.PI * 2);
-  context.stroke();
-
-  context.fillStyle = palette.core;
-  context.shadowColor = palette.core;
-  context.shadowBlur = selected ? 34 : 18;
-  context.beginPath();
-  context.arc(center, center, selected ? 15 : 8, 0, Math.PI * 2);
-  context.fill();
-
-  if (selected) {
-    context.shadowBlur = 14;
-    context.fillStyle = "rgba(255, 238, 226, 0.96)";
-    context.beginPath();
-    context.arc(center, center, 6, 0, Math.PI * 2);
-    context.fill();
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function createConflictMarkerObject(conflict: ConflictVisualDatum) {
-  const texture = createConflictMarkerTexture(conflict);
-  const group = new THREE.Group();
-  if (!texture) return group;
-
-  const material = new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true,
-    opacity: conflict.muted ? 0.52 : 1,
-    depthTest: !conflict.selected,
-    depthWrite: false,
-  });
-  const sprite = new THREE.Sprite(material);
-  const size = conflict.selected ? 14 : conflict.severity === "High" || conflict.severity === "Critical" ? 6.4 : 4.6;
-  sprite.scale.set(size, size, 1);
-  sprite.renderOrder = conflict.selected ? 20 : 6;
-  group.add(sprite);
-  return group;
-}
-
-function ConflictCard({ conflict, onClose }: { conflict: ConflictDatum; onClose: () => void }) {
+function RemovedConflictCard({ conflict, onClose }: { conflict: ConflictDatum; onClose: () => void }) {
   return (
     <aside className={`conflict-card severity-${severityClass(conflict.severity)}`} aria-label={`${conflict.name} conflict brief`}>
       <button type="button" className="conflict-card-close" aria-label="Close conflict brief" onClick={onClose}>
@@ -1076,22 +1031,68 @@ function CompactConflictCard({ conflict, onClose }: { conflict: ConflictDatum; o
 }
 
 function GlobeNewsPins({
-  pins,
+  globeRef,
+  newsVisuals,
+  viewportWidth,
+  viewportHeight,
   onHover,
   onSelect,
+  onOpenArticle,
 }: {
-  pins: ScreenNewsPin[];
+  globeRef: { current: any };
+  newsVisuals: NewsVisualDatum[];
+  viewportWidth: number;
+  viewportHeight: number;
   onHover: (id: string | null) => void;
   onSelect: (news: GeotaggedNewsItem) => void;
+  onOpenArticle: (news: GeotaggedNewsItem) => void;
 }) {
+  const [pins, setPins] = useState<ScreenNewsPin[]>([]);
+
+  useEffect(() => {
+    let frameId = 0;
+    let active = true;
+    let lastProjectionAt = 0;
+
+    const projectPins = (timestamp: number) => {
+      if (!active) return;
+
+      if (timestamp - lastProjectionAt >= PIN_PROJECTION_INTERVAL_MS || lastProjectionAt === 0) {
+        lastProjectionAt = timestamp;
+        const globe = globeRef.current;
+        if (globe) {
+          const pov = globe.pointOfView?.() ?? { lat: 0, lng: 0 };
+          const nextPins = newsVisuals.map((news) => {
+            const coords = globe.getScreenCoords?.(news.lat, news.lng, news.selected ? 0.18 : 0.12) ?? { x: -100, y: -100 };
+            return {
+              ...news,
+              x: Number.isFinite(coords.x) ? coords.x : -100,
+              y: Number.isFinite(coords.y) ? coords.y : -100,
+              visible: angularDistanceDegrees({ lat: news.lat, lng: news.lng }, { lat: pov.lat, lng: pov.lng }) < 98,
+            };
+          });
+          setPins((current) => (screenNewsPinsEqual(current, nextPins) ? current : nextPins));
+        }
+      }
+
+      frameId = window.requestAnimationFrame(projectPins);
+    };
+
+    frameId = window.requestAnimationFrame(projectPins);
+
+    return () => {
+      active = false;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [globeRef, newsVisuals, viewportHeight, viewportWidth]);
+
   return (
     <div className="news-globe-pin-layer" aria-label="Geotagged news locations">
       {pins.map((pin) => (
-        <button
+        <div
           key={pin.id}
-          type="button"
           className={[
-            "news-location-pin",
+            "news-location-anchor",
             `severity-${severityClass(pin.severity)}`,
             pin.selected ? "is-selected" : "",
             pin.hovered ? "is-hovered" : "",
@@ -1099,21 +1100,34 @@ function GlobeNewsPins({
           ]
             .filter(Boolean)
             .join(" ")}
-          style={{ left: pin.x, top: pin.y }}
-          aria-label={`Open news insight: ${pin.title}`}
-          onClick={() => onSelect(pin)}
+          style={{ transform: `translate3d(${pin.x.toFixed(2)}px, ${pin.y.toFixed(2)}px, 0) translate(-50%, -50%)` }}
           onMouseEnter={() => onHover(pin.id)}
           onMouseLeave={() => onHover(null)}
         >
-          <span className="news-pin-dot" aria-hidden="true" />
-          <span className="news-pin-card">
+          <button
+            type="button"
+            className="news-location-dot"
+            aria-label={`Open news summary: ${pin.title}`}
+            onClick={() => onSelect(pin)}
+          >
+            <span className="news-pin-dot" aria-hidden="true" />
+          </button>
+          {pin.selected ? (
+            <button
+              type="button"
+              className="news-map-summary-card"
+              aria-label={`Read full article: ${pin.title}`}
+              onClick={() => onOpenArticle(pin)}
+            >
             <small>
               {pin.region} - {pin.time}
             </small>
             <strong>{pin.title}</strong>
             <span>{pin.summary}</span>
-          </span>
-        </button>
+              <em>Open article</em>
+            </button>
+          ) : null}
+        </div>
       ))}
     </div>
   );
@@ -1134,35 +1148,44 @@ function AiInsightPanel({
 
   return (
     <aside className="ai-insight-panel" aria-label="AI insight explainer">
-      <div className="insight-kicker-row">
-        <p className="eyebrow">AI Insight</p>
-        <span className={`severity-pill severity-${severityClass(news.severity)}`}>{news.severity}</span>
-      </div>
-      <h1>{news.location}</h1>
-      <h2>{news.title}</h2>
-      <p className="insight-summary">{news.aiInsight}</p>
-
-      <dl className="insight-signal-grid">
-        <div>
-          <dt>Region</dt>
-          <dd>{news.region}</dd>
-        </div>
-        <div>
-          <dt>Updated</dt>
-          <dd>{news.time}</dd>
-        </div>
-        <div>
-          <dt>Source</dt>
-          <dd>{news.source}</dd>
-        </div>
-      </dl>
-
-      <div className="market-readout">
-        <span>Market read</span>
-        <p>{news.marketRead}</p>
+      <div className="insight-message-row has-avatar">
+        <img className="insight-avatar" src={news.imageUrl} alt="" />
+        <article className="insight-message-card insight-status-card">
+          <div className="insight-kicker-row">
+            <p className="eyebrow">AI Insight</p>
+            <span className={`severity-pill severity-${severityClass(news.severity)}`}>{news.severity}</span>
+          </div>
+          <h1>{news.location}</h1>
+          <h2>{news.title}</h2>
+        </article>
       </div>
 
-      <section className="connected-sectors" aria-label="Connected sectors">
+      <article className="insight-message-card">
+        <p className="insight-summary">{news.aiInsight}</p>
+      </article>
+
+      <article className="insight-message-card">
+        <dl className="insight-signal-grid">
+          <div>
+            <dt>Region</dt>
+            <dd>{news.region}</dd>
+          </div>
+          <div>
+            <dt>Updated</dt>
+            <dd>{news.time}</dd>
+          </div>
+          <div>
+            <dt>Source</dt>
+            <dd>{news.source}</dd>
+          </div>
+        </dl>
+        <div className="market-readout">
+          <span>Market read</span>
+          <p>{news.marketRead}</p>
+        </div>
+      </article>
+
+      <article className="insight-message-card connected-sectors" aria-label="Connected sectors">
         <header>
           <span>Connected sectors</span>
         </header>
@@ -1184,7 +1207,7 @@ function AiInsightPanel({
             );
           })}
         </div>
-      </section>
+      </article>
     </aside>
   );
 }
@@ -1204,13 +1227,15 @@ function RelatedNewsPanel({
 }) {
   return (
     <aside className="related-news-panel" aria-label="Related geotagged news">
-      <header>
-        <div>
-          <p className="eyebrow">Live News Feed</p>
-          <h2>Related News</h2>
-        </div>
-        <span>{items.length} active</span>
-      </header>
+      <article className="news-feed-heading-card">
+        <header>
+          <div>
+            <p className="eyebrow">Live News Feed</p>
+            <h2>Related News</h2>
+          </div>
+          <span>{items.length} active</span>
+        </header>
+      </article>
 
       <div className="related-news-list">
         {items.map((item) => (
@@ -1224,7 +1249,7 @@ function RelatedNewsPanel({
               onMouseEnter={() => onHover(item.id)}
               onMouseLeave={() => onHover(null)}
             >
-              <span className={`news-card-dot severity-${severityClass(item.severity)}`} aria-hidden="true" />
+              <img className="news-card-image" src={item.imageUrl} alt="" />
               <span className="news-card-copy">
                 <small>
                   {item.region} - {item.time}
@@ -1232,6 +1257,7 @@ function RelatedNewsPanel({
                 <strong>{item.title}</strong>
                 <span>{item.summary}</span>
               </span>
+              <span className={`news-card-dot severity-${severityClass(item.severity)}`} aria-hidden="true" />
               <span className="news-card-location">{item.location}</span>
             </button>
           </article>
@@ -1326,22 +1352,10 @@ function formatPopulationScale(valueMn: number) {
 }
 
 function App() {
-  const globeRef = useRef<any>(null);
-  const initialViewSet = useRef(false);
-  const { width, height } = useWindowSize();
   const [data, setData] = useState<BootstrapData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedIso, setSelectedIso] = useState("IND");
-  const [highlightIso, setHighlightIso] = useState<string | null>(null);
-  const [sectorHighlightsActive, setSectorHighlightsActive] = useState(false);
   const [selectedSectorId, setSelectedSectorId] = useState("semiconductors");
-  const [activeLensMode, setActiveLensMode] = useState<LensMode>("country");
-  const [tradeFlow, setTradeFlow] = useState<TradeFlow>("export");
-  const [selectedConflictId, setSelectedConflictId] = useState<string | null>("red-sea");
-  const [selectedNewsId, setSelectedNewsId] = useState(DEFAULT_NEWS_ID);
-  const [hoveredNewsId, setHoveredNewsId] = useState<string | null>(null);
-  const [screenNewsPins, setScreenNewsPins] = useState<ScreenNewsPin[]>([]);
-  const [collapsedPanes, setCollapsedPanes] = useState<Record<PaneKey, boolean>>(() => ({ ...DEFAULT_COLLAPSED_PANES }));
+  const [selectedNewsId, setSelectedNewsId] = useState(() => newsIdFromArticlePath(window.location.pathname) ?? DEFAULT_NEWS_ID);
   const [activeView, setActiveView] = useState<AppView>(() => routeToView(window.location.pathname));
 
   useEffect(() => {
@@ -1351,121 +1365,21 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setActiveView(routeToView(window.location.pathname));
+    const onPopState = () => {
+      const articleNewsId = newsIdFromArticlePath(window.location.pathname);
+      if (articleNewsId) setSelectedNewsId(articleNewsId);
+      setActiveView(routeToView(window.location.pathname));
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const countries = data?.countries ?? [];
   const sectors = data?.sectors ?? [];
-  const countryByIso = useMemo(() => new Map(countries.map((country) => [country.iso3, country])), [countries]);
-  const selectedCountry = countryByIso.get(selectedIso) ?? countries[0];
   const selectedSector = sectors.find((sector) => sector.id === selectedSectorId) ?? sectors[0];
-  const selectedConflict = ACTIVE_CONFLICTS.find((conflict) => conflict.id === selectedConflictId);
   const selectedNews = GEO_NEWS_FEED.find((news) => news.id === selectedNewsId) ?? GEO_NEWS_FEED[0];
-  const countryLeadSector = selectedCountry?.industry_criticality[0] ?? selectedSector?.name ?? "Strategic sectors";
-  const activeTheme = sectorTheme(selectedSector?.id ?? selectedSectorId);
-  const activeTapeBasket = MARKET_TAPE_BY_SECTOR[selectedSector?.id ?? selectedSectorId] ?? GLOBAL_MARKET_TAPE;
-  const countryFeatures = useMemo(() => buildCountryFeatures(countries), [countries]);
-  const isoByNumeric = useMemo(() => new Map(countries.map((country) => [country.iso_numeric, country.iso3])), [countries]);
-  const newsByConflictId = useMemo(() => {
-    const entries = GEO_NEWS_FEED.map((news) => [news.conflictId, news] as const);
-    return new Map(entries);
-  }, []);
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const controls = globeRef.current.controls?.();
-    if (controls) {
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.18;
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.055;
-      controls.rotateSpeed = 0.52;
-      controls.zoomSpeed = 0.5;
-      controls.enablePan = false;
-    }
-    globeRef.current.renderer?.().setPixelRatio(Math.min(window.devicePixelRatio, MAX_RENDER_PIXEL_RATIO));
-  }, [data]);
-
-  useEffect(() => {
-    if (!data || !globeRef.current || initialViewSet.current) return;
-    initialViewSet.current = true;
-    globeRef.current.pointOfView?.(
-      {
-        lat: 24,
-        lng: 43,
-        altitude: width < 780 ? 2.08 : 1.62,
-      },
-      2000,
-    );
-  }, [data, width]);
-
-  const focusCountry = (country: Country, duration = 1400) => {
-    globeRef.current?.pointOfView?.(
-      {
-        lat: country.coordinates.lat,
-        lng: country.coordinates.lng,
-        altitude: width < 780 ? 1.96 : 1.38,
-      },
-      duration,
-    );
-  };
-
-  const selectCountry = (iso3: string) => {
-    const country = countryByIso.get(iso3);
-    if (!country) return;
-    setSelectedIso(iso3);
-    setHighlightIso(iso3);
-    focusCountry(country);
-  };
 
   const selectSector = (sectorId: string) => {
     setSelectedSectorId(sectorId);
-    setSectorHighlightsActive(true);
-  };
-
-  const selectTradeFlow = (flow: TradeFlow) => {
-    setTradeFlow(flow);
-    setSectorHighlightsActive(true);
-  };
-
-  const focusConflict = (conflict: ConflictDatum, duration = 1300) => {
-    globeRef.current?.pointOfView?.(
-      {
-        lat: conflict.lat,
-        lng: conflict.lng,
-        altitude: width < 780 ? 1.92 : 1.44,
-      },
-      duration,
-    );
-  };
-
-  const focusNewsLocation = (news: GeotaggedNewsItem, duration = 1300) => {
-    globeRef.current?.pointOfView?.(
-      {
-        lat: news.lat,
-        lng: news.lng,
-        altitude: width < 780 ? 1.9 : 1.32,
-      },
-      duration,
-    );
-  };
-
-  const selectNews = (news: GeotaggedNewsItem) => {
-    setSelectedNewsId(news.id);
-    setSelectedConflictId(news.conflictId);
-    setHoveredNewsId(null);
-    focusNewsLocation(news);
-  };
-
-  const selectConflict = (conflict: ConflictDatum) => {
-    const linkedNews = newsByConflictId.get(conflict.id);
-    if (linkedNews) {
-      selectNews(linkedNews);
-      return;
-    }
-    setSelectedConflictId(conflict.id);
-    focusConflict(conflict);
   };
 
   const navigateToNewsDashboard = () => {
@@ -1475,337 +1389,20 @@ function App() {
     }
   };
 
+  const navigateToNewsArticle = (news: GeotaggedNewsItem) => {
+    setSelectedNewsId(news.id);
+    setActiveView("article");
+    const path = newsArticlePath(news.id);
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+    }
+  };
+
   const navigateToLensDashboard = () => {
     setActiveView("lens");
     if (window.location.pathname !== "/") {
       window.history.pushState({}, "", "/");
     }
-  };
-
-  const activateLensMode = (mode: LensMode) => {
-    if (mode === "news") {
-      navigateToNewsDashboard();
-      return;
-    }
-    setActiveLensMode(mode);
-    if (mode === "pulse" && !selectedConflictId) {
-      setSelectedConflictId(ACTIVE_CONFLICTS[0]?.id ?? null);
-    }
-  };
-
-  const isPaneCollapsed = (pane: PaneKey) => collapsedPanes[pane];
-
-  const togglePane = (pane: PaneKey) => {
-    setCollapsedPanes((current) => ({
-      ...current,
-      [pane]: !current[pane],
-    }));
-  };
-
-  const paneClassName = (baseClass: string, pane: PaneKey) =>
-    `${baseClass} collapsible-pane ${isPaneCollapsed(pane) ? "is-collapsed" : "is-expanded"}`;
-
-  const paneToggle = (pane: PaneKey, label: string, meta?: string) => {
-    const collapsed = isPaneCollapsed(pane);
-    return (
-      <button
-        type="button"
-        className="pane-toggle"
-        aria-expanded={!collapsed}
-        aria-controls={`${pane}-pane-content`}
-        onClick={() => togglePane(pane)}
-      >
-        <span className={`pane-toggle-icon ${collapsed ? "is-plus" : "is-minus"}`} aria-hidden="true" />
-        <span className="pane-toggle-label">{label}</span>
-        {meta ? <span className="pane-toggle-meta">{meta}</span> : null}
-      </button>
-    );
-  };
-
-  const sectorIsoSet = useMemo(() => {
-    if (!selectedSector) return new Set<string>();
-    return new Set([...selectedSector.power_nodes, ...selectedSector.consumption_nodes]);
-  }, [selectedSector]);
-
-  const priorityConflictIds = useMemo(
-    () =>
-      new Set(
-        [...ACTIVE_CONFLICTS]
-          .sort((left, right) => SEVERITY_RANK[right.severity] - SEVERITY_RANK[left.severity])
-          .slice(0, 3)
-          .map((conflict) => conflict.id),
-      ),
-    [],
-  );
-
-  const tradeIsoSet = useMemo(() => {
-    if (!selectedCountry) return new Set<string>();
-    return new Set(
-      selectedCountry.trade_partners
-        .filter((partner) => partner.flow === tradeFlow)
-        .map((partner) => partner.iso3),
-    );
-  }, [selectedCountry, tradeFlow]);
-
-  const arcs = useMemo<ArcDatum[]>(() => {
-    if (!selectedCountry || !selectedSector) return [];
-    const arcColor: [string, string] = [rgba(activeTheme, 0.02), rgba(activeTheme, 0.82)];
-    const mutedArcColor: [string, string] = [rgba(activeTheme, 0), rgba(activeTheme, 0.42)];
-    const routeKeys = new Set<string>();
-    const addArc = (source: Country, target: Country, label: string, color: [string, string]) => {
-      const key = `${source.iso3}-${target.iso3}-${label}`;
-      if (routeKeys.has(key)) return [];
-      routeKeys.add(key);
-      return [
-        {
-          startLat: source.coordinates.lat,
-          startLng: source.coordinates.lng,
-          endLat: target.coordinates.lat,
-          endLng: target.coordinates.lng,
-          color,
-          label,
-        },
-      ];
-    };
-
-    const globalTradeArcs = countries.flatMap((country) =>
-      country.trade_partners.flatMap((partner) => {
-        const target = countryByIso.get(partner.iso3);
-        if (!target) return [];
-        const isSelectedRoute = country.iso3 === selectedCountry.iso3 || target.iso3 === selectedCountry.iso3;
-        return addArc(country, target, `${country.iso3} ${partner.flow} ${target.iso3}`, isSelectedRoute ? arcColor : mutedArcColor);
-      }),
-    );
-
-    const sectorArcs = selectedSector.arcs.flatMap((arc) => {
-      const source = countryByIso.get(arc.source);
-      const target = countryByIso.get(arc.target);
-      if (!source || !target) return [];
-      return addArc(source, target, `${source.iso3} sector ${target.iso3}`, arcColor);
-    });
-
-    const tradeArcs = selectedCountry.trade_partners
-      .filter((partner) => partner.flow === tradeFlow)
-      .flatMap((partner) => {
-        const target = countryByIso.get(partner.iso3);
-        if (!target) return [];
-        const exportMode = partner.flow === "export";
-        return addArc(
-          exportMode ? selectedCountry : target,
-          exportMode ? target : selectedCountry,
-          `${selectedCountry.iso3} ${partner.flow} link: ${partner.name}`,
-          arcColor,
-        );
-      });
-
-    const conflictArcs = selectedConflict
-      ? selectedConflict.transmission.map((target) => ({
-          startLat: selectedConflict.lat,
-          startLng: selectedConflict.lng,
-          endLat: target.lat,
-          endLng: target.lng,
-          color:
-            target.type === "route"
-              ? (["rgba(0, 245, 255, 0.02)", "rgba(0, 245, 255, 0.28)"] as [string, string])
-              : (["rgba(213, 150, 82, 0.02)", "rgba(213, 150, 82, 0.34)"] as [string, string]),
-          label: `${selectedConflict.name} transmission: ${target.label}`,
-          stroke: 0.045,
-        }))
-      : [];
-
-    return [...globalTradeArcs, ...sectorArcs, ...tradeArcs, ...conflictArcs];
-  }, [activeTheme, countries, countryByIso, selectedConflict, selectedCountry, selectedSector, tradeFlow]);
-
-  const points = useMemo<PointDatum[]>(() => {
-    if (!selectedCountry || !selectedSector) return [];
-    const nodePoints = countries.map((country) => ({
-      lat: country.coordinates.lat,
-      lng: country.coordinates.lng,
-      label: `${country.capital} node`,
-      color: activeTheme.accent,
-      radius: 0.25,
-    }));
-
-    const chokepoints = selectedSector.chokepoints.map((point) => ({
-      lat: point.coordinates.lat,
-      lng: point.coordinates.lng,
-      label: point.name,
-      color: activeTheme.accent,
-      radius: 0.22,
-    }));
-
-    return [
-      ...nodePoints,
-      ...chokepoints,
-      {
-        lat: selectedCountry.coordinates.lat,
-        lng: selectedCountry.coordinates.lng,
-        label: `${selectedCountry.name} selected`,
-        color: activeTheme.accent,
-        radius: 0.25,
-      },
-    ];
-  }, [activeTheme, countries, selectedCountry, selectedSector]);
-
-  const conflictVisuals = useMemo<ConflictVisualDatum[]>(
-    () =>
-      ACTIVE_CONFLICTS.map((conflict) => {
-        const selected = conflict.id === selectedConflictId;
-        return {
-          ...conflict,
-          selected,
-          muted: Boolean(selectedConflictId && !selected),
-        };
-      }),
-    [selectedConflictId],
-  );
-
-  const newsVisuals = useMemo<NewsVisualDatum[]>(
-    () =>
-      GEO_NEWS_FEED.map((news) => ({
-        ...news,
-        selected: news.id === selectedNews.id,
-        hovered: news.id === hoveredNewsId,
-      })),
-    [hoveredNewsId, selectedNews.id],
-  );
-
-  useEffect(() => {
-    let frameId = 0;
-    const intervalId = window.setInterval(() => {
-      const globe = globeRef.current;
-      if (!globe) return;
-
-      const pov = globe.pointOfView?.() ?? { lat: 0, lng: 0 };
-      const nextPins = newsVisuals.map((news) => {
-        const coords = globe.getScreenCoords?.(news.lat, news.lng, news.selected ? 0.18 : 0.12) ?? { x: -100, y: -100 };
-        const visible = angularDistanceDegrees({ lat: news.lat, lng: news.lng }, { lat: pov.lat, lng: pov.lng }) < 98;
-        return {
-          ...news,
-          x: Number.isFinite(coords.x) ? coords.x : -100,
-          y: Number.isFinite(coords.y) ? coords.y : -100,
-          visible,
-        };
-      });
-      setScreenNewsPins(nextPins);
-    }, 120);
-
-    frameId = window.requestAnimationFrame(() => {
-      const globe = globeRef.current;
-      if (!globe) return;
-      const pov = globe.pointOfView?.() ?? { lat: 0, lng: 0 };
-      setScreenNewsPins(
-        newsVisuals.map((news) => {
-          const coords = globe.getScreenCoords?.(news.lat, news.lng, news.selected ? 0.18 : 0.12) ?? { x: -100, y: -100 };
-          return {
-            ...news,
-            x: Number.isFinite(coords.x) ? coords.x : -100,
-            y: Number.isFinite(coords.y) ? coords.y : -100,
-            visible: angularDistanceDegrees({ lat: news.lat, lng: news.lng }, { lat: pov.lat, lng: pov.lng }) < 98,
-          };
-        }),
-      );
-    });
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [height, newsVisuals, width]);
-
-  const conflictRings = useMemo<RingDatum[]>(
-    () =>
-      ACTIVE_CONFLICTS.filter((conflict) => conflict.severity !== "Watch" || conflict.id === selectedConflictId).flatMap((conflict) => {
-        const selected = conflict.id === selectedConflictId;
-        const critical = conflict.severity === "Critical";
-        const primaryRing = {
-          lat: conflict.lat,
-          lng: conflict.lng,
-          color: conflictRingColor(conflict.severity),
-          maxRadius: selected ? 8.4 : critical ? 3.1 : conflict.severity === "High" ? 2.7 : 1.9,
-          repeatPeriod: selected ? 3100 : critical ? 3400 : 4300,
-          propagationSpeed: selected ? 1.8 : critical ? 0.72 : 0.52,
-        };
-        if (!selected) return [primaryRing];
-        return [
-          primaryRing,
-          {
-            lat: conflict.lat,
-            lng: conflict.lng,
-            color: conflictRingColor(conflict.severity),
-            maxRadius: 11.4,
-            repeatPeriod: 4700,
-            propagationSpeed: 2.25,
-          },
-        ];
-      }),
-    [selectedConflictId],
-  );
-
-  const labels = useMemo<LabelDatum[]>(() => {
-    if (!selectedSector) return [];
-    const focusIsoSet = new Set(["IND", "USA", "ARE", "SAU", "TWN"]);
-    const countryLabels = countries
-      .filter((country) => focusIsoSet.has(country.iso3))
-      .map((country) => ({
-        lat: country.coordinates.lat,
-        lng: country.coordinates.lng,
-        text: country.capital.toUpperCase(),
-        kind: "country" as const,
-      }));
-    const chokepointLabels = selectedSector.chokepoints.slice(0, 1).map((point) => ({
-      lat: point.coordinates.lat,
-      lng: point.coordinates.lng,
-      text: point.name.toUpperCase(),
-      kind: "chokepoint" as const,
-    }));
-    const conflictLabels = ACTIVE_CONFLICTS.filter(
-      (conflict) => conflict.id === selectedConflictId || priorityConflictIds.has(conflict.id),
-    ).map((conflict) => {
-      const selected = conflict.id === selectedConflictId;
-      return {
-        lat: conflict.lat + (selected ? 0.15 : 0),
-        lng: conflict.lng + (selected ? 3.4 : 1.1),
-        text: conflict.name,
-        kind: "conflict" as const,
-        selected,
-      };
-    });
-
-    return [...countryLabels, ...chokepointLabels, ...conflictLabels];
-  }, [countries, priorityConflictIds, selectedConflictId, selectedSector]);
-
-  const borderPaths = useMemo<RenderPathDatum[]>(() => {
-    const withAltitude = (path: BoundaryPathDatum, iso3?: string, source?: string): RenderPathDatum => ({
-      ...path,
-      iso3,
-      source: source ?? path.source,
-      points: path.points.map((point) => ({
-        ...point,
-        borderAlt: source === "survey-of-india" ? INDIA_BORDER_ALTITUDE : ATLAS_BORDER_ALTITUDE,
-      })),
-    });
-    const atlasPaths = COUNTRY_BORDER_PATHS.flatMap((path) => {
-      if (path.id === "356") return [];
-      const iso3 = path.id ? isoByNumeric.get(path.id) : undefined;
-      if (!iso3) return [];
-      return [withAltitude(path, iso3)];
-    });
-    const indiaPaths = INDIA_BOUNDARY_PATHS.map((path) => withAltitude(path, "IND", "survey-of-india"));
-
-    return [...atlasPaths, ...indiaPaths];
-  }, [isoByNumeric]);
-
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const frame = window.requestAnimationFrame(() => stabilizeBoundaryPathMaterials(globeRef.current));
-    return () => window.cancelAnimationFrame(frame);
-  }, [borderPaths]);
-
-  const handlePolygonClick = (feature: object) => {
-    const iso3 = (feature as GlobeCountryFeature).properties.iso3;
-    if (!iso3 || !countryByIso.has(iso3)) return;
-    selectCountry(iso3);
   };
 
   if (error) {
@@ -1835,183 +1432,24 @@ function App() {
     return <NewsDashboard data={data} onBack={navigateToLensDashboard} />;
   }
 
-  if (!selectedCountry || !selectedSector) {
+  if (activeView === "article") {
     return (
-      <main className="app-shell">
-        <div className="loading-panel">
-          <span className="pulse-dot" />
-          <p>Calibrating sovereign risk layers</p>
-        </div>
-      </main>
+      <NewsArticleView
+        news={selectedNews}
+        sectors={sectors}
+        selectedSectorId={selectedSector?.id ?? selectedSectorId}
+        onBack={navigateToLensDashboard}
+        onOpenFeed={navigateToNewsDashboard}
+        onSectorSelect={selectSector}
+      />
     );
   }
 
   return (
-    <main
-      className="app-shell"
-      style={
-        {
-          "--accent": PREMIUM_ORANGE_THEME.accent,
-          "--accent-rgb": PREMIUM_ORANGE_THEME.rgb,
-          "--accent-on": PREMIUM_ORANGE_THEME.onAccent,
-        } as React.CSSProperties
-      }
-      >
-      <div className="globe-stage" aria-label="Interactive 3D geopolitical risk globe">
-        <Globe
-          ref={globeRef}
-          width={width}
-          height={height}
-          globeOffset={width > 980 ? [-Math.round(width * 0.12), 18] : [0, 12]}
-          rendererConfig={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-          globeImageUrl={API_IMAGE_EARTH}
-          backgroundColor="rgba(0, 5, 10, 0)"
-          showAtmosphere
-          atmosphereColor="#a9c7c8"
-          atmosphereAltitude={0.13}
-          enablePointerInteraction
-          lineHoverPrecision={0.35}
-          showPointerCursor
-          polygonsData={countryFeatures}
-          polygonsTransitionDuration={0}
-          polygonCapColor={() => "rgba(58, 79, 86, 0.72)"}
-          polygonSideColor={() => "rgba(3, 16, 20, 0.34)"}
-          polygonStrokeColor={() => "rgba(135, 165, 169, 0)"}
-          polygonAltitude={0.012}
-          polygonCapCurvatureResolution={1}
-          onPolygonClick={handlePolygonClick}
-          pathsData={borderPaths}
-          pathPoints="points"
-          pathPointLat={(point: object) => (point as BoundaryPathPoint).lat}
-          pathPointLng={(point: object) => (point as BoundaryPathPoint).lng}
-          pathPointAlt={(point: object) => (point as RenderPathPoint).borderAlt}
-          pathResolution={1}
-          pathColor={(path: object) => {
-            const borderPath = path as BoundaryPathDatum;
-            if (borderPath.iso3 === highlightIso) return rgba(activeTheme, 0.82);
-            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) {
-              return rgba(activeTheme, 0.56);
-            }
-            return "rgba(218, 226, 226, 0.28)";
-          }}
-          pathStroke={(path: object) => {
-            const borderPath = path as BoundaryPathDatum;
-            if (borderPath.iso3 === highlightIso) return SELECTED_BORDER_STROKE;
-            if (sectorHighlightsActive && borderPath.iso3 && (sectorIsoSet.has(borderPath.iso3) || tradeIsoSet.has(borderPath.iso3))) {
-              return LINKED_BORDER_STROKE;
-            }
-            if (borderPath.source === "survey-of-india") return INDIA_BORDER_STROKE;
-            return DEFAULT_BORDER_STROKE;
-          }}
-          pathTransitionDuration={0}
-          arcsData={arcs}
-          arcStartLat="startLat"
-          arcStartLng="startLng"
-          arcEndLat="endLat"
-          arcEndLng="endLng"
-          arcColor={(arc: object) => (arc as ArcDatum).color}
-          arcStroke={(arc: object) => (arc as ArcDatum).stroke ?? 0.12}
-          arcAltitude={0.2}
-          arcCurveResolution={32}
-          arcCircularResolution={1}
-          arcDashLength={0.4}
-          arcDashGap={4}
-          arcDashInitialGap={(arc: object) => ((arc as ArcDatum).label.length % 17) / 17}
-          arcDashAnimateTime={2600}
-          pointsData={points}
-          pointLat="lat"
-          pointLng="lng"
-          pointColor="color"
-          pointRadius={(point: object) => (point as PointDatum).radius}
-          pointAltitude={() => 0.012}
-          pointLabel="label"
-          pointResolution={8}
-          pointsTransitionDuration={0}
-          objectsData={conflictVisuals}
-          objectLat="lat"
-          objectLng="lng"
-          objectAltitude={(object: object) => ((object as ConflictVisualDatum).selected ? 0.07 : 0.052)}
-          // react-globe.gl uses this singular prop at runtime, while its types currently expose a plural name.
-          {...({ objectFacesSurface: false } as any)}
-          objectThreeObject={(object: object) => createConflictMarkerObject(object as ConflictVisualDatum)}
-          objectLabel={(object: object) => {
-            const conflict = object as ConflictVisualDatum;
-            return `${conflict.name}: ${conflict.severity}`;
-          }}
-          onObjectHover={(object: object | null) => {
-            const conflict = object as ConflictVisualDatum | null;
-            setHoveredNewsId(conflict ? newsByConflictId.get(conflict.id)?.id ?? null : null);
-          }}
-          onObjectClick={(object: object) => selectConflict(object as ConflictDatum)}
-          ringsData={conflictRings}
-          ringLat="lat"
-          ringLng="lng"
-          ringColor="color"
-          ringMaxRadius="maxRadius"
-          ringPropagationSpeed="propagationSpeed"
-          ringRepeatPeriod="repeatPeriod"
-          ringAltitude={0.036}
-          ringResolution={48}
-          labelsData={labels}
-          labelLat="lat"
-          labelLng="lng"
-          labelText="text"
-          labelSize={(label: object) => {
-            const item = label as LabelDatum;
-            if (item.kind !== "conflict") return 0.46;
-            return item.selected ? 0.9 : 0.66;
-          }}
-          labelDotRadius={(label: object) => ((label as LabelDatum).kind === "conflict" ? 0.03 : 0.08)}
-          labelIncludeDot={(label: object) => (label as LabelDatum).kind !== "conflict"}
-          labelAltitude={(label: object) => ((label as LabelDatum).kind === "conflict" ? 0.066 : 0.018)}
-          labelColor={(label: object) => {
-            const item = label as LabelDatum;
-            if (item.kind !== "conflict") return "rgba(222, 230, 232, 0.52)";
-            return item.selected ? "rgba(255, 232, 216, 0.96)" : "rgba(231, 221, 204, 0.72)";
-          }}
-          labelResolution={1}
-        />
-        <GlobeNewsPins pins={screenNewsPins} onHover={setHoveredNewsId} onSelect={selectNews} />
-      </div>
-
-      <header className="home-dashboard-topbar" aria-label="Sovereign Lens navigation">
-        <div className="home-wordmark" aria-label="Sovereign Lens">
-          <span>Sovereign</span>
-          <strong>Lens</strong>
-        </div>
-        <span className="home-topbar-rule" aria-hidden="true" />
-        <p>Geopolitical risk command</p>
-        <button
-          type="button"
-          className="home-news-button"
-          aria-label="Open News Pulse dashboard"
-          onClick={navigateToNewsDashboard}
-        >
-          News Pulse
-        </button>
-        <label className="home-search">
-          <span className="sr-only">Search countries, sectors, or conflicts</span>
-          <input type="search" placeholder="Search countries, sectors, or conflicts..." />
-          <span className="events-search-icon" aria-hidden="true" />
-        </label>
-      </header>
-
-      <MarketTape basket={activeTapeBasket} />
-
-      <AiInsightPanel
-        news={selectedNews}
-        sectors={sectors}
-        selectedSectorId={selectedSector?.id ?? selectedSectorId}
-        onSectorSelect={selectSector}
-      />
-
-      <RelatedNewsPanel
-        items={GEO_NEWS_FEED}
-        selectedNewsId={selectedNews.id}
-        hoveredNewsId={hoveredNewsId}
-        onSelect={selectNews}
-        onHover={setHoveredNewsId}
-      />
+    <main className="app-shell global-monitor-app">
+      <GlobalBrandNav onHome={navigateToLensDashboard} />
+      <MarketTape basket={GLOBAL_MARKET_TAPE} />
+      <GlobeMonitor />
     </main>
   );
 }

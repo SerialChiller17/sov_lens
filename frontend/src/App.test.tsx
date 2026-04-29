@@ -1,36 +1,19 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import type { BootstrapData } from "./types";
 
-vi.mock("react-globe.gl", () => ({
-  default: ({ polygonsData = [], onPolygonClick, objectsData = [], onObjectClick, onObjectHover }: any) => (
-    <div data-testid="globe">
-      {polygonsData
-        .filter((feature: any) => feature.properties.iso3)
-        .map((feature: any) => (
-          <button
-            key={feature.properties.iso3}
-            data-testid={`polygon-${feature.properties.iso3}`}
-            onClick={() => onPolygonClick(feature)}
-          >
-            {feature.properties.iso3}
-          </button>
-        ))}
-      {objectsData.map((object: any) => (
-        <button
-          key={object.id}
-          data-testid={`object-${object.id}`}
-          onClick={() => onObjectClick?.(object)}
-          onMouseEnter={() => onObjectHover?.(object, null)}
-          onMouseLeave={() => onObjectHover?.(null, object)}
-        >
-          {object.name}
-        </button>
-      ))}
-    </div>
-  ),
+vi.mock("cobe", () => ({
+  default: vi.fn(() => ({
+    update: vi.fn(),
+    destroy: vi.fn(),
+  })),
 }));
+
+class ResizeObserverMock {
+  observe() {}
+  disconnect() {}
+}
 
 const bootstrap: BootstrapData = {
   countries: [
@@ -216,6 +199,7 @@ const bootstrap: BootstrapData = {
 
 beforeEach(() => {
   window.history.pushState({}, "", "/");
+  vi.stubGlobal("ResizeObserver", ResizeObserverMock);
   vi.stubGlobal(
     "fetch",
     vi.fn((url: string) => {
@@ -236,25 +220,59 @@ beforeEach(() => {
 });
 
 describe("Sovereign Lens app", () => {
-  it("renders the geotagged news intelligence layout around the globe", async () => {
+  it("renders the cinematic global intelligence monitor", async () => {
     render(<App />);
 
-    expect(await screen.findByRole("complementary", { name: /AI insight explainer/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Bab el-Mandeb corridor" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: /Related geotagged news/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Hydrocarbons Route premium/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open News Pulse dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: /Search countries, sectors, or conflicts/i })).toBeInTheDocument();
-    expect(screen.getByTestId("polygon-IND")).toBeInTheDocument();
-    expect(screen.getByTestId("object-red-sea")).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /Global Intelligence Monitor/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Live geopolitical and market event surface/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Market and risk tape/i })).toBeInTheDocument();
+    expect(screen.getByText("Live Markets")).toBeInTheDocument();
+    const panel = screen.getByRole("complementary", { name: /Global intelligence monitor panel/i });
+    expect(within(panel).getByRole("button", { name: "Filter" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("heading", { name: /Live News Feed: High Impact Events/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /System status/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Selected event details/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "REQUEST DETAILED ANALYSIS" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Sovereign AI analysis/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Selected globe news panel/i)).toHaveTextContent(/Red Sea Shipping Risk/i);
+    expect(screen.getByRole("region", { name: /Most affected sectors and stocks/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Related news/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Egypt Trade Context/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Active data context/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Open event details: China Demand Pulse/i })).toBeInTheDocument();
   });
 
-  it("opens the global events dashboard from the top news control", async () => {
+  it("toggles globe cards into the AI context", async () => {
     render(<App />);
+    await screen.findByRole("button", { name: /Open event details: Red Sea Shipping Risk/i });
 
-    fireEvent.click(await screen.findByRole("button", { name: /Open News Pulse dashboard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Open event details: China Demand Pulse/i }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /Open event details: China Demand Pulse/i })).toHaveClass("is-selected"));
+    expect(screen.getByRole("region", { name: /Sovereign AI analysis/i })).toHaveTextContent(/China/i);
+    expect(screen.getByLabelText(/Selected globe news panel/i)).toHaveTextContent(/China Demand Pulse/i);
+    fireEvent.click(screen.getByRole("button", { name: /Open event details: China Demand Pulse/i }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Open event details: China Demand Pulse/i })).not.toHaveClass("is-selected"));
+    expect(screen.getByRole("region", { name: /Sovereign AI analysis/i })).not.toHaveTextContent(/China/i);
+    expect(screen.queryByRole("region", { name: /Selected event details/i })).not.toBeInTheDocument();
+  });
+
+  it("filters the monitor by issue type using mock data", async () => {
+    render(<App />);
+    await screen.findByRole("button", { name: /Open event details: Red Sea Shipping Risk/i });
+
+    const filterButton = screen.getByRole("button", { name: "Filter" });
+    fireEvent.click(filterButton);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Energy" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /Open event details: Energy Import Exposure/i })).toBeInTheDocument());
+    expect(filterButton).toHaveClass("is-active");
+    expect(screen.queryByRole("button", { name: /Open event details: Red Sea Shipping Risk/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the global events dashboard from a direct route", async () => {
+    window.history.pushState({}, "", "/news-pulse");
+    render(<App />);
 
     expect(await screen.findByRole("heading", { name: /Global Event Archive/i })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: /Search events, regions, or topics/i })).toBeInTheDocument();
@@ -263,65 +281,27 @@ describe("Sovereign Lens app", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Lens" }));
 
-    await waitFor(() => expect(screen.getByRole("complementary", { name: /AI insight explainer/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("region", { name: /Global Intelligence Monitor/i })).toBeInTheDocument());
     expect(window.location.pathname).toBe("/");
   });
 
-  it("updates the AI insight from a globe location click", async () => {
+  it("opens a full article from a direct article route", async () => {
+    window.history.pushState({}, "", "/news-pulse/red-sea-freight");
     render(<App />);
-    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
 
-    fireEvent.click(await screen.findByTestId("object-taiwan-strait"));
-
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Taiwan Strait" })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Taiwan Strait activity widens chip continuity hedge/i })).toBeInTheDocument();
-    expect(screen.getByText(/TAIEX, SOXX, KRW/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument());
+    expect(screen.getByText("Full news article")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/news-pulse/red-sea-freight");
   });
 
-  it("uses connected sector buttons to switch the active sector", async () => {
+  it("uses article sector controls without breaking the legacy article view", async () => {
+    window.history.pushState({}, "", "/news-pulse/red-sea-freight");
     render(<App />);
-    await screen.findByRole("complementary", { name: /AI insight explainer/i });
+    await screen.findByRole("heading", { name: /Red Sea security posture keeps freight insurance bid/i });
 
     const hydrocarbons = screen.getByRole("button", { name: /Hydrocarbons Route premium/i });
     fireEvent.click(hydrocarbons);
 
     expect(hydrocarbons).toHaveClass("is-active");
-    expect(screen.getAllByText("Shipping Insurance").length).toBeGreaterThan(0);
-    expect(screen.queryByText("NVIDIA")).not.toBeInTheDocument();
-  });
-
-  it("uses the related news cards to select the active location", async () => {
-    render(<App />);
-    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
-
-    fireEvent.click(screen.getByRole("button", { name: /Ukraine infrastructure risk keeps Europe energy hedge alive/i }));
-
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Ukraine / Black Sea" })).toBeInTheDocument());
-    expect(screen.getByText(/European gas, wheat, defense primes/i)).toBeInTheDocument();
-  });
-
-  it("highlights the related card when a globe marker is hovered", async () => {
-    render(<App />);
-    await screen.findByRole("heading", { name: "Bab el-Mandeb corridor" });
-
-    fireEvent.mouseEnter(screen.getByTestId("object-myanmar"));
-
-    expect(screen.getByRole("button", { name: /Myanmar border pressure disrupts rare-earth logistics/i })).toHaveClass("is-hovered");
-  });
-
-  it("keeps global tape items while swapping the sector tape items", async () => {
-    render(<App />);
-    await screen.findByRole("complementary", { name: /AI insight explainer/i });
-
-    expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("NVIDIA").length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getByRole("button", { name: /Hydrocarbons Route premium/i }));
-
-    expect(screen.getAllByText("DXY").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("US10Y").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Shipping Insurance").length).toBeGreaterThan(0);
-    expect(screen.queryByText("NVIDIA")).not.toBeInTheDocument();
   });
 });

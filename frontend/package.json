@@ -11,12 +11,9 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "cobe": "^2.0.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-globe.gl": "^2.31.1",
-    "three": "^0.172.0",
-    "topojson-client": "^3.1.0",
-    "world-atlas": "^2.0.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -24,7 +21,6 @@
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "@types/topojson-client": "^3.1.5",
     "jsdom": "^26.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
