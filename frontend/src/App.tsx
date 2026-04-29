@@ -698,6 +698,10 @@ function GlobalBrandNav({ onHome }: { onHome: () => void }) {
         <span>Sovereign</span>
         <strong>Lens</strong>
       </button>
+      <button type="button" className="global-portfolio-button" aria-label="Open your portfolio">
+        <span>Your</span>
+        <strong>Portfolio</strong>
+      </button>
     </nav>
   );
 }

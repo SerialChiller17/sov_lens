@@ -156,7 +156,7 @@ function GlobeHotspotLayer({
         id: event.id,
         location: [event.lat, event.lng],
         size: markerSize(event, selectedEventIds, hoveredEventId),
-        color: selectedEventIds.includes(event.id) || event.id === hoveredEventId ? [0.82, 0.42, 0.22] : [0.98, 0.05, 0.035],
+        color: selectedEventIds.includes(event.id) || event.id === hoveredEventId ? [1, 0.94, 0.78] : [0.92, 0.86, 0.68],
       })),
     [events, hoveredEventId, selectedEventIds],
   );
@@ -184,9 +184,9 @@ function GlobeHotspotLayer({
       mapSamples: size.width < 720 ? 15000 : 30000,
       mapBrightness: 12.8,
       mapBaseBrightness: 0.018,
-      baseColor: [0.12, 0.12, 0.135],
-      markerColor: [1, 0.07, 0.04],
-      glowColor: [0.44, 0.44, 0.5],
+      baseColor: [0.12, 0.115, 0.1],
+      markerColor: [0.96, 0.9, 0.72],
+      glowColor: [0.86, 0.82, 0.68],
       markerElevation: 0.075,
       opacity: 0.96,
       scale,
@@ -516,6 +516,9 @@ function IntelligencePanel({
         ) : null}
       </section>
 
+      <div className="monitor-scroll-cue" aria-hidden="true">
+        <span />
+      </div>
     </aside>
   );
 }
