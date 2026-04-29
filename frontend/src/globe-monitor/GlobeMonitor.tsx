@@ -14,12 +14,17 @@ const LABEL_SAFE_BOTTOM = 18;
 const LABEL_SAFE_EDGE = 12;
 const LABEL_BOX_WIDTH = 116;
 const LABEL_BOX_HEIGHT = 38;
-const HOTSPOT_SAFE_EDGE = 34;
+const HOTSPOT_SAFE_EDGE = 56;
 
 interface ProjectedPosition {
   x: number;
   y: number;
   visible: boolean;
+}
+
+interface LabelAnchor {
+  x: number;
+  y: number;
 }
 
 function impactClass(impact: GlobeMonitorEvent["impact"]) {
@@ -61,16 +66,55 @@ function useElementSize<T extends HTMLElement>() {
 
     const updateSize = () => {
       const rect = element.getBoundingClientRect();
-      setSize({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      const nextSize = { width: Math.round(rect.width), height: Math.round(rect.height) };
+      setSize((currentSize) =>
+        currentSize.width === nextSize.width && currentSize.height === nextSize.height ? currentSize : nextSize,
+      );
     };
 
     updateSize();
     const observer = new ResizeObserver(updateSize);
     observer.observe(element);
-    return () => observer.disconnect();
+    window.addEventListener("resize", updateSize);
+    window.visualViewport?.addEventListener("resize", updateSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateSize);
+      window.visualViewport?.removeEventListener("resize", updateSize);
+    };
   }, []);
 
   return { ref, size };
+}
+
+function useDevicePixelRatio() {
+  const readPixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
+  const [pixelRatio, setPixelRatio] = useState(readPixelRatio);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const updatePixelRatio = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const nextPixelRatio = readPixelRatio();
+        setPixelRatio((currentPixelRatio) => (currentPixelRatio === nextPixelRatio ? currentPixelRatio : nextPixelRatio));
+      });
+    };
+
+    updatePixelRatio();
+    window.addEventListener("resize", updatePixelRatio);
+    window.visualViewport?.addEventListener("resize", updatePixelRatio);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updatePixelRatio);
+      window.visualViewport?.removeEventListener("resize", updatePixelRatio);
+    };
+  }, []);
+
+  return pixelRatio;
 }
 
 function sortByPriority(a: GlobeMonitorEvent, b: GlobeMonitorEvent) {
@@ -122,6 +166,46 @@ function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function globeRenderScale(width: number, height: number) {
+  const minSide = Math.min(width, height);
+  const haloGuardPx = clampNumber(minSide * 0.05, 36, 58);
+  const safeBodyRadius = 1 - (haloGuardPx * 2) / Math.max(minSide, 1);
+  return clampNumber(safeBodyRadius / 0.8, 1.04, 1.18);
+}
+
+function maxVisibleLabels(stageSize: { width: number; height: number }) {
+  const minSide = Math.min(stageSize.width, stageSize.height);
+  if (minSide < 620) return 5;
+  if (minSide < 760) return 7;
+  if (minSide < 980) return 9;
+  return 11;
+}
+
+function labelAnchor(event: GlobeMonitorEvent, position: ProjectedPosition, stageSize: { width: number; height: number }): LabelAnchor {
+  const preferredX = position.x + (event.labelOffset?.x ?? 0);
+  const preferredY = position.y - LABEL_BOX_HEIGHT + (event.labelOffset?.y ?? 0);
+  const halfWidth = LABEL_BOX_WIDTH / 2;
+  const halfHeight = LABEL_BOX_HEIGHT / 2;
+
+  return {
+    x: clampNumber(preferredX, LABEL_SAFE_EDGE + halfWidth, stageSize.width - LABEL_SAFE_EDGE - halfWidth),
+    y: clampNumber(preferredY, LABEL_SAFE_TOP + halfHeight, stageSize.height - LABEL_SAFE_BOTTOM - halfHeight),
+  };
+}
+
+function labelCollisionScore(event: GlobeMonitorEvent, selectedIds: string[], hoveredId: string | null) {
+  if (selectedIds.includes(event.id)) return -100;
+  if (event.id === hoveredId) return -90;
+  return event.priority * 10 - IMPACT_RANK[event.impact];
+}
+
+function labelsOverlap(
+  a: { left: number; right: number; top: number; bottom: number },
+  b: { left: number; right: number; top: number; bottom: number },
+) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
 function GlobeHotspotLayer({
   events,
   selectedEventIds,
@@ -144,13 +228,53 @@ function GlobeHotspotLayer({
   const isPausedRef = useRef(false);
   const [projectedPositions, setProjectedPositions] = useState<Record<string, ProjectedPosition>>({});
   const { ref: stageRef, size } = useElementSize<HTMLDivElement>();
+  const pixelRatio = useDevicePixelRatio();
 
   const visibleLabelEvents = useMemo(() => {
-    const sorted = [...events].sort(sortByPriority);
-    return sorted
-      .filter((event, index) => event.priority <= 2 || selectedEventIds.includes(event.id) || event.id === hoveredEventId || index < 10)
-      .slice(0, 14);
-  }, [events, hoveredEventId, selectedEventIds]);
+    const sorted = [...events].sort(
+      (a, b) =>
+        labelCollisionScore(a, selectedEventIds, hoveredEventId) - labelCollisionScore(b, selectedEventIds, hoveredEventId) ||
+        sortByPriority(a, b),
+    );
+
+    if (size.width <= 0 || size.height <= 0 || Object.keys(projectedPositions).length === 0) {
+      return sorted.filter((event) => event.priority <= 2 || selectedEventIds.includes(event.id) || event.id === hoveredEventId).slice(0, 8);
+    }
+
+    const accepted: GlobeMonitorEvent[] = [];
+    const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+    const labelLimit = maxVisibleLabels(size);
+    const collisionPadding = size.width < 760 ? 12 : 8;
+
+    for (const event of sorted) {
+      const isPinned = selectedEventIds.includes(event.id) || event.id === hoveredEventId;
+      const position = projectedPositions[event.id];
+
+      if (!position?.visible) continue;
+      if (!isPinned && event.priority > 2 && accepted.length >= labelLimit) continue;
+
+      const anchor = labelAnchor(event, position, size);
+      const halfWidth = LABEL_BOX_WIDTH / 2 + collisionPadding;
+      const halfHeight = LABEL_BOX_HEIGHT / 2 + collisionPadding;
+      const rect = {
+        left: anchor.x - halfWidth,
+        right: anchor.x + halfWidth,
+        top: anchor.y - halfHeight,
+        bottom: anchor.y + halfHeight,
+      };
+
+      if (!isPinned && occupied.some((existingRect) => labelsOverlap(rect, existingRect))) continue;
+
+      accepted.push(event);
+      occupied.push(rect);
+
+      if (accepted.length >= labelLimit && !sorted.some((candidate) => selectedEventIds.includes(candidate.id) && !accepted.includes(candidate))) {
+        break;
+      }
+    }
+
+    return accepted;
+  }, [events, hoveredEventId, projectedPositions, selectedEventIds, size]);
 
   const markers = useMemo<Marker[]>(
     () =>
@@ -178,13 +302,12 @@ function GlobeHotspotLayer({
     const canvas = canvasRef.current;
     if (!canvas || size.width < 120 || size.height < 120) return;
 
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     let frame = 0;
     let frameCount = 0;
     let width = size.width;
     let height = size.height;
     const theta = size.width < 720 ? 0.18 : 0.25;
-    const scale = size.width < 720 ? 1.14 : 1.36;
+    const scale = globeRenderScale(width, height);
 
     const globe = createGlobe(canvas, {
       width,
@@ -244,7 +367,7 @@ function GlobeHotspotLayer({
       globe.destroy();
       if (globeRef.current === globe) globeRef.current = null;
     };
-  }, [size.height, size.width]);
+  }, [pixelRatio, size.height, size.width]);
 
   const directCompanionTowardGlobe = (target: HTMLDivElement, clientX?: number, clientY?: number, duration = 60000) => {
     const rect = target.getBoundingClientRect();
@@ -375,17 +498,12 @@ function labelPositionStyle(
     return hotspotPositionStyle(event, position);
   }
 
-  const preferredX = position.x + (event.labelOffset?.x ?? 0);
-  const preferredY = position.y - LABEL_BOX_HEIGHT + (event.labelOffset?.y ?? 0);
-  const halfWidth = LABEL_BOX_WIDTH / 2;
-  const halfHeight = LABEL_BOX_HEIGHT / 2;
-  const safeX = clampNumber(preferredX, LABEL_SAFE_EDGE + halfWidth, stageSize.width - LABEL_SAFE_EDGE - halfWidth);
-  const safeY = clampNumber(preferredY, LABEL_SAFE_TOP + halfHeight, stageSize.height - LABEL_SAFE_BOTTOM - halfHeight);
+  const anchor = labelAnchor(event, position, stageSize);
 
   return {
     "--anchor-visible": `${position.visible === false ? 0 : 0.98}`,
-    "--screen-x": `${safeX.toFixed(2)}px`,
-    "--screen-y": `${safeY.toFixed(2)}px`,
+    "--screen-x": `${anchor.x.toFixed(2)}px`,
+    "--screen-y": `${anchor.y.toFixed(2)}px`,
     "--fallback-x": `${event.fallbackPosition?.x ?? 50}%`,
     "--fallback-y": `${event.fallbackPosition?.y ?? 50}%`,
   } as React.CSSProperties & Record<string, string | undefined>;

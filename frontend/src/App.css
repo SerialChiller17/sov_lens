@@ -6837,6 +6837,7 @@ button {
 }
 
 .global-monitor-app {
+  padding: 0;
   overflow: hidden;
   background:
     radial-gradient(circle at 35% 40%, rgba(255, 255, 255, 0.075), transparent 18rem),
@@ -6850,9 +6851,25 @@ button {
 }
 
 .global-monitor-shell {
+  --monitor-globe-bottom: clamp(0.2rem, 0.5vh, 0.55rem);
+  --monitor-globe-gutter: clamp(0.35rem, 0.8vw, 0.8rem);
+  --monitor-globe-top: clamp(4.05rem, 4.8vh, 4.2rem);
+  --monitor-globe-size: min(
+    calc(100% - var(--monitor-globe-gutter) - var(--monitor-globe-gutter)),
+    calc(100dvh - var(--monitor-globe-top) - var(--monitor-globe-bottom))
+  );
+  --monitor-panel-bottom: clamp(0.7rem, 1.5vw, 1.5rem);
+  --monitor-panel-gap: clamp(1.5rem, 1.8vw, 2.25rem);
+  --monitor-panel-gutter: clamp(0.7rem, 1.5vw, 1.5rem);
+  --monitor-panel-top: 4.05rem;
+  --monitor-panel-width-target: clamp(32rem, 56vw, 94rem);
+  --monitor-panel-width: min(
+    var(--monitor-panel-width-target),
+    calc(100% - var(--monitor-globe-size) - var(--monitor-globe-gutter) - var(--monitor-panel-gap))
+  );
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(30rem, 39vw, 47rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--monitor-panel-width));
   width: 100%;
   height: 100%;
   min-height: 100vh;
@@ -6957,6 +6974,7 @@ button {
 .monitor-globe-zone {
   min-width: 0;
   min-height: 0;
+  isolation: isolate;
 }
 
 .monitor-selected-news-panel {
@@ -6965,9 +6983,9 @@ button {
   left: clamp(1.15rem, 3.2vw, 3.4rem);
   z-index: 7;
   display: grid;
-  grid-template-columns: 7.2rem minmax(0, 1fr);
+  grid-template-columns: clamp(5.9rem, 9vw, 7.2rem) minmax(0, 1fr);
   gap: 0.7rem;
-  width: min(28rem, 43vw);
+  width: min(28rem, calc(100% - clamp(2.5rem, 6vw, 4.5rem)));
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   padding: 0.56rem;
@@ -6983,8 +7001,8 @@ button {
 }
 
 .monitor-selected-news-panel img {
-  width: 7.2rem;
-  height: 5.15rem;
+  width: 100%;
+  height: clamp(4.35rem, 6.5vw, 5.15rem);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 7px;
   display: block;
@@ -7076,13 +7094,16 @@ button {
 
 .monitor-globe-stage {
   position: absolute;
-  inset: 3.72rem auto auto clamp(0rem, 0.25vw, 0.4rem);
-  width: min(83vw, calc(100vh - 1.7rem));
-  height: min(83vw, calc(100vh - 1.7rem));
-  min-width: min(51.25rem, calc(100vh - 1.7rem));
-  min-height: min(51.25rem, calc(100vh - 1.7rem));
+  top: var(--monitor-globe-top);
+  left: var(--monitor-globe-gutter);
+  width: var(--monitor-globe-size);
+  max-width: calc(100% - var(--monitor-globe-gutter) - var(--monitor-globe-gutter));
+  aspect-ratio: 1;
   border-radius: 50%;
   cursor: grab;
+  overflow: visible;
+  min-width: 0;
+  min-height: 0;
   touch-action: none;
 }
 
@@ -7122,6 +7143,8 @@ button {
   display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   filter: contrast(1.44) brightness(1.44) drop-shadow(0 0 0.75rem rgba(255, 255, 255, 0.045));
 }
 
@@ -7129,6 +7152,7 @@ button {
   position: absolute;
   inset: 0;
   z-index: 5;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -7292,9 +7316,12 @@ button {
 .monitor-intelligence-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  align-self: stretch;
   gap: 0;
-  height: calc(100vh - 4.75rem);
-  margin: 4.05rem clamp(0.7rem, 1.5vw, 1.5rem) clamp(0.7rem, 1.5vw, 1.5rem) 0;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  margin: var(--monitor-panel-top) var(--monitor-panel-gutter) var(--monitor-panel-bottom) 0;
   padding: 0.25rem;
   overflow: visible;
   scrollbar-width: thin;
@@ -7383,8 +7410,9 @@ button {
 
 .monitor-filter-card {
   position: absolute;
-  bottom: clamp(0.25rem, 1.1vh, 0.75rem);
-  left: clamp(-15rem, -11.5vw, -9rem);
+  right: calc(100% + clamp(0.75rem, 1.4vw, 1.25rem));
+  bottom: var(--monitor-globe-bottom);
+  left: auto;
   z-index: 12;
   width: max-content;
   overflow: visible;
@@ -7394,7 +7422,7 @@ button {
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
-  transform: translate(-0.5cm, 0.25cm);
+  transform: none;
 }
 
 .monitor-filter-card::before {
@@ -8151,7 +8179,7 @@ button {
 }
 
 .monitor-ai-response {
-  max-width: min(45rem, 100%);
+  max-width: min(68rem, 100%);
 }
 
 .monitor-ai-response p {
@@ -8172,7 +8200,7 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
-  max-width: min(45rem, 100%);
+  max-width: min(68rem, 100%);
 }
 
 .monitor-impact-grid > div,
@@ -8249,11 +8277,11 @@ button {
 }
 
 .monitor-related-news {
-  max-width: min(45rem, 100%);
+  max-width: min(68rem, 100%);
 }
 
 .monitor-suggested-plays {
-  max-width: min(45rem, 100%);
+  max-width: min(68rem, 100%);
 }
 
 .monitor-suggested-plays > span {
@@ -8467,11 +8495,14 @@ button {
 }
 
 .global-monitor-app .market-tape {
-  top: 1.9rem;
+  position: absolute;
+  top: 1.92rem;
   right: clamp(0.75rem, 1.4vw, 1.25rem);
   left: clamp(0.75rem, 1.4vw, 1.25rem);
   z-index: 8;
-  min-width: 24rem;
+  width: auto;
+  min-width: 0;
+  margin: 0;
   grid-template-columns: 8.75rem minmax(0, 1fr);
   border-color: rgba(255, 255, 255, 0.11);
   border-radius: 8px;
@@ -9640,9 +9671,45 @@ button {
 
 @media (max-width: 1180px) {
   .global-monitor-shell {
-    grid-template-columns: minmax(0, 1fr) clamp(20rem, 36vw, 28rem);
+    --monitor-globe-gutter: clamp(0.35rem, 0.9vw, 0.7rem);
+    --monitor-panel-gap: clamp(1rem, 1.6vw, 1.5rem);
+    --monitor-panel-width-target: clamp(19rem, 34vw, 25rem);
   }
 
+  .monitor-selected-news-panel {
+    top: clamp(5.75rem, 10vh, 6.7rem);
+    left: clamp(0.9rem, 2.8vw, 2rem);
+    grid-template-columns: 5.7rem minmax(0, 1fr);
+    width: min(24rem, calc(100% - 2rem));
+  }
+
+  .monitor-selected-news-panel img {
+    height: 4.35rem;
+  }
+
+  .monitor-floating-label.priority-2,
+  .monitor-floating-label.priority-3 {
+    display: none;
+  }
+
+  .monitor-impact-grid,
+  .monitor-suggested-plays > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 901px) {
+  .monitor-selected-news-panel {
+    top: 5.75rem;
+    grid-template-columns: 5.7rem minmax(0, 1fr);
+    width: min(24rem, calc(100% - 2rem));
+  }
+
+  .monitor-selected-news-panel img {
+    height: 4.35rem;
+  }
+
+  .monitor-floating-label.priority-2,
   .monitor-floating-label.priority-3 {
     display: none;
   }
@@ -9670,11 +9737,13 @@ button {
   }
 
   .monitor-globe-stage {
+    --monitor-mobile-globe-size: min(126vw, 40rem, calc(100vw - 2rem));
     inset: 4.85rem auto auto 50%;
-    width: min(126vw, 40rem);
-    height: min(126vw, 40rem);
-    min-width: 28rem;
-    min-height: 28rem;
+    width: var(--monitor-mobile-globe-size);
+    height: var(--monitor-mobile-globe-size);
+    min-width: min(28rem, calc(100vw - 2rem));
+    min-height: min(28rem, calc(100vw - 2rem));
+    max-width: none;
     transform: translateX(-50%);
   }
 
@@ -9782,11 +9851,12 @@ button {
   }
 
   .monitor-globe-stage {
+    --monitor-mobile-globe-size: min(34rem, calc(100vw - 1rem));
     top: 10vh;
-    width: 34rem;
-    height: 34rem;
-    min-width: 34rem;
-    min-height: 34rem;
+    width: var(--monitor-mobile-globe-size);
+    height: var(--monitor-mobile-globe-size);
+    min-width: var(--monitor-mobile-globe-size);
+    min-height: var(--monitor-mobile-globe-size);
   }
 
   .monitor-selected-card dl {

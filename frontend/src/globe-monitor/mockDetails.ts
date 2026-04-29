@@ -164,21 +164,21 @@ function detail(
 export const MONITOR_EVENT_DETAILS: Record<string, MonitorEventDetail> = {
   "red-sea-shipping-risk": detail(
     ["#1a1716", "#4e2924", "#ff4d3f", "RED SEA"],
-    "The practical risk is not the headline itself, but the cost of avoiding it. If carriers keep rerouting, freight prices, delivery schedules, and energy cargo insurance can all tighten at once. That makes this a margin-pressure story before it becomes a demand story.",
+    "The practical risk is not the headline itself, but the cost of avoiding it. If carriers keep rerouting, freight prices, delivery schedules, and energy cargo insurance can all tighten at once. That makes this a margin-pressure story before it becomes a demand story. Watch whether the premium moves from spot freight into contract renewals, because that is when retailers, refiners, and industrial importers start absorbing a real earnings hit. The clean confirmation set is Suez throughput, war-risk insurance, bunker fuel spreads, and whether carriers begin adding capacity to the longer Cape route instead of treating it as temporary disruption.",
     logisticsSectors,
     shippingStocks,
     related("red-sea", "Freight desks keep Red Sea detours in base-case models", "Forwarders are still pricing a slower route network, keeping delivery buffers and insurance premiums elevated."),
   ),
   "usa-policy-cycle": detail(
     ["#151719", "#30343a", "#c88452", "US POLICY"],
-    "This is a policy-volatility event. Markets usually absorb regulation when timing is clear, but uncertainty around scope can delay capex and raise discount rates for strategic sectors. The impact is highest where revenue depends on licenses, subsidies, or export permissions.",
+    "This is a policy-volatility event. Markets usually absorb regulation when timing is clear, but uncertainty around scope can delay capex and raise discount rates for strategic sectors. The impact is highest where revenue depends on licenses, subsidies, or export permissions. Treat the first move as a repricing of optionality rather than a direct demand shock: names with policy-linked revenue can trade defensively even before fundamentals change. Confirmation comes from agency language, compliance deadlines, lobby response, and whether management teams pause guidance or capital plans.",
     policySectors,
     policyStocks,
     related("usa-policy", "Washington signals keep strategic sectors on watch", "Investors are mapping policy language into defense, banks, industrials, and advanced technology exposure."),
   ),
   "canada-critical-minerals": detail(
     ["#122019", "#2c3a33", "#e4a15f", "MINERALS"],
-    "Critical minerals are becoming a security asset, not just a commodity input. The market impact builds through permitting speed, offtake agreements, and grid bottlenecks. Battery and defense supply chains benefit if the corridor turns from announcement to capacity.",
+    "Critical minerals are becoming a security asset, not just a commodity input. The market impact builds through permitting speed, offtake agreements, and grid bottlenecks. Battery and defense supply chains benefit if the corridor turns from announcement to capacity. The investment read is not simply higher metal prices; it is which developers can convert policy support into bankable supply, processing capacity, and contracted volumes. Watch permit milestones, utility interconnects, and buyer commitments for signs that the corridor is moving from theme to earnings.",
     energySectors,
     [
       { ticker: "ALB", name: "Albemarle", exposure: "High", signal: "Lithium supply beta" },
@@ -189,7 +189,7 @@ export const MONITOR_EVENT_DETAILS: Record<string, MonitorEventDetail> = {
   ),
   "mexico-nearshoring": detail(
     ["#181512", "#3b3328", "#dc9d52", "NEARSHORE"],
-    "Nearshoring only helps margins if border throughput and power reliability keep up. This event matters because it can turn a structural opportunity into a near-term bottleneck, especially for auto suppliers and electronics assemblers.",
+    "Nearshoring only helps margins if border throughput and power reliability keep up. This event matters because it can turn a structural opportunity into a near-term bottleneck, especially for auto suppliers and electronics assemblers. The bullish case is capacity moving closer to US demand; the risk case is that customs dwell time, rail slots, power availability, and water constraints turn new orders into delayed shipments. Track border wait times, industrial park occupancy, utility approvals, and supplier commentary before treating new investment headlines as margin accretive.",
     [
       { label: "Autos", exposure: "High", signal: "Border dwell time directly hits production flow." },
       { label: "Industrial Parks", exposure: "Medium", signal: "Power and water access set leasing quality." },
@@ -204,21 +204,21 @@ export const MONITOR_EVENT_DETAILS: Record<string, MonitorEventDetail> = {
   ),
   "peru-copper-output": detail(
     ["#171412", "#3a2921", "#c98248", "COPPER"],
-    "Copper risk has an outsized market signal because inventories are thin. Even a modest production wobble can move expectations for industrial metals, mining equities, and inflation-sensitive infrastructure names.",
+    "Copper risk has an outsized market signal because inventories are thin. Even a modest production wobble can move expectations for industrial metals, mining equities, and inflation-sensitive infrastructure names. The trade is most powerful when supply risk arrives at the same time as improving China credit or grid investment data. Watch port movement, concentrate treatment charges, local labor headlines, and LME inventory draws to separate a one-day mine story from a broader metals impulse.",
     macroSectors,
     macroStocks,
     related("peru-copper", "Copper traders watch mine output and port movement", "The market is looking for confirmation that supply can meet a firmer industrial demand impulse."),
   ),
   "china-demand-pulse": detail(
     ["#171719", "#322d29", "#e96048", "CHINA"],
-    "China demand is a global risk switch. If credit support turns into real activity, commodities and machinery get a tailwind. If the data stays soft, the pressure moves into exporters, luxury demand, and commodity currencies.",
+    "China demand is a global risk switch. If credit support turns into real activity, commodities and machinery get a tailwind. If the data stays soft, the pressure moves into exporters, luxury demand, and commodity currencies. The signal to respect is not the first policy headline, but whether lending, property transactions, metals imports, and equipment orders move together. Until that confirmation appears, rallies in miners, machinery, and China-sensitive FX should be treated as tactical rather than durable.",
     macroSectors,
     macroStocks,
     related("china-demand", "China credit impulse remains central to global risk tone", "Commodity desks and exporters are waiting for demand data to confirm whether stimulus is reaching the real economy."),
   ),
   "japan-yen-intervention": detail(
     ["#121923", "#263342", "#7fb3ff", "YEN"],
-    "Yen pressure matters because it can change the global funding mood. Intervention risk can steady imported inflation, but it also makes exporters and carry trades more sensitive to official language.",
+    "Yen pressure matters because it can change the global funding mood. Intervention risk can steady imported inflation, but it also makes exporters and carry trades more sensitive to official language. A sharp yen move can force de-risking across leveraged FX books before equity investors fully react. Watch Ministry of Finance language, rate differentials, Tokyo fix behavior, and whether exporter guidance starts treating currency as a margin risk rather than a translation benefit.",
     [
       { label: "Exporters", exposure: "High", signal: "Currency translation drives earnings revisions." },
       { label: "Banks", exposure: "Medium", signal: "Yield-curve expectations affect margins." },
@@ -233,42 +233,42 @@ export const MONITOR_EVENT_DETAILS: Record<string, MonitorEventDetail> = {
   ),
   "korea-memory-cycle": detail(
     ["#101923", "#25313d", "#a46cff", "MEMORY"],
-    "Korea is a clean read on the AI hardware cycle. Memory pricing can show whether data-center demand is broadening beyond the headline chip leaders into suppliers, exporters, and regional FX.",
+    "Korea is a clean read on the AI hardware cycle. Memory pricing can show whether data-center demand is broadening beyond the headline chip leaders into suppliers, exporters, and regional FX. The most useful signal is breadth: HBM strength is expected, but DRAM contract pricing, equipment orders, and export volume reveal whether the cycle is becoming self-sustaining. Watch memory spot prices, foundry utilization, won sensitivity, and guidance from downstream server assemblers.",
     techSectors,
     techStocks,
     related("korea-memory", "Memory pricing keeps Korea linked to AI server demand", "HBM and DRAM signals are being used as confirmation for the broader semiconductor cycle."),
   ),
   "india-energy-imports": detail(
     ["#151817", "#303525", "#e7a24b", "INDIA"],
-    "India's risk is a current-account and margin story. Higher crude and shipping costs can pressure refiners, the rupee, and consumer fuel sensitivity, even if domestic demand remains healthy.",
+    "India's risk is a current-account and margin story. Higher crude and shipping costs can pressure refiners, the rupee, and consumer fuel sensitivity, even if domestic demand remains healthy. The first impact usually appears in import bills, marketing margins, and FX hedging before it shows up in broad consumption data. Watch refinery crack spreads, pump-price policy, rupee forwards, and whether shipping premiums are being absorbed by buyers or passed through to end users.",
     energySectors,
     energyStocks,
     related("india-energy", "India watches crude volatility and shipping premiums", "Energy import costs remain one of the fastest channels from global route risk into domestic markets."),
   ),
   "sri-lanka-port-flows": detail(
     ["#101916", "#25332e", "#63d0a4", "PORTS"],
-    "Port-flow data is useful because it often moves before official trade releases. A change in transshipment patterns can reveal stress in Indian Ocean routing, bunker demand, and regional container availability.",
+    "Port-flow data is useful because it often moves before official trade releases. A change in transshipment patterns can reveal stress in Indian Ocean routing, bunker demand, and regional container availability. The advice is to treat port activity as an early warning system rather than a lagging logistics statistic. Watch vessel calls, container dwell times, bunker volumes, and whether nearby hubs are picking up overflow that would normally clear through Colombo.",
     logisticsSectors,
     shippingStocks,
     related("sri-lanka-ports", "Indian Ocean transshipment trends stay in focus", "Container and bunker indicators are being watched for early signs of rerouting stress."),
   ),
   "france-eu-diplomacy": detail(
     ["#15161b", "#2f3038", "#d8b16a", "EU TRACK"],
-    "This is a coordination-risk event. The market cares less about one meeting and more about whether Europe can align security spending, trade posture, and fiscal messaging without widening sovereign spreads.",
+    "This is a coordination-risk event. The market cares less about one meeting and more about whether Europe can align security spending, trade posture, and fiscal messaging without widening sovereign spreads. The constructive outcome is a clearer procurement and trade framework; the risk is more commitments without financing clarity. Watch defense budget language, joint issuance chatter, tariff positioning, and peripheral spread behavior for evidence that policy unity is helping rather than adding fiscal stress.",
     policySectors,
     policyStocks,
     related("france-eu", "European security and trade files remain linked", "Investors are watching whether coordinated policy reduces uncertainty or creates new budget pressure."),
   ),
   "spain-energy-terminal": detail(
     ["#10191d", "#27343b", "#5ab7d8", "LNG"],
-    "Iberian LNG flexibility matters when Europe needs optionality. Terminal utilization, TTF spreads, and power margins can show whether gas supply is abundant or simply better distributed.",
+    "Iberian LNG flexibility matters when Europe needs optionality. Terminal utilization, TTF spreads, and power margins can show whether gas supply is abundant or simply better distributed. The market read is strongest when send-out, storage injections, and power prices all point in the same direction. Watch reload activity, regas utilization, pipeline nominations into France, and whether industrial users are locking in forward supply.",
     energySectors,
     energyStocks,
     related("spain-lng", "Iberian LNG terminals stay relevant to gas flexibility", "European gas desks continue to monitor send-out, storage, and power-market margins."),
   ),
   "hong-kong-capital-flow": detail(
     ["#12141b", "#252a34", "#b48cff", "HK FLOW"],
-    "Hong Kong is a flow signal for China risk. Liquidity, IPO appetite, and southbound buying can reveal whether investors are adding exposure or simply trading short-term policy optimism.",
+    "Hong Kong is a flow signal for China risk. Liquidity, IPO appetite, and southbound buying can reveal whether investors are adding exposure or simply trading short-term policy optimism. The key distinction is between turnover that follows a headline and durable capital formation that supports earnings, listings, and bank activity. Watch HIBOR, southbound net buying, new issue demand, and whether internet-platform volume is being led by long-only allocation or fast money.",
     [
       { label: "Banks", exposure: "High", signal: "HIBOR and liquidity move risk appetite." },
       { label: "Exchanges", exposure: "High", signal: "Listings and turnover affect earnings." },
@@ -283,14 +283,14 @@ export const MONITOR_EVENT_DETAILS: Record<string, MonitorEventDetail> = {
   ),
   "philippines-maritime-pressure": detail(
     ["#1a1515", "#3d2726", "#ff5b4d", "MARITIME"],
-    "Maritime pressure is a regional security premium. The first impact is not broad war risk; it is higher insurance, more cautious shipping behavior, and a firmer bid for defense and surveillance exposure.",
+    "Maritime pressure is a regional security premium. The first impact is not broad war risk; it is higher insurance, more cautious shipping behavior, and a firmer bid for defense and surveillance exposure. The market can reprice quietly through route planning, patrol budgets, and offshore activity before any headline escalation. Watch insurer language, coast guard posture, fisheries disruption, and whether regional shippers start building buffer time into schedules.",
     logisticsSectors,
     shippingStocks,
     related("philippines-maritime", "Regional maritime incidents keep insurers alert", "Shipping, defense, and fisheries exposure remain the active market transmission points."),
   ),
   "malaysia-malacca-flow": detail(
     ["#111815", "#26342f", "#ff8d4d", "MALACCA"],
-    "Malacca is a concentration-risk corridor. Any stress here matters because energy, containers, and electronics move through the same narrow path, creating a single chokepoint for multiple sectors.",
+    "Malacca is a concentration-risk corridor. Any stress here matters because energy, containers, and electronics move through the same narrow path, creating a single chokepoint for multiple sectors. The advice is to monitor congestion before price: vessel density, AIS gaps, port queues, and bunker demand can all show strain before spot rates fully react. If delays broaden, the impact moves quickly from shipping lines into refiners, electronics exporters, and inventory-sensitive manufacturers.",
     logisticsSectors,
     [
       { ticker: "MAERSK-B", name: "Maersk", exposure: "High", signal: "Container flow proxy" },
