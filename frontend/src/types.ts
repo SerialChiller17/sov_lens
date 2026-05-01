@@ -27,6 +27,20 @@ export interface MarketPoint {
   value: number;
 }
 
+export type MarketTapeDirection = "up" | "down";
+
+export interface MarketTapeItem {
+  label: string;
+  value: string;
+  move: string;
+  direction: MarketTapeDirection;
+}
+
+export interface MarketTapeBasket {
+  label: string;
+  items: MarketTapeItem[];
+}
+
 export interface MarketIndex {
   symbol: string;
   name: string;
