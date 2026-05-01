@@ -1,0 +1,349 @@
+﻿@keyframes monitor-hotspot-pulse {
+  0% {
+    opacity: 0.78;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.45);
+  }
+}
+
+@media (max-width: 1180px) {
+  .global-monitor-shell {
+    --monitor-chrome-clearance: clamp(5.72rem, 9vh, 6.18rem);
+    --monitor-globe-gutter: clamp(0.35rem, 0.9vw, 0.7rem);
+    --monitor-panel-gap: clamp(1rem, 1.6vw, 1.5rem);
+    --monitor-panel-width-target: clamp(19rem, 34vw, 25rem);
+  }
+
+  .monitor-selected-news-panel {
+    left: clamp(0.9rem, 2.8vw, 2rem);
+    grid-template-columns: 5.7rem minmax(0, 1fr);
+    width: min(24rem, calc(100% - 2rem));
+  }
+
+  .monitor-selected-news-panel img {
+    height: 4.35rem;
+  }
+
+  .monitor-floating-label.priority-2,
+  .monitor-floating-label.priority-3 {
+    display: none;
+  }
+
+  .monitor-impact-grid,
+  .monitor-suggested-plays > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 901px) {
+  .global-monitor-shell {
+    --monitor-chrome-clearance: 5.76rem;
+    --monitor-globe-bottom: 0.36rem;
+  }
+
+  .monitor-selected-news-panel {
+    grid-template-columns: 5.7rem minmax(0, 1fr);
+    width: min(24rem, calc(100% - 2rem));
+  }
+
+  .monitor-selected-news-panel img {
+    height: 4.35rem;
+  }
+
+  .monitor-floating-label.priority-2,
+  .monitor-floating-label.priority-3 {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .global-monitor-app {
+    overflow: auto;
+  }
+
+  .global-monitor-shell {
+    --monitor-mobile-globe-size: min(118vw, 40rem, calc(100vw - 1rem), calc(100dvh - var(--monitor-mobile-globe-top) - 2rem));
+    --monitor-mobile-globe-top: clamp(5.65rem, 10.5vh, 6.2rem);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
+  .global-monitor-shell::after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 22%, rgba(0, 0, 0, 0.5));
+  }
+
+  .monitor-globe-zone {
+    min-height: calc(var(--monitor-mobile-globe-top) + var(--monitor-mobile-globe-size) + 1rem);
+  }
+
+  .monitor-globe-stage {
+    inset: var(--monitor-mobile-globe-top) auto auto 50%;
+    width: var(--monitor-mobile-globe-size);
+    height: var(--monitor-mobile-globe-size);
+    min-width: min(28rem, var(--monitor-mobile-globe-size));
+    min-height: min(28rem, var(--monitor-mobile-globe-size));
+    max-width: none;
+    transform: translateX(-50%);
+  }
+
+  .monitor-floating-label {
+    min-width: 6.8rem;
+    padding: 0.68rem 0.78rem;
+  }
+
+  .monitor-floating-label strong {
+    font-size: 1rem;
+  }
+
+  .monitor-floating-label.priority-2,
+  .monitor-floating-label.priority-3 {
+    display: none;
+  }
+
+  .monitor-selected-news-panel {
+    top: calc(var(--monitor-mobile-globe-top) + 0.72rem);
+    left: 1rem;
+    width: min(26rem, calc(100vw - 2rem));
+    grid-template-columns: 6rem minmax(0, 1fr);
+  }
+
+  .monitor-selected-news-panel img {
+    width: 6rem;
+    height: 4.4rem;
+  }
+
+  .monitor-intelligence-panel {
+    height: auto;
+    margin: 0;
+    padding: 1rem;
+    overflow: visible;
+  }
+
+  .monitor-ai-hud {
+    margin: 0;
+    overflow: visible;
+  }
+
+  .monitor-scroll-cue {
+    display: none;
+  }
+
+  .monitor-impact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-suggested-plays > div {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-filter-card {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin-bottom: 0.9rem;
+    transform: none;
+  }
+
+  .global-brand-nav {
+    top: 0.36rem;
+    width: min(calc(100vw - 1rem), 78rem);
+  }
+
+  .global-brand-shell {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.4rem;
+    min-height: 2.44rem;
+    border-radius: 19px;
+    padding: 0.22rem;
+  }
+
+  .global-brand-button {
+    min-height: 1.88rem;
+    padding: 0 0.46rem 0 0.2rem;
+  }
+
+  .global-brand-wordmark span {
+    display: none;
+  }
+
+  .global-nav-links {
+    justify-self: stretch;
+  }
+
+  .global-nav-link {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 1.7rem;
+    padding-inline: 0.46rem;
+  }
+
+  .global-nav-actions {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .global-brand-nav {
+    top: 0.28rem;
+    width: calc(100vw - 0.72rem);
+  }
+
+  .global-brand-shell {
+    gap: 0.24rem;
+    min-height: 2.3rem;
+    border-radius: 17px;
+    padding: 0.2rem;
+  }
+
+  .global-brand-button {
+    gap: 0.3rem;
+    min-height: 1.78rem;
+    padding-inline: 0.28rem 0.36rem;
+  }
+
+  .global-brand-mark {
+    width: 1.28rem;
+    height: 1.28rem;
+    font-size: 0.34rem;
+  }
+
+  .global-brand-wordmark strong {
+    font-size: 0.78rem;
+  }
+
+  .global-nav-links {
+    gap: 0.08rem;
+    padding: 0.08rem;
+  }
+
+  .global-nav-link {
+    min-height: 1.58rem;
+    padding-inline: 0.3rem;
+  }
+
+  .global-nav-link:first-child {
+    display: none;
+  }
+
+  .global-nav-link span {
+    font-size: 0.56rem;
+  }
+
+  .portfolio-ai-block > .portfolio-suggested-list {
+    width: 100%;
+    padding-inline: 0.52rem;
+  }
+
+  .portfolio-card-stack {
+    width: min(100%, 330px);
+    height: 33.25rem;
+  }
+
+  .portfolio-recommendation-face {
+    gap: 0.64rem;
+    padding: 0.86rem;
+  }
+
+  .portfolio-recommendation-risk,
+  .portfolio-recommendation-context {
+    min-height: 1.7rem;
+    padding-inline: 0.62rem;
+    font-size: 0.72rem;
+  }
+
+  .portfolio-recommendation-copy h3 {
+    max-width: 100%;
+    font-size: clamp(1.36rem, 6.2vw, 1.62rem);
+  }
+
+  .portfolio-ai-block .portfolio-recommendation-copy p {
+    font-size: 0.78rem;
+  }
+
+  .portfolio-recommendation-why > span,
+  .portfolio-recommendation-action > span {
+    font-size: 0.66rem;
+  }
+
+  .portfolio-ai-block .portfolio-recommendation-why p {
+    min-height: 2.32rem;
+    padding: 0.42rem 0.54rem;
+    font-size: 0.74rem;
+  }
+
+  .portfolio-recommendation-actions {
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    gap: 0.58rem;
+  }
+
+  .portfolio-ai-block .portfolio-recommendation-action-button {
+    min-height: 2.62rem;
+    padding-inline: 0.52rem;
+    gap: 0.32rem;
+    font-size: 0.74rem;
+    line-height: 1.1;
+    white-space: normal;
+  }
+
+  .portfolio-ai-block .portfolio-stack-arrow {
+    top: auto;
+    bottom: 2.04rem;
+    width: 2.42rem;
+    height: 2.42rem;
+    min-width: 2.42rem;
+    min-height: 2.42rem;
+  }
+
+  .portfolio-logic-copy h3 {
+    font-size: 1.55rem;
+  }
+
+  .portfolio-ai-block .portfolio-logic-stream p {
+    font-size: 0.78rem;
+  }
+
+  .portfolio-highlight-recommendation.stack-position-1 {
+    opacity: 0.52;
+    transform: translate3d(0.42rem, -0.86rem, -4.2rem) scale(0.945) rotate(1.2deg);
+  }
+
+  .portfolio-highlight-recommendation.stack-position-2 {
+    opacity: 0.32;
+    transform: translate3d(-0.38rem, -1.58rem, -7rem) scale(0.9) rotate(-1.4deg);
+  }
+
+  .portfolio-ai-block .portfolio-stack-arrow-prev {
+    left: -0.18rem;
+  }
+
+  .portfolio-ai-block .portfolio-stack-arrow-next {
+    right: -0.18rem;
+  }
+
+  .monitor-globe-zone {
+    min-height: calc(var(--monitor-mobile-globe-top) + var(--monitor-mobile-globe-size) + 0.8rem);
+  }
+
+  .monitor-globe-stage {
+    top: var(--monitor-mobile-globe-top);
+    width: var(--monitor-mobile-globe-size);
+    height: var(--monitor-mobile-globe-size);
+    min-width: var(--monitor-mobile-globe-size);
+    min-height: var(--monitor-mobile-globe-size);
+  }
+
+  .monitor-selected-card dl {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-panel-card {
+    padding: 1rem;
+  }
+}
