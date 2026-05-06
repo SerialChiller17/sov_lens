@@ -260,7 +260,7 @@
   gap: 0.46rem;
   border-right-color: rgba(255, 242, 209, 0.1);
   padding: 0 0.78rem;
-  color: rgba(238, 231, 214, 0.68);
+  color: rgba(238, 231, 214, 0.76);
 }
 
 .portfolio-app .market-tape-status strong {
@@ -287,7 +287,7 @@
 }
 
 .portfolio-app .market-tape-label {
-  color: rgba(238, 231, 214, 0.54);
+  color: rgba(238, 231, 214, 0.68);
   font-size: 0.52rem;
 }
 
@@ -298,6 +298,45 @@
 
 .portfolio-app .market-tape-move {
   font-size: 0.5rem;
+}
+
+.portfolio-app .funds-market-tape {
+  pointer-events: auto;
+}
+
+.portfolio-app .funds-market-tape::before {
+  width: 1.5rem;
+}
+
+.portfolio-app .funds-market-tape::after {
+  width: 1.5rem;
+}
+
+.portfolio-app .funds-market-tape .market-tape-viewport {
+  overflow: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.portfolio-app .funds-market-tape .market-tape-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.portfolio-app .funds-market-tape .market-tape-track {
+  min-width: max-content;
+  animation: market-tape-scroll 34s linear infinite;
+  will-change: transform;
+}
+
+.portfolio-app .funds-market-tape .market-tape-item {
+  flex: 0 0 auto;
+  justify-content: center;
+  padding-inline: clamp(0.68rem, 1vw, 0.95rem);
+}
+
+.portfolio-app .funds-market-tape:hover .market-tape-track,
+.portfolio-app .funds-market-tape:focus-within .market-tape-track {
+  animation-play-state: paused;
 }
 
 @media (max-width: 900px) {
@@ -320,6 +359,10 @@
     min-height: 1.82rem;
     padding-inline: 0.78rem;
   }
+
+  .portfolio-app .funds-market-tape .market-tape-item {
+    flex-basis: max-content;
+  }
 }
 
 @media (max-width: 760px) {
@@ -327,6 +370,19 @@
     right: 0.75rem;
     left: 0.75rem;
     min-width: 0;
+  }
+
+  .portfolio-app .funds-market-tape .market-tape-viewport {
+    overflow-x: auto;
+  }
+
+  .portfolio-app .funds-market-tape .market-tape-track {
+    animation: none;
+    will-change: auto;
+  }
+
+  .portfolio-app .funds-market-tape .market-tape-track .market-tape-item:nth-child(n + 8) {
+    display: none;
   }
 }
 
@@ -344,5 +400,16 @@
   .global-monitor-app .market-tape-status strong,
   .portfolio-app .market-tape-status strong {
     font-size: 0.48rem;
+  }
+
+  .portfolio-app .funds-market-tape .market-tape-status strong {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-app .funds-market-tape .market-tape-track {
+    animation: none;
+    will-change: auto;
   }
 }

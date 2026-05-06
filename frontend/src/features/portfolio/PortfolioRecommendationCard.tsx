@@ -29,9 +29,22 @@ interface PortfolioRecommendationCardProps {
   isExpanded: boolean;
   isInteractive: boolean;
   onToggleLogic: () => void;
+  onPrimaryAction?: () => void;
+  isPrimaryActionDisabled?: boolean;
+  primaryActionHint?: string;
 }
 
-export function PortfolioRecommendationCard({ play, isExpanded, isInteractive, onToggleLogic }: PortfolioRecommendationCardProps) {
+export function PortfolioRecommendationCard({
+  play,
+  isExpanded,
+  isInteractive,
+  onToggleLogic,
+  onPrimaryAction,
+  isPrimaryActionDisabled = false,
+  primaryActionHint,
+}: PortfolioRecommendationCardProps) {
+  const primaryActionDisabled = !isInteractive || isExpanded || isPrimaryActionDisabled;
+
   return (
     <article className={`portfolio-recommendation-card risk-${play.priority.toLowerCase()}${isExpanded ? " is-flipped" : ""}`}>
       <div className="portfolio-recommendation-face portfolio-recommendation-front" aria-hidden={isExpanded}>
@@ -61,7 +74,14 @@ export function PortfolioRecommendationCard({ play, isExpanded, isInteractive, o
           <span>Suggested action</span>
           <p>{play.command}</p>
           <div className="portfolio-recommendation-actions">
-            <button type="button" className="portfolio-recommendation-action-button is-primary" tabIndex={isInteractive && !isExpanded ? 0 : -1}>
+            <button
+              type="button"
+              className="portfolio-recommendation-action-button is-primary"
+              disabled={primaryActionDisabled}
+              title={primaryActionHint}
+              tabIndex={primaryActionDisabled ? -1 : 0}
+              onClick={onPrimaryAction}
+            >
               <span>{play.primaryAction}</span>
               <ArrowRight aria-hidden="true" />
             </button>

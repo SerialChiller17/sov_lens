@@ -1,10 +1,12 @@
-import { useMemo, useState, type ChangeEvent, type CSSProperties, type PointerEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import {
   computeAlphaVsBenchmark,
   computeCAGR,
   computeRollingCAGR,
   computeTotalReturn,
+  formatIndianCroresCompact,
   formatIndianCurrency,
+  formatPercent,
   formatSignedPercent,
   generateAICommentary,
   niceRoundTicks,
@@ -16,7 +18,6 @@ import { MOCK_FUNDS } from "../mockFunds";
 import type { Fund, FundSlot, NavPoint } from "../types";
 
 type TimeRange = "1Y" | "3Y" | "5Y" | "10Y" | "MAX";
-type ScaleMode = "LINEAR" | "LOG";
 type ViewMode = "POINT_TO_POINT" | "ROLLING_3Y";
 
 type SelectedFund = {
@@ -54,80 +55,165 @@ const FONT_SANS = 'Inter, Archivo, ui-sans-serif, system-ui, -apple-system, Blin
 const FONT_MONO = '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace';
 const SVG_VIEW_BOX = { width: 220, height: 74 };
 const VIEW_BOX = { left: 27, right: 214, top: 7, bottom: 63 };
-const CHART_MIN_HEIGHT = "23.5rem";
+const CHART_MIN_HEIGHT = "16.9rem";
+const PERFORMANCE_PANEL_MIN_HEIGHT = "22.8rem";
 const SVG_AXIS_FONT_SIZE = 3.05;
 const SVG_AXIS_SMALL_FONT_SIZE = 2;
 const DEFAULT_INVESTMENT_AMOUNT = 10000;
 const BENCHMARK_SOURCE_IDS = ["icici-pru-bluechip", "parag-parikh-flexi-cap", "hdfc-flexi-cap", "kotak-emerging-equity"];
 const MAX_X_TICKS: Record<TimeRange, number> = { "1Y": 6, "3Y": 6, "5Y": 6, "10Y": 6, MAX: 6 };
 
-const controlShellStyle: CSSProperties = {
-  position: "relative",
-  minHeight: "2.25rem",
+const chartHeaderStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "auto auto auto auto auto 1fr auto",
+  gridTemplateColumns: "minmax(16rem, 1fr) auto",
   alignItems: "center",
-  gap: "0.44rem",
-  border: "1px solid rgba(255, 242, 209, 0.105)",
-  borderRadius: OUTER_RADIUS,
-  padding: "0.3rem 0.42rem",
-  background: "rgba(0, 0, 0, 0.34)",
+  gap: "0.64rem",
+  minWidth: 0,
 };
 
-const controlGroupStyle: CSSProperties = {
+const chartTitleBlockStyle: CSSProperties = {
+  display: "grid",
+  minWidth: 0,
+};
+
+const chartHeadingStyle: CSSProperties = {
+  margin: 0,
+  color: "rgba(255, 250, 235, 0.94)",
+  fontFamily: FONT_SANS,
+  fontSize: "1rem",
+  fontWeight: 700,
+  lineHeight: 1.1,
+};
+
+const primaryRangeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifySelf: "end",
+  gap: "0.16rem",
+  border: "1px solid rgba(255, 242, 209, 0.14)",
+  borderRadius: CHIP_RADIUS,
+  padding: "0.18rem",
+  background:
+    "linear-gradient(180deg, rgba(255, 250, 235, 0.05), rgba(255, 250, 235, 0.015)), rgba(0, 0, 0, 0.34)",
+  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.06), 0 0.55rem 1.1rem rgba(0, 0, 0, 0.18)",
+};
+
+const secondaryControlsRowStyle: CSSProperties = {
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  flexWrap: "wrap",
+  gap: "0.5rem",
+  borderTop: "1px solid rgba(255, 242, 209, 0.075)",
+  paddingTop: "0.48rem",
+};
+
+const secondaryControlsRightStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifySelf: "end",
+  flexWrap: "wrap",
+  gap: "0.42rem",
+};
+
+const quietControlGroupStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: "0.28rem",
 };
 
-const dividerStyle: CSSProperties = {
-  width: "1px",
-  height: "1.45rem",
-  background: "rgba(255, 242, 209, 0.09)",
+const segmentedControlStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.12rem",
+  border: "1px solid rgba(255, 242, 209, 0.085)",
+  borderRadius: CHIP_RADIUS,
+  padding: "0.14rem",
+  background: "rgba(0, 0, 0, 0.18)",
+  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.04)",
+};
+
+const controlLabelStyle: CSSProperties = {
+  color: "rgba(238, 231, 214, 0.46)",
+  fontFamily: FONT_MONO,
+  fontSize: "0.46rem",
+  fontWeight: 700,
+  lineHeight: 1,
+  textTransform: "uppercase",
 };
 
 const pillStyle: CSSProperties = {
-  border: "1px solid rgba(255, 242, 209, 0.13)",
+  border: "1px solid transparent",
   borderRadius: CHIP_RADIUS,
-  minHeight: "1.55rem",
-  padding: "0.32rem 0.52rem",
-  color: "rgba(238, 231, 214, 0.62)",
-  background: "rgba(255, 242, 209, 0.035)",
+  minHeight: "1.5rem",
+  padding: "0.26rem 0.5rem",
+  color: "rgba(238, 231, 214, 0.66)",
+  background: "transparent",
   cursor: "pointer",
-  fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-  fontSize: "0.52rem",
+  fontFamily: FONT_MONO,
+  fontSize: "0.54rem",
   fontWeight: 700,
   lineHeight: 1,
   textTransform: "uppercase",
 };
 
 const activePillStyle: CSSProperties = {
-  borderColor: "rgba(255, 242, 209, 0.32)",
+  borderColor: "rgba(255, 242, 209, 0.16)",
   color: "rgba(255, 250, 235, 0.94)",
-  background: "rgba(255, 242, 209, 0.1)",
+  background:
+    "linear-gradient(180deg, rgba(255, 250, 235, 0.16), rgba(255, 250, 235, 0.05)), rgba(0, 0, 0, 0.5)",
+  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.14), 0 0 0.82rem rgba(255, 242, 209, 0.055)",
+};
+
+const secondaryPillStyle: CSSProperties = {
+  ...pillStyle,
+  minHeight: "1.24rem",
+  padding: "0.2rem 0.42rem",
+  borderColor: "transparent",
+  color: "rgba(238, 231, 214, 0.58)",
+  background: "transparent",
+  fontSize: "0.48rem",
+};
+
+const activeSecondaryPillStyle: CSSProperties = {
+  ...secondaryPillStyle,
+  borderColor: "rgba(255, 242, 209, 0.14)",
+  color: "rgba(255, 250, 235, 0.9)",
+  background:
+    "linear-gradient(180deg, rgba(255, 242, 209, 0.13), rgba(255, 242, 209, 0.045)), rgba(0, 0, 0, 0.34)",
+  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.09)",
 };
 
 const heroStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 76fr) minmax(18.5rem, 24fr)",
-  columnGap: "0.9rem",
-  minHeight: CHART_MIN_HEIGHT,
+  columnGap: "0.76rem",
+  minHeight: PERFORMANCE_PANEL_MIN_HEIGHT,
   overflow: "hidden",
 };
 
 const chartPaneStyle: CSSProperties = {
   position: "relative",
+  display: "grid",
+  gridTemplateRows: "auto auto auto",
+  alignContent: "start",
+  gap: "0.28rem",
   minWidth: 0,
-  padding: "0.7rem 0.7rem 0.52rem",
+  padding: "0.66rem 0.66rem 0.5rem",
 };
 
 const statsPaneStyle: CSSProperties = {
   display: "grid",
   alignContent: "start",
-  gap: "0.46rem",
+  gap: "0.34rem",
   minWidth: 0,
   borderLeft: "1px solid rgba(255, 242, 209, 0.08)",
-  padding: "0.66rem 0.68rem",
+  maxHeight: "min(36rem, calc(100vh - 15rem))",
+  overflowY: "auto",
+  padding: "0.56rem 0.58rem",
+  scrollbarWidth: "thin",
+  scrollbarColor: "rgba(255, 242, 209, 0.24) transparent",
 };
 
 const tooltipChromeStyle: CSSProperties = {
@@ -135,7 +221,7 @@ const tooltipChromeStyle: CSSProperties = {
   zIndex: 3,
   display: "grid",
   gap: "0.34rem",
-  width: "min(20rem, calc(100% - 0.92rem))",
+  width: "min(16.9rem, calc(100% - 0.92rem))",
   border: "1px solid rgba(255, 253, 240, 0.13)",
   borderRadius: OUTER_RADIUS,
   padding: "0.48rem 0.56rem",
@@ -148,76 +234,47 @@ const tooltipChromeStyle: CSSProperties = {
   userSelect: "none",
 };
 
-const monoLabelStyle: CSSProperties = {
-  display: "block",
-  color: "rgba(238, 231, 214, 0.46)",
-  fontFamily: FONT_MONO,
-  fontSize: "0.52rem",
-  fontWeight: 700,
-  lineHeight: 1,
-  textTransform: "uppercase",
-};
-
-const statValueStyle: CSSProperties = {
-  display: "block",
-  margin: "0.2rem 0 0",
-  color: "rgba(255, 250, 235, 0.84)",
-  fontFamily: FONT_MONO,
-  fontSize: "0.72rem",
-  fontWeight: 700,
-  lineHeight: 1,
-  whiteSpace: "nowrap",
-};
-
-const axisTitleStyle: CSSProperties = {
-  margin: "0 0 0.32rem 0",
-  color: "rgba(238, 231, 214, 0.44)",
-  fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-  fontSize: "0.58rem",
-  fontWeight: 700,
-  lineHeight: 1,
-  textTransform: "uppercase",
-};
-
 const chartTitleRowStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   flexWrap: "wrap",
-  gap: "0.28rem",
-  margin: "0 0 0.32rem 0",
-  color: "rgba(238, 231, 214, 0.44)",
-  fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-  fontSize: "0.58rem",
-  fontWeight: 700,
-  lineHeight: 1,
-  textTransform: "uppercase",
+  gap: "0.32rem",
+  minWidth: 0,
+  margin: 0,
+  color: "rgba(238, 231, 214, 0.68)",
+  fontFamily: FONT_SANS,
+  fontSize: "0.76rem",
+  fontWeight: 650,
+  lineHeight: 1.1,
 };
 
 const chartTitleCurrencyStyle: CSSProperties = {
-  color: "rgba(255, 250, 235, 0.9)",
+  color: "rgba(255, 250, 235, 0.94)",
   fontWeight: 900,
 };
 
 const investmentAmountInputStyle: CSSProperties = {
   minWidth: "8.8ch",
   maxWidth: "18ch",
-  height: "1.42rem",
-  border: "1px solid rgba(255, 242, 209, 0.28)",
-  borderRadius: "6px",
-  padding: "0 0.48rem",
+  height: "1.62rem",
+  border: "1px solid rgba(255, 242, 209, 0.24)",
+  borderRadius: "7px",
+  padding: "0 0.52rem",
   color: "rgba(255, 250, 235, 0.92)",
   background:
-    "linear-gradient(180deg, rgba(255, 242, 209, 0.105), rgba(255, 242, 209, 0.035)), rgba(0, 0, 0, 0.42)",
-  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.12), 0 0 0 1px rgba(255, 242, 209, 0.035)",
+    "linear-gradient(180deg, rgba(255, 250, 235, 0.12), rgba(255, 250, 235, 0.035)), rgba(0, 0, 0, 0.42)",
+  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.13), inset 0 -0.35rem 0.65rem rgba(0, 0, 0, 0.24)",
   cursor: "text",
-  font: "inherit",
+  fontFamily: FONT_MONO,
+  fontSize: "0.82rem",
+  fontWeight: 700,
   fontVariantNumeric: "tabular-nums",
   outline: "none",
 };
 
 const svgAxisTextStyle: CSSProperties = {
-  fill: "rgba(238, 231, 214, 0.66)",
-  fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
+  fill: "rgba(238, 231, 214, 0.76)",
+  fontFamily: FONT_MONO,
   fontVariantNumeric: "tabular-nums",
   fontWeight: 700,
   letterSpacing: 0,
@@ -226,7 +283,7 @@ const svgAxisTextStyle: CSSProperties = {
 
 const svgAxisMutedTextStyle: CSSProperties = {
   ...svgAxisTextStyle,
-  fill: "rgba(238, 231, 214, 0.36)",
+  fill: "rgba(238, 231, 214, 0.52)",
 };
 
 function buildBenchmarkHistory() {
@@ -309,17 +366,11 @@ function toChartPoints(points: NormalizedNavPoint[] | RollingCagrPoint[], viewMo
   }));
 }
 
-function yDomain(values: number[], viewMode: ViewMode, scaleMode: ScaleMode, investmentAmount: number) {
+function yDomain(values: number[], viewMode: ViewMode, investmentAmount: number) {
   const baseAmount = Number.isFinite(investmentAmount) && investmentAmount > 0 ? investmentAmount : DEFAULT_INVESTMENT_AMOUNT;
 
   if (values.length === 0) {
     return viewMode === "ROLLING_3Y" ? { min: -5, max: 5 } : { min: baseAmount * 0.88, max: baseAmount * 1.12 };
-  }
-
-  if (viewMode === "POINT_TO_POINT" && scaleMode === "LOG") {
-    const min = Math.max(Math.min(...values, baseAmount) * 0.92, 1);
-    const max = Math.max(...values, baseAmount) * 1.08;
-    return { min, max: Math.max(max, min + 1) };
   }
 
   const minValue = Math.min(...values, viewMode === "ROLLING_3Y" ? 0 : baseAmount);
@@ -332,15 +383,7 @@ function xForIndex(index: number, total: number) {
   return VIEW_BOX.left + (index / Math.max(total - 1, 1)) * (VIEW_BOX.right - VIEW_BOX.left);
 }
 
-function yForValue(value: number, domain: { min: number; max: number }, viewMode: ViewMode, scaleMode: ScaleMode) {
-  if (viewMode === "POINT_TO_POINT" && scaleMode === "LOG") {
-    const safeValue = Math.max(value, 1);
-    const logMin = Math.log(Math.max(domain.min, 1));
-    const logMax = Math.log(Math.max(domain.max, domain.min + 1));
-    const ratio = (Math.log(safeValue) - logMin) / Math.max(logMax - logMin, 1);
-    return VIEW_BOX.bottom - ratio * (VIEW_BOX.bottom - VIEW_BOX.top);
-  }
-
+function yForValue(value: number, domain: { min: number; max: number }) {
   const ratio = (value - domain.min) / Math.max(domain.max - domain.min, 1);
   return VIEW_BOX.bottom - ratio * (VIEW_BOX.bottom - VIEW_BOX.top);
 }
@@ -412,6 +455,16 @@ function valueLabel(value: number, viewMode: ViewMode) {
   return viewMode === "ROLLING_3Y" ? formatSignedPercent(value, 1) : formatIndianCurrency(value, 0);
 }
 
+function preventMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+  event.preventDefault();
+}
+
+function blurAfterPointerClick(event: MouseEvent<HTMLButtonElement>) {
+  if (event.detail > 0) {
+    event.currentTarget.blur();
+  }
+}
+
 function categoryAverage(fund: Fund) {
   const peers = MOCK_FUNDS.filter((peer) => peer.category === fund.category && peer.trailingReturns[5] > 0);
   return peers.reduce((sum, peer) => sum + peer.trailingReturns[5], 0) / Math.max(peers.length, 1);
@@ -439,38 +492,38 @@ function uniqueCommentary(fund: Fund, context: { rangeReturn: number; rangeCagr:
 
 function FundStatCard({
   selectedFund,
-  stats,
-  benchmarkCagr,
   commentary,
 }: {
   selectedFund: SelectedFund;
-  stats: { totalReturn: number; cagr: number };
-  benchmarkCagr: number;
   commentary: string;
 }) {
-  const alpha = computeAlphaVsBenchmark(stats.cagr, benchmarkCagr);
-
   return (
     <article
+      className="fund-performance-stat-card"
       style={{
         display: "grid",
-        gap: "0.52rem",
+        alignContent: "start",
+        gridTemplateRows: "auto auto",
+        gap: "0.5rem",
+        height: "auto",
+        minHeight: "5.55rem",
+        overflow: "visible",
         border: "1px solid rgba(255, 242, 209, 0.105)",
         borderRadius: OUTER_RADIUS,
-        padding: "0.7rem 0.74rem",
+        padding: "0.68rem 0.72rem 0.76rem",
         background:
           "linear-gradient(145deg, rgba(255, 242, 209, 0.045), transparent 46%), linear-gradient(180deg, rgba(24, 23, 20, 0.58), rgba(7, 7, 6, 0.58))",
       }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", gap: "0.38rem", minWidth: 0 }}>
-        <span aria-hidden="true" style={{ width: "0.46rem", height: "0.46rem", borderRadius: CHIP_RADIUS, background: selectedFund.color }} />
+      <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", gap: "0.36rem", minWidth: 0 }}>
+        <span aria-hidden="true" style={{ width: "0.4rem", height: "0.4rem", borderRadius: CHIP_RADIUS, background: selectedFund.color }} />
         <strong
           style={{
             minWidth: 0,
             overflow: "hidden",
-            color: "rgba(255, 250, 235, 0.9)",
+            color: "rgba(255, 250, 235, 0.94)",
             fontFamily: FONT_SANS,
-            fontSize: "0.84rem",
+            fontSize: "0.76rem",
             fontWeight: 700,
             lineHeight: 1.1,
             textOverflow: "ellipsis",
@@ -481,31 +534,20 @@ function FundStatCard({
         </strong>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.42rem" }}>
-        <div>
-          <span style={monoLabelStyle}>Return</span>
-          <strong style={{ ...statValueStyle, color: stats.totalReturn >= 0 ? "#9ee3b5" : "#e7a2a2" }}>{formatSignedPercent(stats.totalReturn, 1)}</strong>
-        </div>
-        <div>
-          <span style={monoLabelStyle}>CAGR</span>
-          <strong style={{ ...statValueStyle, color: stats.cagr >= 0 ? "#9ee3b5" : "#e7a2a2" }}>{formatSignedPercent(stats.cagr, 1)}</strong>
-        </div>
-        <div>
-          <span style={monoLabelStyle}>Alpha</span>
-          <strong style={{ ...statValueStyle, color: alpha >= 0 ? "#9ee3b5" : "#e7a2a2" }}>{formatSignedPercent(alpha, 1)}</strong>
-        </div>
-      </div>
-
       <p
         style={{
+          display: "block",
           margin: 0,
-          overflow: "hidden",
-          color: "rgba(238, 231, 214, 0.68)",
+          minWidth: 0,
+          overflow: "visible",
+          color: "rgba(238, 231, 214, 0.78)",
           fontFamily: FONT_SANS,
-          fontSize: "0.7rem",
+          fontSize: "0.64rem",
           fontStyle: "normal",
           fontWeight: 500,
-          lineHeight: 1.42,
+          lineHeight: 1.43,
+          overflowWrap: "break-word",
+          whiteSpace: "normal",
         }}
       >
         {commentary}
@@ -514,41 +556,69 @@ function FundStatCard({
   );
 }
 
-function BenchmarkStatRow({ stats }: { stats: { totalReturn: number; cagr: number } }) {
+function ComparisonMatrix({
+  funds,
+  benchmarkStats,
+  hoveredSeriesId,
+  onSeriesHover,
+}: {
+  funds: Array<{ selectedFund: SelectedFund; totalReturn: number; cagr: number }>;
+  benchmarkStats: { totalReturn: number; cagr: number };
+  hoveredSeriesId: string | null;
+  onSeriesHover: (seriesId: string | null) => void;
+}) {
   return (
-    <article
-      style={{
-        display: "grid",
-        gap: "0.42rem",
-        border: "1px dashed rgba(255, 253, 240, 0.13)",
-        borderRadius: OUTER_RADIUS,
-        padding: "0.54rem 0.62rem",
-        color: "rgba(238, 231, 214, 0.58)",
-        background: "rgba(255, 242, 209, 0.026)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.42rem" }}>
-        <span
-          aria-hidden="true"
-          style={{
-            width: "1.5rem",
-            height: 0,
-            borderTop: "1px dashed rgba(255, 253, 240, 0.48)",
-          }}
-        />
-        <strong style={{ color: "rgba(255, 250, 235, 0.66)", fontSize: "0.62rem", fontWeight: 650 }}>{BENCHMARK_LABEL}</strong>
+    <section className="fund-comparison-matrix" aria-label="Fast fund comparison metrics">
+      <div className="fund-comparison-matrix-header" aria-hidden="true">
+        <span>Fund</span>
+        <span>Return</span>
+        <span>CAGR</span>
+        <span>Alpha</span>
+        <span>TER</span>
+        <span>AUM</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.42rem" }}>
-        <div>
-          <span style={monoLabelStyle}>Return</span>
-          <strong style={statValueStyle}>{formatSignedPercent(stats.totalReturn, 1)}</strong>
+
+      {funds.map((item) => {
+        const alpha = computeAlphaVsBenchmark(item.cagr, benchmarkStats.cagr);
+        const isHovered = hoveredSeriesId === item.selectedFund.fund.id;
+        return (
+          <div
+            key={item.selectedFund.fund.id}
+            className={isHovered ? "fund-comparison-matrix-row is-hovered" : "fund-comparison-matrix-row"}
+            onMouseEnter={() => onSeriesHover(item.selectedFund.fund.id)}
+            onMouseLeave={() => onSeriesHover(null)}
+            style={{ "--fund-color": item.selectedFund.color } as CSSProperties}
+          >
+            <div className="fund-comparison-matrix-name">
+              <span aria-hidden="true" />
+              <strong>{item.selectedFund.fund.shortName}</strong>
+            </div>
+            <strong className={item.totalReturn >= 0 ? "is-positive" : "is-negative"}>{formatSignedPercent(item.totalReturn, 1)}</strong>
+            <strong className={item.cagr >= 0 ? "is-positive" : "is-negative"}>{formatSignedPercent(item.cagr, 1)}</strong>
+            <strong className={alpha >= 0 ? "is-positive" : "is-negative"}>{formatSignedPercent(alpha, 1)}</strong>
+            <span>{formatPercent(item.selectedFund.fund.expenseRatio)}</span>
+            <span>{formatIndianCroresCompact(item.selectedFund.fund.aum)}</span>
+          </div>
+        );
+      })}
+
+      <div
+        className={hoveredSeriesId === "benchmark" ? "fund-comparison-matrix-row is-benchmark is-hovered" : "fund-comparison-matrix-row is-benchmark"}
+        onMouseEnter={() => onSeriesHover("benchmark")}
+        onMouseLeave={() => onSeriesHover(null)}
+        style={{ "--fund-color": BENCHMARK_COLOR } as CSSProperties}
+      >
+        <div className="fund-comparison-matrix-name">
+          <span aria-hidden="true" />
+          <strong>{BENCHMARK_LABEL}</strong>
         </div>
-        <div>
-          <span style={monoLabelStyle}>CAGR</span>
-          <strong style={statValueStyle}>{formatSignedPercent(stats.cagr, 1)}</strong>
-        </div>
+        <strong>{formatSignedPercent(benchmarkStats.totalReturn, 1)}</strong>
+        <strong>{formatSignedPercent(benchmarkStats.cagr, 1)}</strong>
+        <span>Base</span>
+        <span>Index</span>
+        <span>--</span>
       </div>
-    </article>
+    </section>
   );
 }
 
@@ -565,13 +635,22 @@ function PerformanceTooltip({
   left: number;
   top: number;
 }) {
+  const tooltipLeft =
+    left > 62
+      ? `clamp(0.46rem, calc(${left}% - 18.8rem), calc(100% - 17.4rem))`
+      : `clamp(0.46rem, calc(${left}% + 0.78rem), calc(100% - 17.4rem))`;
+  const tooltipTop =
+    top > 52
+      ? `clamp(0.46rem, calc(${top}% - 8.1rem), calc(100% - 8.8rem))`
+      : `clamp(0.46rem, calc(${top}% + 0.82rem), calc(100% - 8.8rem))`;
+
   return (
     <div
       aria-label={`${date} performance tooltip`}
       style={{
         ...tooltipChromeStyle,
-        left: `clamp(0.46rem, calc(${left}% + 0.72rem), calc(100% - 20.5rem))`,
-        top: `clamp(0.36rem, calc(${top}% - 0.62rem), calc(100% - 10.4rem))`,
+        left: tooltipLeft,
+        top: tooltipTop,
       }}
     >
       <strong
@@ -611,7 +690,7 @@ function PerformanceTooltip({
               style={{
                 minWidth: 0,
                 overflow: "visible",
-                color: "rgba(238, 231, 214, 0.58)",
+                color: "rgba(238, 231, 214, 0.68)",
                 fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
                 fontSize: "0.5rem",
                 lineHeight: 1.12,
@@ -623,7 +702,7 @@ function PerformanceTooltip({
             </span>
             <strong
               style={{
-                color: row.value === null ? "rgba(238, 231, 214, 0.42)" : "rgba(255, 250, 235, 0.82)",
+                color: row.value === null ? "rgba(238, 231, 214, 0.56)" : "rgba(255, 250, 235, 0.88)",
                 fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
                 fontSize: "0.54rem",
                 fontWeight: 700,
@@ -646,40 +725,33 @@ function PerformanceChart({
   benchmarkSeries,
   domainDates,
   timeRange,
-  scaleMode,
   viewMode,
-  investmentInput,
   investmentAmount,
-  onInvestmentInputChange,
-  onInvestmentInputBlur,
   showInceptionNote,
+  hoveredSeriesId,
 }: {
   series: ChartSeries[];
   benchmarkSeries: ChartSeries;
   domainDates: string[];
   timeRange: TimeRange;
-  scaleMode: ScaleMode;
   viewMode: ViewMode;
-  investmentInput: string;
   investmentAmount: number;
-  onInvestmentInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onInvestmentInputBlur: () => void;
   showInceptionNote: boolean;
+  hoveredSeriesId: string | null;
 }) {
   const [activeIndex, setActiveIndex] = useState(domainDates.length - 1);
   const [cursor, setCursor] = useState({ x: 78, y: 22 });
   const [isPointerActive, setIsPointerActive] = useState(false);
-  const effectiveScale = viewMode === "ROLLING_3Y" ? "LINEAR" : scaleMode;
   const safeActiveIndex = Math.min(Math.max(activeIndex, 0), Math.max(domainDates.length - 1, 0));
   const activeDate = domainDates[safeActiveIndex] ?? domainDates[domainDates.length - 1] ?? "";
   const allSeries = [...series, benchmarkSeries];
   const numericValues = allSeries.flatMap((item) => item.points.map((point) => point.value).filter((value): value is number => typeof value === "number"));
-  const rawDomain = yDomain(numericValues, viewMode, effectiveScale, investmentAmount);
+  const rawDomain = yDomain(numericValues, viewMode, investmentAmount);
   const pointTickStep = Math.max(1, Math.pow(10, Math.max(0, Math.floor(Math.log10(Math.max(investmentAmount, 1))) - 1)));
   const yTicks = niceRoundTicks(
     viewMode === "POINT_TO_POINT" && rawDomain.min > investmentAmount * 0.75 ? investmentAmount : rawDomain.min,
     rawDomain.max,
-    viewMode === "ROLLING_3Y" ? 8 : effectiveScale === "LOG" ? 5 : 4,
+    viewMode === "ROLLING_3Y" ? 8 : 4,
     viewMode === "ROLLING_3Y" ? 5 : pointTickStep,
   );
   const domain =
@@ -699,7 +771,7 @@ function PerformanceChart({
         return {
           ...point,
           x: xForIndex(dateIndex, domainDates.length),
-          y: point.value === null ? null : yForValue(point.value, domain, viewMode, effectiveScale),
+          y: point.value === null ? null : yForValue(point.value, domain),
         };
       })
       .filter((point): point is CoordinatePoint => Boolean(point));
@@ -750,33 +822,10 @@ function PerformanceChart({
   const isInInsufficientZone = viewMode === "ROLLING_3Y" && hatchedWidth > 0 && activeX <= VIEW_BOX.left + hatchedWidth;
   const xTicks = xAxisTicks(domainDates, timeRange);
   const rotateXAxisLabels = xTicks.length > 8;
+  const hasMatrixHover = hoveredSeriesId !== null;
 
   return (
-    <div style={{ position: "relative", minHeight: CHART_MIN_HEIGHT }}>
-      {viewMode === "ROLLING_3Y" ? (
-        <p style={axisTitleStyle}>3Y rolling CAGR (%)</p>
-      ) : (
-        <label style={chartTitleRowStyle}>
-          <span>Growth of</span>
-          <span aria-hidden="true" style={chartTitleCurrencyStyle}>
-            {"\u20b9"}
-          </span>
-          <input
-            aria-label="Investment amount"
-            inputMode="numeric"
-            title="Investment amount"
-            value={investmentInput}
-            onChange={onInvestmentInputChange}
-            onBlur={onInvestmentInputBlur}
-            onFocus={(event) => event.currentTarget.select()}
-            style={{
-              ...investmentAmountInputStyle,
-              width: `${Math.min(Math.max((investmentInput.length || 5) + 3, 9), 18)}ch`,
-            }}
-          />
-          <span>invested</span>
-        </label>
-      )}
+    <div className="funds-performance-chart-stage" style={{ position: "relative", minHeight: CHART_MIN_HEIGHT }}>
       <svg
         className="portfolio-performance-chart"
         viewBox={`0 0 ${SVG_VIEW_BOX.width} ${SVG_VIEW_BOX.height}`}
@@ -797,7 +846,7 @@ function PerformanceChart({
         </defs>
 
         {yTicks.map((tick) => {
-          const y = yForValue(tick, domain, viewMode, effectiveScale);
+          const y = yForValue(tick, domain);
           return (
             <g key={tick}>
               <path className="portfolio-chart-grid" d={`M ${VIEW_BOX.left} ${y.toFixed(2)} H ${VIEW_BOX.right}`} />
@@ -842,28 +891,65 @@ function PerformanceChart({
         {coordinatesBySeries
           .filter((item) => !item.dashed)
           .flatMap((item) =>
-            item.segments.map((segment, index) => (
-              <path key={`${item.id}-area-${index}`} d={areaPathForSegment(segment)} fill={item.color} opacity="0.06" />
-            )),
+            item.segments.map((segment, index) => {
+              const isDimmed = hasMatrixHover && hoveredSeriesId !== item.id;
+              const isHighlighted = hoveredSeriesId === item.id;
+
+              return (
+                <path
+                  key={`${item.id}-area-${index}`}
+                  d={areaPathForSegment(segment)}
+                  fill={item.color}
+                  opacity={isDimmed ? "0.018" : isHighlighted ? "0.095" : "0.06"}
+                />
+              );
+            }),
           )}
 
         {coordinatesBySeries.map((item) =>
           item.segments.map((segment, index) => {
             const path = pathForSegment(segment);
+            const isDimmed = hasMatrixHover && hoveredSeriesId !== item.id;
+            const isHighlighted = hoveredSeriesId === item.id;
             if (item.dashed) {
-              return <path key={`${item.id}-${index}`} className="portfolio-chart-benchmark-line" d={path} style={{ strokeWidth: 0.36 }} />;
+              return (
+                <path
+                  key={`${item.id}-${index}`}
+                  className="portfolio-chart-benchmark-line"
+                  d={path}
+                  style={{
+                    opacity: isDimmed ? 0.18 : 1,
+                    stroke: isHighlighted ? "rgba(255, 250, 235, 0.96)" : undefined,
+                    strokeWidth: isHighlighted ? 0.48 : 0.3,
+                    filter: isHighlighted
+                      ? "drop-shadow(0 0 0.14rem rgba(255, 250, 235, 0.34)) drop-shadow(0 0 0.44rem rgba(255, 242, 209, 0.16))"
+                      : undefined,
+                  }}
+                />
+              );
             }
 
             return (
               <g key={`${item.id}-${index}`}>
-                <path className="portfolio-chart-line-glass" d={path} style={{ stroke: item.color, strokeWidth: 0.88, opacity: 0.13 }} />
+                <path
+                  className="portfolio-chart-line-glass"
+                  d={path}
+                  style={{
+                    stroke: item.color,
+                    strokeWidth: isHighlighted ? 1.1 : 0.88,
+                    opacity: isDimmed ? 0.035 : isHighlighted ? 0.26 : 0.13,
+                  }}
+                />
                 <path
                   className="portfolio-chart-line"
                   d={path}
                   style={{
                     stroke: item.color,
-                    strokeWidth: 0.44,
-                    filter: `drop-shadow(0 0 0.18rem ${item.color}42) drop-shadow(0 0 0.5rem rgba(236, 215, 110, 0.12))`,
+                    strokeWidth: isHighlighted ? 0.62 : 0.44,
+                    opacity: isDimmed ? 0.28 : 1,
+                    filter: isDimmed
+                      ? "none"
+                      : `drop-shadow(0 0 0.18rem ${item.color}42) drop-shadow(0 0 ${isHighlighted ? "0.72rem" : "0.5rem"} rgba(236, 215, 110, 0.12))`,
                   }}
                 />
               </g>
@@ -921,7 +1007,7 @@ function PerformanceChart({
             right: "0.82rem",
             bottom: "0.52rem",
             margin: 0,
-            color: "rgba(238, 231, 214, 0.44)",
+            color: "rgba(238, 231, 214, 0.56)",
             fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
             fontSize: "0.5rem",
             textTransform: "uppercase",
@@ -936,10 +1022,10 @@ function PerformanceChart({
 
 export function PerformanceTab({ fundSlots }: { fundSlots: FundSlot[] }) {
   const [timeRange, setTimeRange] = useState<TimeRange>("5Y");
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("LINEAR");
   const [viewMode, setViewMode] = useState<ViewMode>("POINT_TO_POINT");
   const [investmentInput, setInvestmentInput] = useState(() => formatInvestmentInput(DEFAULT_INVESTMENT_AMOUNT));
   const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [hoveredSeriesId, setHoveredSeriesId] = useState<string | null>(null);
   const investmentAmount = parseInvestmentAmount(investmentInput) ?? DEFAULT_INVESTMENT_AMOUNT;
 
   const handleInvestmentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1027,137 +1113,167 @@ export function PerformanceTab({ fundSlots }: { fundSlots: FundSlot[] }) {
 
   return (
     <div style={{ display: "grid", gap: "0.82rem" }}>
-      <section aria-label="Performance controls" style={controlShellStyle}>
-        <div style={controlGroupStyle}>
-          {TIME_RANGES.map((range) => (
-            <button
-              key={range}
-              type="button"
-              className="funds-performance-control-pill"
-              aria-pressed={range === timeRange}
-              onClick={() => setTimeRange(range)}
-              style={range === timeRange ? { ...pillStyle, ...activePillStyle } : pillStyle}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
-        <span aria-hidden="true" style={dividerStyle} />
-        <div style={controlGroupStyle}>
-          {(["LINEAR", "LOG"] as ScaleMode[]).map((scale) => (
-            <button
-              key={scale}
-              type="button"
-              className="funds-performance-control-pill"
-              aria-pressed={scale === scaleMode}
-              onClick={() => setScaleMode(scale)}
-              style={scale === scaleMode ? { ...pillStyle, ...activePillStyle } : pillStyle}
-            >
-              {scale}
-            </button>
-          ))}
-        </div>
-        <span aria-hidden="true" style={dividerStyle} />
-        <div style={controlGroupStyle}>
-          {[
-            { label: "POINT-TO-POINT", value: "POINT_TO_POINT" },
-            { label: "ROLLING 3Y", value: "ROLLING_3Y" },
-          ].map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className="funds-performance-control-pill"
-              aria-pressed={item.value === viewMode}
-              onClick={() => setViewMode(item.value as ViewMode)}
-              style={item.value === viewMode ? { ...pillStyle, ...activePillStyle } : pillStyle}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <span aria-hidden="true" />
-        <div style={{ position: "relative", justifySelf: "end" }}>
-          <button
-            type="button"
-            aria-label="About rolling returns"
-            onMouseEnter={() => setIsHelpVisible(true)}
-            onMouseLeave={() => setIsHelpVisible(false)}
-            onFocus={() => setIsHelpVisible(true)}
-            onBlur={() => setIsHelpVisible(false)}
-            style={{
-              width: "1.45rem",
-              height: "1.45rem",
-              border: "1px solid rgba(255, 242, 209, 0.13)",
-              borderRadius: CHIP_RADIUS,
-              display: "grid",
-              placeItems: "center",
-              color: "rgba(255, 242, 209, 0.72)",
-              background: "rgba(255, 242, 209, 0.035)",
-              cursor: "help",
-              fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-              fontSize: "0.56rem",
-              fontWeight: 700,
-            }}
-          >
-            ?
-          </button>
-          {isHelpVisible ? (
-            <div
-              role="tooltip"
-              style={{
-                ...tooltipChromeStyle,
-                right: 0,
-                top: "2.12rem",
-                width: "18rem",
-                color: "rgba(238, 231, 214, 0.68)",
-                fontSize: "0.64rem",
-                lineHeight: 1.35,
-              }}
-            >
-              Rolling returns show how the fund performed across all possible 3-year holding periods, not just one start-to-end stretch. Less misleading than point-to-point returns.
-            </div>
-          ) : null}
-        </div>
-      </section>
+      <section className="portfolio-glass-panel funds-performance-panel" aria-label="Performance chart and stats" style={heroStyle}>
+        <div className="funds-performance-chart-pane" style={chartPaneStyle}>
+          <div className="funds-chart-toolbar">
+            <header className="funds-performance-chart-header" style={chartHeaderStyle}>
+              <div style={chartTitleBlockStyle}>
+                {viewMode === "ROLLING_3Y" ? (
+                  <h2 style={chartHeadingStyle}>3Y rolling CAGR</h2>
+                ) : (
+                  <label style={chartTitleRowStyle}>
+                    <span>Growth of</span>
+                    <span aria-hidden="true" style={chartTitleCurrencyStyle}>
+                      {"\u20b9"}
+                    </span>
+                    <input
+                      aria-label="Investment amount"
+                      inputMode="numeric"
+                      title="Investment amount"
+                      value={investmentInput}
+                      onChange={handleInvestmentInputChange}
+                      onBlur={handleInvestmentInputBlur}
+                      onFocus={(event) => event.currentTarget.select()}
+                      style={{
+                        ...investmentAmountInputStyle,
+                        width: `${Math.min(Math.max((investmentInput.length || 5) + 3, 9), 18)}ch`,
+                      }}
+                    />
+                    <span>invested</span>
+                  </label>
+                )}
+              </div>
 
-      <section className="portfolio-glass-panel" aria-label="Performance chart and stats" style={heroStyle}>
-        <div style={chartPaneStyle}>
+              <div className="funds-performance-primary-controls" aria-label="Time range" style={primaryRangeStyle}>
+                {TIME_RANGES.map((range) => (
+                  <button
+                    key={range}
+                    type="button"
+                    className="funds-performance-control-pill"
+                    aria-pressed={range === timeRange}
+                    onMouseDown={preventMouseFocus}
+                    onClick={(event) => {
+                      setTimeRange(range);
+                      blurAfterPointerClick(event);
+                    }}
+                    style={range === timeRange ? { ...pillStyle, ...activePillStyle } : pillStyle}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            </header>
+
+            <section aria-label="Performance display controls" style={secondaryControlsRowStyle}>
+              <div style={secondaryControlsRightStyle}>
+                <div style={quietControlGroupStyle}>
+                  <span style={controlLabelStyle}>View</span>
+                  <div style={segmentedControlStyle}>
+                    {[
+                      { label: "POINT-TO-POINT", value: "POINT_TO_POINT" },
+                      { label: "ROLLING 3Y", value: "ROLLING_3Y" },
+                    ].map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        className="funds-performance-control-pill funds-performance-secondary-pill"
+                        aria-pressed={item.value === viewMode}
+                        onMouseDown={preventMouseFocus}
+                        onClick={(event) => {
+                          setViewMode(item.value as ViewMode);
+                          blurAfterPointerClick(event);
+                        }}
+                        style={item.value === viewMode ? activeSecondaryPillStyle : secondaryPillStyle}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    aria-label="About rolling returns"
+                    onMouseEnter={() => setIsHelpVisible(true)}
+                    onMouseLeave={() => setIsHelpVisible(false)}
+                    onFocus={() => setIsHelpVisible(true)}
+                    onBlur={() => setIsHelpVisible(false)}
+                    style={{
+                      width: "1.34rem",
+                      height: "1.34rem",
+                      border: "1px solid rgba(255, 242, 209, 0.12)",
+                      borderRadius: CHIP_RADIUS,
+                      display: "grid",
+                      placeItems: "center",
+                      color: "rgba(255, 242, 209, 0.68)",
+                      background: "rgba(255, 242, 209, 0.026)",
+                      cursor: "help",
+                      fontFamily: FONT_MONO,
+                      fontSize: "0.52rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ?
+                  </button>
+                  {isHelpVisible ? (
+                    <div
+                      role="tooltip"
+                      style={{
+                        ...tooltipChromeStyle,
+                        right: 0,
+                        top: "1.92rem",
+                        width: "18rem",
+                        color: "rgba(238, 231, 214, 0.78)",
+                        fontSize: "0.64rem",
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Rolling returns show how the fund performed across all possible 3-year holding periods, not just one start-to-end stretch.
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          </div>
+
           <PerformanceChart
             series={chartData.series}
             benchmarkSeries={chartData.benchmarkSeries}
             domainDates={domainDates}
             timeRange={timeRange}
-            scaleMode={scaleMode}
             viewMode={viewMode}
-            investmentInput={investmentInput}
             investmentAmount={investmentAmount}
-            onInvestmentInputChange={handleInvestmentInputChange}
-            onInvestmentInputBlur={handleInvestmentInputBlur}
             showInceptionNote={showInceptionNote}
+            hoveredSeriesId={hoveredSeriesId}
+          />
+
+          <ComparisonMatrix
+            funds={sideStats.funds}
+            benchmarkStats={sideStats.benchmarkStats}
+            hoveredSeriesId={hoveredSeriesId}
+            onSeriesHover={setHoveredSeriesId}
           />
         </div>
 
-        <aside aria-label="Performance stats" style={statsPaneStyle}>
-          {sideStats.funds.map((item, index) => (
+        <aside className="funds-performance-stats" aria-label="Performance insights" style={statsPaneStyle}>
+          {sideStats.funds.map((item) => (
             <FundStatCard
               key={item.selectedFund.fund.id}
               selectedFund={item.selectedFund}
-              stats={{ totalReturn: item.totalReturn, cagr: item.cagr }}
-              benchmarkCagr={sideStats.benchmarkStats.cagr}
               commentary={item.commentary}
             />
           ))}
-          <BenchmarkStatRow stats={sideStats.benchmarkStats} />
         </aside>
       </section>
 
       <p
         style={{
           margin: 0,
-          color: "rgba(238, 231, 214, 0.44)",
+          color: "rgba(238, 231, 214, 0.58)",
           fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-          fontSize: "0.5rem",
-          lineHeight: 1.3,
+          fontSize: "0.34rem",
+          lineHeight: 1.25,
           textTransform: "uppercase",
         }}
       >

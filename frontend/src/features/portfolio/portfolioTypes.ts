@@ -1,6 +1,7 @@
 export interface PortfolioHolding {
   ticker: string;
   name: string;
+  exchange?: string;
   sector: string;
   shares: number;
   price: number;
@@ -8,6 +9,7 @@ export interface PortfolioHolding {
   allocation: number;
   dayMove: number;
   risk: "High" | "Medium" | "Low";
+  impact?: string;
 }
 
 export interface PortfolioPerformancePoint {
@@ -34,4 +36,15 @@ export interface PortfolioSuggestedPlay {
   primaryAction: string;
   secondaryAction: string;
   reasons: PortfolioRecommendationReason[];
+}
+
+export interface PortfolioNewsCard {
+  id: string;
+  impact: string;
+  headline: string;
+  source: string;
+  time: string;
+  summary: string;
+  severity: "High Impact" | "Medium Impact" | "Low Impact";
+  tickers: string[];
 }

@@ -100,6 +100,17 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
           )}
         </div>
       </div>
+      <div className="portfolio-allocation-list" aria-label="Allocation breakdown">
+        {holdings.map((holding) => (
+          <div key={holding.ticker} className={`risk-${holding.risk.toLowerCase()}`}>
+            <span>{holding.ticker}</span>
+            <div aria-hidden="true">
+              <i style={{ width: `${holding.allocation}%` }} />
+            </div>
+            <strong>{holding.allocation.toFixed(1)}%</strong>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

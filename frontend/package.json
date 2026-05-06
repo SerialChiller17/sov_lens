@@ -10,6 +10,7 @@
     "test": "vitest run --pool=forks"
   },
   "dependencies": {
+    "@paper-design/shaders": "^0.0.76",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",

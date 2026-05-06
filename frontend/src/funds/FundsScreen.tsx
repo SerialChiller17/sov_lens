@@ -1,13 +1,12 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { AddFundDrawer } from "./AddFundDrawer";
 import { FundSelector } from "./FundSelector";
 import { MOCK_FUNDS } from "./mockFunds";
 import { PerformanceTab } from "./tabs/PerformanceTab";
 import type { Fund, FundSlot } from "./types";
 
-type ComparisonTab = "Performance" | "Allocation" | "Risk" | "Cost" | "Stress Test";
+type ComparisonTab = "Performance" | "Allocation" | "Risk" | "Overlap";
 
-const COMPARISON_TABS: ComparisonTab[] = ["Performance", "Allocation", "Risk", "Cost", "Stress Test"];
+const COMPARISON_TABS: ComparisonTab[] = ["Performance", "Allocation", "Risk", "Overlap"];
 
 const BENCHMARK_TAPE = [
   { label: "NIFTY 50 TRI", value: "37,842.20", move: "+0.42%", direction: "up" },
@@ -20,9 +19,9 @@ const BENCHMARK_TAPE = [
 ] as const;
 
 const shellStyle: CSSProperties = {
-  // Mobile is a separate project.
-  minWidth: "1100px",
-  overflowX: "auto",
+  minWidth: 0,
+  overflowX: "hidden",
+  overflowY: "auto",
 };
 
 const OUTER_RADIUS = "8px";
@@ -33,9 +32,9 @@ const contentStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "1fr",
   alignContent: "start",
-  gap: "0.72rem",
+  gap: "0.56rem",
   minHeight: "100%",
-  padding: "6.58rem clamp(1rem, 2.35vw, 2.7rem) 1.1rem",
+  padding: "5.92rem clamp(1rem, 2.35vw, 2.7rem) 1.1rem",
   isolation: "isolate",
 };
 
@@ -43,8 +42,8 @@ const bodyPanelStyle: CSSProperties = {
   minHeight: "22rem",
   display: "grid",
   gridTemplateRows: "auto minmax(0, 1fr)",
-  gap: "0.62rem",
-  padding: "0.68rem",
+  gap: "0.46rem",
+  padding: "0.56rem",
 };
 
 const tabStripStyle: CSSProperties = {
@@ -58,24 +57,28 @@ const tabStripStyle: CSSProperties = {
 };
 
 const tabButtonStyle: CSSProperties = {
-  minHeight: "2.02rem",
+  position: "relative",
+  minHeight: "1.82rem",
   border: 0,
   borderRight: "1px solid rgba(255, 242, 209, 0.09)",
-  padding: "0 0.76rem",
-  color: "rgba(238, 231, 214, 0.58)",
+  padding: "0 0.66rem",
+  color: "rgba(238, 231, 214, 0.68)",
   background:
     "linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.02)), rgba(0, 0, 0, 0.26)",
   cursor: "pointer",
   fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-  fontSize: "0.56rem",
+  fontSize: "0.54rem",
   fontWeight: 700,
   textTransform: "uppercase",
 };
 
 const activeTabStyle: CSSProperties = {
   color: "rgba(255, 250, 235, 0.96)",
+  textShadow: "0 0 0.7rem rgba(255, 242, 209, 0.18)",
   background:
-    "linear-gradient(180deg, rgba(255, 242, 209, 0.12), rgba(255, 242, 209, 0.038)), rgba(10, 10, 9, 0.72)",
+    "linear-gradient(180deg, rgba(255, 242, 209, 0.22), rgba(255, 242, 209, 0.075) 48%, rgba(255, 242, 209, 0.035)), rgba(18, 17, 15, 0.92)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255, 250, 235, 0.22), inset 0 -1px 0 rgba(255, 242, 209, 0.1), 0 0.62rem 1.35rem rgba(0, 0, 0, 0.28)",
 };
 
 const placeholderStyle: CSSProperties = {
@@ -301,30 +304,14 @@ function RiskWireframe() {
   );
 }
 
-function CostWireframe() {
+function OverlapWireframe() {
   return (
     <div style={wireframeShellStyle}>
       <InDevelopmentChip />
       <div style={{ display: "grid", gap: "0.88rem", paddingRight: "7.8rem" }}>
-        <WireShape style={{ height: "3.2rem" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, max-content)", gap: "0.48rem" }}>
-          {[0, 1, 2, 3].map((item) => (
-            <WireShape key={item} style={{ width: "5.2rem", height: "1.65rem", borderRadius: CHIP_RADIUS }} />
-          ))}
-        </div>
-        <ChartFrame height="10.2rem" />
-      </div>
-    </div>
-  );
-}
-
-function StressTestWireframe() {
-  return (
-    <div style={wireframeShellStyle}>
-      <InDevelopmentChip />
-      <div style={{ display: "grid", gap: "0.88rem", paddingRight: "7.8rem" }}>
+        <OverlapWarningBar />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.72rem" }}>
-          {["COVID Crash", "2022 Correction", "2008 GFC"].map((label) => (
+          {["Shared holdings", "Sector crowding", "True diversification"].map((label) => (
             <div key={label} style={{ ...wireShapeBaseStyle, minHeight: "4rem", display: "grid", placeItems: "center" }}>
               <span
                 style={{
@@ -340,7 +327,7 @@ function StressTestWireframe() {
             </div>
           ))}
         </div>
-        <ChartWithLegend height="11.4rem" />
+        <ChartWithLegend height="10.8rem" />
       </div>
     </div>
   );
@@ -349,8 +336,7 @@ function StressTestWireframe() {
 function TabWireframe({ tab }: { tab: ComparisonTab }) {
   if (tab === "Allocation") return <AllocationWireframe />;
   if (tab === "Risk") return <RiskWireframe />;
-  if (tab === "Cost") return <CostWireframe />;
-  if (tab === "Stress Test") return <StressTestWireframe />;
+  if (tab === "Overlap") return <OverlapWireframe />;
   return null;
 }
 
@@ -358,12 +344,12 @@ function FundsMarketTape() {
   const tapeItems = [...BENCHMARK_TAPE, ...BENCHMARK_TAPE];
 
   return (
-    <section className="market-tape" aria-label="Fund benchmark tape">
+    <section className="market-tape funds-market-tape" aria-label="Fund benchmark tape">
       <div className="market-tape-status">
         <span aria-hidden="true" />
         <strong>Benchmarks</strong>
       </div>
-      <div className="market-tape-viewport" aria-label="Fund comparison benchmark tape" style={{ paddingLeft: "1.18rem" }}>
+      <div className="market-tape-viewport" aria-label="Fund comparison benchmark tape">
         <div className="market-tape-track">
           {tapeItems.map((item, index) => (
             <div
@@ -395,7 +381,7 @@ function ComparisonBody({
   onTabChange: (tab: ComparisonTab) => void;
   onOpenDrawer: () => void;
 }) {
-  if (filledCount < 2) {
+  if (filledCount === 0) {
     return (
       <section className="portfolio-glass-panel" aria-label="Fund comparison empty state" style={{ ...bodyPanelStyle, gridTemplateRows: "minmax(0, 1fr)" }}>
         <div style={placeholderStyle}>
@@ -408,7 +394,7 @@ function ComparisonBody({
                 fontWeight: 600,
               }}
             >
-              Add at least two funds to compare.
+              Add a fund to start.
             </p>
             <button
               type="button"
@@ -440,6 +426,21 @@ function ComparisonBody({
             }}
           >
             {tab}
+            {tab === activeTab ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  right: "0.58rem",
+                  bottom: 0,
+                  left: "0.58rem",
+                  height: "2px",
+                  borderRadius: CHIP_RADIUS,
+                  background: "linear-gradient(90deg, transparent, rgba(255, 242, 209, 0.72), transparent)",
+                  boxShadow: "0 0 0.55rem rgba(255, 242, 209, 0.24)",
+                }}
+              />
+            ) : null}
           </button>
         ))}
       </div>
@@ -451,11 +452,10 @@ function ComparisonBody({
 
 export function FundsScreen({ navigation }: { navigation: ReactNode }) {
   const [fundSlots, setFundSlots] = useState<FundSlot[]>(initialFundSlots);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFundPickerOpen, setIsFundPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ComparisonTab>("Performance");
 
   const filledCount = useMemo(() => fundSlots.filter(Boolean).length, [fundSlots]);
-  const hasOpenSlot = fundSlots.some((fund) => !fund);
 
   const removeFund = (slotIndex: number) => {
     setFundSlots((currentSlots) => currentSlots.map((fund, index) => (index === slotIndex ? null : fund)));
@@ -463,11 +463,12 @@ export function FundsScreen({ navigation }: { navigation: ReactNode }) {
 
   const addFund = (fund: Fund) => {
     setFundSlots((currentSlots) => {
+      if (currentSlots.some((slot) => slot?.id === fund.id)) return currentSlots;
       const emptyIndex = currentSlots.findIndex((slot) => !slot);
       if (emptyIndex === -1) return currentSlots;
       return currentSlots.map((slot, index) => (index === emptyIndex ? fund : slot));
     });
-    setIsDrawerOpen(false);
+    setIsFundPickerOpen(false);
   };
 
   return (
@@ -481,41 +482,39 @@ export function FundsScreen({ navigation }: { navigation: ReactNode }) {
         <section className="portfolio-dashboard" aria-label="Funds compare workspace">
           <header className="portfolio-section-header">
             <div>
-              <span>Mutual Fund Comparison</span>
-              <h1>Funds</h1>
+              <h1 style={{ fontSize: "clamp(1.9rem, 2.35vw, 2.3rem)", lineHeight: 0.96 }}>Mutual Funds</h1>
               <p
                 style={{
                   maxWidth: "34rem",
-                  margin: "0.45rem 0 0",
-                  color: "rgba(238, 231, 214, 0.58)",
-                  fontSize: "0.86rem",
-                  lineHeight: 1.5,
+                  margin: "0.34rem 0 0",
+                  color: "rgba(238, 231, 214, 0.68)",
+                  fontSize: "0.82rem",
+                  lineHeight: 1.34,
                 }}
               >
-                Compare up to 4 funds across performance, allocation, risk, and cost.
+                Compare up to 4 funds across performance, allocation, risk, and overlap.
               </p>
             </div>
           </header>
 
-          <FundSelector slots={fundSlots} onRemove={removeFund} onOpenDrawer={() => setIsDrawerOpen(true)} />
+          <FundSelector
+            slots={fundSlots}
+            funds={MOCK_FUNDS}
+            isPickerOpen={isFundPickerOpen}
+            onPickerOpenChange={setIsFundPickerOpen}
+            onRemove={removeFund}
+            onAddFund={addFund}
+          />
 
           <ComparisonBody
             filledCount={filledCount}
             activeTab={activeTab}
             fundSlots={fundSlots}
             onTabChange={setActiveTab}
-            onOpenDrawer={() => setIsDrawerOpen(true)}
+            onOpenDrawer={() => setIsFundPickerOpen(true)}
           />
         </section>
       </section>
-
-      <AddFundDrawer
-        isOpen={isDrawerOpen}
-        funds={MOCK_FUNDS}
-        hasOpenSlot={hasOpenSlot}
-        onClose={() => setIsDrawerOpen(false)}
-        onAddFund={addFund}
-      />
     </main>
   );
 }

@@ -20,7 +20,7 @@ function App() {
   const [activeView, setActiveView] = useState(() => routeToView(window.location.pathname));
 
   useEffect(() => {
-    if (activeView === "funds" || data) return;
+    if (activeView === "funds" || activeView === "portfolio" || data) return;
 
     getBootstrapData()
       .then(setData)
@@ -79,6 +79,10 @@ function App() {
     );
   }
 
+  if (activeView === "portfolio") {
+    return <PortfolioScreen onHome={navigateToLensDashboard} onFunds={navigateToFunds} onPortfolio={navigateToPortfolio} />;
+  }
+
   if (error) {
     return (
       <main className="app-shell error-shell">
@@ -117,10 +121,6 @@ function App() {
         onSectorSelect={setSelectedSectorId}
       />
     );
-  }
-
-  if (activeView === "portfolio") {
-    return <PortfolioScreen onHome={navigateToLensDashboard} onFunds={navigateToFunds} onPortfolio={navigateToPortfolio} />;
   }
 
   return (

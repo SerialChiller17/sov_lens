@@ -1,9 +1,18 @@
 export function formatPortfolioCurrency(value: number) {
-  return `$${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export function formatPortfolioTapePrice(value: number) {
-  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 export function formatSignedPortfolioCurrency(value: number) {
