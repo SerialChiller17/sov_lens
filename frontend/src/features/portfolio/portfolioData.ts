@@ -1,6 +1,6 @@
 import type { MarketTapeBasket } from "../../types";
 import { formatPortfolioTapePrice } from "./portfolioFormatters";
-import type { PortfolioHolding, PortfolioNewsCard, PortfolioPerformancePoint, PortfolioSuggestedPlay } from "./portfolioTypes";
+import type { PortfolioHolding, PortfolioHoldingContext, PortfolioNewsCard, PortfolioPerformancePoint, PortfolioSuggestedPlay } from "./portfolioTypes";
 
 export const PORTFOLIO_HOLDINGS: PortfolioHolding[] = [
   {
@@ -104,6 +104,64 @@ export const PORTFOLIO_MARKET_TAPE: MarketTapeBasket = {
     move: `${holding.dayMove > 0 ? "+" : ""}${holding.dayMove.toFixed(2)}%`,
     direction: holding.dayMove >= 0 ? "up" : "down",
   })),
+};
+
+export const PORTFOLIO_HOLDING_CONTEXT: Record<string, PortfolioHoldingContext> = {
+  ICICIBANK: {
+    riskReason: "High-quality bank, but it moves with the same private-bank cycle as HDFC Bank.",
+    signal: "Leadership holding; confirms Bank Nifty breadth.",
+    nextCheck: "Deposit cost and credit growth commentary.",
+    exposureCluster: "Private banks",
+  },
+  TATAMOTORS: {
+    riskReason: "Higher beta because JLR margins, exports, and EV demand can reprice quickly.",
+    signal: "Main upside driver today, but momentum is already crowded.",
+    nextCheck: "JLR margin and domestic PV volume.",
+    exposureCluster: "Auto / exports",
+  },
+  TCS: {
+    riskReason: "Lower balance-sheet risk, but exposed to US tech spending and guidance tone.",
+    signal: "Quality anchor; needs demand confirmation.",
+    nextCheck: "Order book, BFSI demand, and margin guidance.",
+    exposureCluster: "IT services",
+  },
+  HDFCBANK: {
+    riskReason: "Lower stock-specific risk, but adds to private-bank concentration.",
+    signal: "Stability sleeve inside financials.",
+    nextCheck: "NIM stabilisation and deposit growth.",
+    exposureCluster: "Private banks",
+  },
+  LT: {
+    riskReason: "Execution risk exists, but order-book visibility makes the holding cleaner.",
+    signal: "Domestic capex exposure with steadier fundamentals.",
+    nextCheck: "Order inflow and margin delivery.",
+    exposureCluster: "Domestic capex",
+  },
+  RELIANCE: {
+    riskReason: "Mixed conglomerate exposure; crude and refining spreads can offset consumer growth.",
+    signal: "Main drag today from O2C uncertainty.",
+    nextCheck: "Refining spread, Jio ARPU, and retail margin commentary.",
+    exposureCluster: "Energy / consumer",
+  },
+  INFY: {
+    riskReason: "Medium risk from US discretionary spending and cautious guidance.",
+    signal: "Weak spot unless deal wins broaden.",
+    nextCheck: "BFSI recovery and FY guidance tone.",
+    exposureCluster: "IT services",
+  },
+};
+
+export const PORTFOLIO_AI_TRUST = {
+  lastUpdated: "Updated 9m ago",
+  sourceCount: 49,
+  confidence: "Medium-high",
+  changedToday: ["Private banks widened leadership", "Tata Motors added most upside", "Reliance stayed the main drag"],
+  assumptions: [
+    "Portfolio values are local sample holdings, not a broker sync.",
+    "Market/news references are frontend product-demo context.",
+    "Recommendations are sizing logic, not trade execution.",
+  ],
+  needsConfirmation: ["Bank Nifty breadth after earnings", "JLR margin commentary", "IT demand beyond currency support"],
 };
 
 export const PORTFOLIO_INVESTED_VALUE = 900000;
@@ -220,6 +278,8 @@ export const PORTFOLIO_SUGGESTED_PLAYS: PortfolioSuggestedPlay[] = [
     ],
     primaryAction: "Set sleeve target",
     secondaryAction: "View logic",
+    confidence: "Medium",
+    wouldChange: "This becomes less urgent if non-bank holdings regain leadership or financials fall below a 30% sleeve.",
     reasons: [
       { icon: "chip", text: "ICICI + HDFC = 32.0% allocation", emphasis: "32.0%" },
       { icon: "risk", text: "Main risk: bank cycle crowding" },
@@ -243,6 +303,8 @@ export const PORTFOLIO_SUGGESTED_PLAYS: PortfolioSuggestedPlay[] = [
     ],
     primaryAction: "Track margin",
     secondaryAction: "View logic",
+    confidence: "High",
+    wouldChange: "This turns constructive if JLR margin holds and EV volume grows without valuation stretching further.",
     reasons: [
       { icon: "chip", text: "Tata Motors = 16.1% allocation", emphasis: "16.1%" },
       { icon: "risk", text: "Main risk: export and margin beta" },
@@ -266,6 +328,8 @@ export const PORTFOLIO_SUGGESTED_PLAYS: PortfolioSuggestedPlay[] = [
     ],
     primaryAction: "Compare funds",
     secondaryAction: "View logic",
+    confidence: "Medium",
+    wouldChange: "This is less important if direct-stock concentration falls or a broader diversified sleeve already exists.",
     reasons: [
       { icon: "chip", text: "7 stocks drive current portfolio behavior", emphasis: "7 stocks" },
       { icon: "risk", text: "Main risk: single-stock concentration" },

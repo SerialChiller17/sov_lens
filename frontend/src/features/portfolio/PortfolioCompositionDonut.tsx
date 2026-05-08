@@ -36,7 +36,7 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
   return (
     <div className="portfolio-donut-composition" onMouseLeave={() => setActiveTicker(null)} onBlur={() => setActiveTicker(null)}>
       <div className="portfolio-donut-stage">
-        <svg className="portfolio-donut-chart" viewBox="0 0 112 112" role="img" aria-label="Interactive stock allocation donut chart">
+        <svg className="portfolio-donut-chart" viewBox="0 0 112 112" role="img" aria-label="Stock allocation donut chart. Focus or hover a segment to preview its allocation.">
           <circle className="portfolio-donut-track" cx="56" cy="56" r="42" />
           {segments.map((segment) => (
             <g
@@ -99,17 +99,6 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
             </div>
           )}
         </div>
-      </div>
-      <div className="portfolio-allocation-list" aria-label="Allocation breakdown">
-        {holdings.map((holding) => (
-          <div key={holding.ticker} className={`risk-${holding.risk.toLowerCase()}`}>
-            <span>{holding.ticker}</span>
-            <div aria-hidden="true">
-              <i style={{ width: `${holding.allocation}%` }} />
-            </div>
-            <strong>{holding.allocation.toFixed(1)}%</strong>
-          </div>
-        ))}
       </div>
     </div>
   );

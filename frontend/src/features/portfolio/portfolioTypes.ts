@@ -12,6 +12,13 @@ export interface PortfolioHolding {
   impact?: string;
 }
 
+export interface PortfolioHoldingContext {
+  riskReason: string;
+  signal: string;
+  nextCheck: string;
+  exposureCluster: string;
+}
+
 export interface PortfolioPerformancePoint {
   label: string;
   value: number;
@@ -36,6 +43,8 @@ export interface PortfolioSuggestedPlay {
   primaryAction: string;
   secondaryAction: string;
   reasons: PortfolioRecommendationReason[];
+  confidence?: "High" | "Medium" | "Low";
+  wouldChange?: string;
 }
 
 export interface PortfolioNewsCard {

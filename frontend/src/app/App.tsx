@@ -5,12 +5,22 @@ import { MarketTape } from "../features/market-tape/MarketTape";
 import { EventsDashboard } from "../features/events/EventsDashboard";
 import { DEFAULT_NEWS_ID, GEO_NEWS_FEED } from "../features/events/eventsData";
 import { NewsArticleView } from "../features/events/NewsArticleView";
-import { PortfolioScreen } from "../features/portfolio/PortfolioScreen";
+import { EarningsScreen, IndianMarketsScreen, PortfolioScreen, ScreenerScreen, WatchlistScreen } from "../features/portfolio/PortfolioScreen";
 import { FundsScreen } from "../funds/FundsScreen";
 import { GlobeMonitor } from "../globe-monitor/GlobeMonitor";
 import type { BootstrapData } from "../types";
 import { GlobalBrandNav } from "./GlobalBrandNav";
-import { FUNDS_PATH, newsIdFromArticlePath, PORTFOLIO_PATH, routeToView, NEWS_DASHBOARD_PATH } from "./routes";
+import {
+  EARNINGS_PATH,
+  FUNDS_PATH,
+  MARKETS_PATH,
+  newsIdFromArticlePath,
+  PORTFOLIO_PATH,
+  routeToView,
+  NEWS_DASHBOARD_PATH,
+  SCREENER_PATH,
+  WATCHLIST_PATH,
+} from "./routes";
 
 function App() {
   const [data, setData] = useState<BootstrapData | null>(null);
@@ -20,7 +30,7 @@ function App() {
   const [activeView, setActiveView] = useState(() => routeToView(window.location.pathname));
 
   useEffect(() => {
-    if (activeView === "funds" || activeView === "portfolio" || data) return;
+    if (["markets", "earnings", "screener", "funds", "watchlist", "portfolio"].includes(activeView) || data) return;
 
     getBootstrapData()
       .then(setData)
@@ -55,10 +65,44 @@ function App() {
     }
   };
 
+  const navigateToMarkets = () => {
+    setActiveView("markets");
+    if (window.location.pathname !== MARKETS_PATH) {
+      window.history.pushState({}, "", MARKETS_PATH);
+    }
+  };
+
+  const navigateToEarnings = (query?: string) => {
+    const trimmedQuery = query?.trim() ?? "";
+    const nextPath = trimmedQuery ? `${EARNINGS_PATH}?q=${encodeURIComponent(trimmedQuery)}` : EARNINGS_PATH;
+
+    setActiveView("earnings");
+    if (`${window.location.pathname}${window.location.search}` !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+  };
+
   const navigateToFunds = () => {
     setActiveView("funds");
     if (window.location.pathname !== FUNDS_PATH) {
       window.history.pushState({}, "", FUNDS_PATH);
+    }
+  };
+
+  const navigateToScreener = (query?: string) => {
+    const trimmedQuery = query?.trim() ?? "";
+    const nextPath = trimmedQuery ? `${SCREENER_PATH}?q=${encodeURIComponent(trimmedQuery)}` : SCREENER_PATH;
+
+    setActiveView("screener");
+    if (`${window.location.pathname}${window.location.search}` !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+  };
+
+  const navigateToWatchlist = () => {
+    setActiveView("watchlist");
+    if (window.location.pathname !== WATCHLIST_PATH) {
+      window.history.pushState({}, "", WATCHLIST_PATH);
     }
   };
 
@@ -69,18 +113,52 @@ function App() {
     }
   };
 
-  if (activeView === "funds") {
+  const financeNavigation = {
+    onHome: navigateToLensDashboard,
+    onMarkets: navigateToMarkets,
+    onEarnings: navigateToEarnings,
+    onFunds: navigateToFunds,
+    onScreener: navigateToScreener,
+    onWatchlist: navigateToWatchlist,
+    onPortfolio: navigateToPortfolio,
+  };
+
+  if (activeView === "markets") {
+    return <IndianMarketsScreen {...financeNavigation} />;
+  }
+
+  if (activeView === "earnings") {
     return (
-      <FundsScreen
-        navigation={
-          <GlobalBrandNav activeView="funds" onHome={navigateToLensDashboard} onFunds={navigateToFunds} onPortfolio={navigateToPortfolio} />
-        }
+      <EarningsScreen
+        initialQuery={new URLSearchParams(window.location.search).get("q") ?? ""}
+        {...financeNavigation}
       />
     );
   }
 
+  if (activeView === "funds") {
+    return (
+      <FundsScreen
+        navigation={<GlobalBrandNav activeView="funds" {...financeNavigation} />}
+      />
+    );
+  }
+
+  if (activeView === "screener") {
+    return (
+      <ScreenerScreen
+        initialQuery={new URLSearchParams(window.location.search).get("q") ?? ""}
+        {...financeNavigation}
+      />
+    );
+  }
+
+  if (activeView === "watchlist") {
+    return <WatchlistScreen {...financeNavigation} />;
+  }
+
   if (activeView === "portfolio") {
-    return <PortfolioScreen onHome={navigateToLensDashboard} onFunds={navigateToFunds} onPortfolio={navigateToPortfolio} />;
+    return <PortfolioScreen {...financeNavigation} />;
   }
 
   if (error) {
@@ -125,7 +203,10 @@ function App() {
 
   return (
     <main className="app-shell global-monitor-app">
-      <GlobalBrandNav activeView={activeView} onHome={navigateToLensDashboard} onFunds={navigateToFunds} onPortfolio={navigateToPortfolio} />
+      <GlobalBrandNav
+        activeView={activeView}
+        {...financeNavigation}
+      />
       <MarketTape basket={GLOBAL_MARKET_TAPE} />
       <GlobeMonitor />
     </main>

@@ -137,6 +137,29 @@ export interface WatchlistMovement {
   sources: number;
 }
 
+export interface ScreenerRowContext {
+  reason: string;
+  riskNote: string;
+  nextCatalyst: string;
+  themeTags: string[];
+}
+
+export interface WatchlistItemContext {
+  reasonWatched: string;
+  alertReason: string;
+  riskCluster: string;
+  latestSignal: string;
+  relatedEarnings: string;
+}
+
+export interface EarningsEventContext {
+  importance: "High impact" | "Medium impact" | "Low impact";
+  relevance: string[];
+  theme: string;
+  whyItMatters: string;
+  watchFor: string;
+}
+
 export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
   {
     symbol: "NIFTY 50",
@@ -434,7 +457,17 @@ export const EARNINGS_EVENTS: EarningsEvent[] = [
   },
 ];
 
-export const SCREENER_PRESETS = ["All", "Quality", "Low debt", "Momentum", "Dividend"] as const;
+export const SCREENER_PRESETS = [
+  "All",
+  "Quality compounders",
+  "Value opportunities",
+  "Momentum leaders",
+  "Low debt",
+  "High ROE",
+  "Large-cap safety",
+  "Earnings momentum",
+  "Dividend",
+] as const;
 
 export const SCREENER_ROWS: ScreenerRow[] = [
   { ticker: "RELIANCE", name: "Reliance Industries", exchange: "NSE", sector: "Energy / Consumer", marketCapCr: 1945000, price: 1437.85, pe: 27.4, oneDay: -1.8, oneMonth: 1.6, oneYear: 12.2, revenueGrowth: 7.8, profitGrowth: 8.4, roe: 9.7, debtEquity: 0.36, dividendYield: 0.35 },
@@ -450,6 +483,75 @@ export const SCREENER_ROWS: ScreenerRow[] = [
   { ticker: "ADANIGREEN", name: "Adani Green Energy", exchange: "NSE", sector: "Utilities", marketCapCr: 276000, price: 1742.2, pe: 104.3, oneDay: 1.1, oneMonth: 4.2, oneYear: 24.8, revenueGrowth: 28.8, profitGrowth: 33.0, roe: 18.4, debtEquity: 5.2, dividendYield: 0 },
 ];
 
+export const SCREENER_ROW_CONTEXT: Record<string, ScreenerRowContext> = {
+  RELIANCE: {
+    reason: "Large-cap energy and consumer exposure with crude sensitivity now visible.",
+    riskNote: "O2C margins and crude volatility can offset Jio and retail strength.",
+    nextCatalyst: "Q4 commentary on refining spread, retail margins, and Jio ARPU.",
+    themeTags: ["Large-cap", "Crude sensitivity", "Consumer scale"],
+  },
+  TCS: {
+    reason: "High ROE, low debt, and dividend support, but momentum is not yet strong.",
+    riskNote: "US discretionary tech spending and BFSI demand remain the swing factors.",
+    nextCatalyst: "Order book and margin guidance in Q4 commentary.",
+    themeTags: ["Quality", "Low debt", "Dividend"],
+  },
+  HDFCBANK: {
+    reason: "Large-cap bank with improving NIM stabilisation and low balance-sheet risk.",
+    riskNote: "Adds to private-bank concentration if paired with ICICI Bank.",
+    nextCatalyst: "Deposit growth and net interest margin trend.",
+    themeTags: ["Large-cap", "Financials", "Safety"],
+  },
+  ICICIBANK: {
+    reason: "Bank leadership, positive 1M momentum, and improving profitability.",
+    riskNote: "The stock is highly tied to the private-bank cycle.",
+    nextCatalyst: "Credit growth, deposit cost, and asset-quality commentary.",
+    themeTags: ["Momentum", "Financials", "Quality"],
+  },
+  INFY: {
+    reason: "Low debt and high ROE, but weak 1M and 1Y price trend.",
+    riskNote: "Guidance risk remains until US demand broadens beyond currency support.",
+    nextCatalyst: "Deal wins and BFSI recovery commentary.",
+    themeTags: ["Quality", "Dividend", "IT demand"],
+  },
+  LT: {
+    reason: "Capex-linked growth, healthy profit expansion, and strong 1Y trend.",
+    riskNote: "Execution and order conversion matter more than broad market beta.",
+    nextCatalyst: "Order inflow and margin delivery.",
+    themeTags: ["Capex", "Momentum", "Industrials"],
+  },
+  TATAMOTORS: {
+    reason: "Strong 1M/1Y momentum with earnings acceleration after JLR margin strength.",
+    riskNote: "Higher beta from exports, commodity costs, and EV demand expectations.",
+    nextCatalyst: "JLR margin, domestic PV volume, and EV commentary.",
+    themeTags: ["Momentum", "Auto", "Earnings momentum"],
+  },
+  BHARTIARTL: {
+    reason: "Strong 1Y trend and earnings growth tied to ARPU upgrades.",
+    riskNote: "Debt and valuation make tariff execution important.",
+    nextCatalyst: "ARPU, tariff action, and subscriber quality.",
+    themeTags: ["Telecom", "Momentum", "Earnings growth"],
+  },
+  ASIANPAINT: {
+    reason: "High ROE and low debt, but valuation remains premium versus growth.",
+    riskNote: "Margin pressure and weak 1Y trend reduce near-term urgency.",
+    nextCatalyst: "Volume growth and raw-material margin commentary.",
+    themeTags: ["Quality", "Low debt", "Consumer"],
+  },
+  ZOMATO: {
+    reason: "Strong price momentum and rapid profit growth from a high-growth internet name.",
+    riskNote: "Valuation is stretched and can reprice quickly if margins disappoint.",
+    nextCatalyst: "Quick-commerce margin and order-frequency update.",
+    themeTags: ["Momentum", "Consumer internet", "High growth"],
+  },
+  ADANIGREEN: {
+    reason: "High growth and utilities theme exposure, but leverage is elevated.",
+    riskNote: "Debt/equity is high, so financing cost and execution risk matter.",
+    nextCatalyst: "Capacity addition, debt refinancing, and tariff visibility.",
+    themeTags: ["Renewables", "High growth", "Leverage risk"],
+  },
+};
+
 export const WATCHLIST_ITEMS: WatchlistItem[] = [
   { ticker: "INFY", name: "Infosys", exchange: "NSE", sector: "IT Services", price: 1167.2, oneDay: -0.93, fiveDay: -2.33, oneMonth: -6.48, sixMonth: -20.42, ytd: -7.2, alert: true, note: "Watch guidance tone and BFSI demand.", points: [35, 34, 32, 31, 32, 30, 29, 28] },
   { ticker: "ICICIBANK", name: "ICICI Bank", exchange: "NSE", sector: "Financials", price: 1809.9, oneDay: 1.86, fiveDay: 2.72, oneMonth: 5.66, sixMonth: -9.55, ytd: 8.4, alert: false, note: "Leadership name for Bank Nifty confirmation.", points: [22, 23, 24, 26, 28, 31, 32, 34] },
@@ -458,6 +560,89 @@ export const WATCHLIST_ITEMS: WatchlistItem[] = [
   { ticker: "BHARTIARTL", name: "Bharti Airtel", exchange: "NSE", sector: "Telecom", price: 1398.6, oneDay: 1.53, fiveDay: 3.7, oneMonth: 5.9, sixMonth: 22.6, ytd: 14.1, alert: false, note: "ARPU and tariff action remain the main catalysts.", points: [24, 25, 25, 27, 28, 30, 31, 33] },
   { ticker: "ZOMATO", name: "Zomato", exchange: "NSE", sector: "Consumer Internet", price: 203.5, oneDay: 3.8, fiveDay: 7.2, oneMonth: 11.2, sixMonth: 38.4, ytd: 31.2, alert: true, note: "High momentum; watch quick-commerce margins.", points: [18, 19, 22, 25, 29, 32, 36, 39] },
 ];
+
+export const WATCHLIST_ITEM_CONTEXT: Record<string, WatchlistItemContext> = {
+  INFY: {
+    reasonWatched: "Quality IT name, but guidance risk keeps it on watch.",
+    alertReason: "Alert when guidance tone or BFSI demand changes.",
+    riskCluster: "IT demand",
+    latestSignal: "Deal wins improved, but discretionary spending remains selective.",
+    relatedEarnings: "Recent result already reported; guidance follow-through is the next check.",
+  },
+  ICICIBANK: {
+    reasonWatched: "Leadership name for confirming private-bank breadth.",
+    alertReason: "Alert if Bank Nifty leadership narrows or deposit costs rise.",
+    riskCluster: "Private banks",
+    latestSignal: "Outperformed broader financials as credit growth steadied.",
+    relatedEarnings: "Bank commentary matters for the full financials sleeve.",
+  },
+  RELIANCE: {
+    reasonWatched: "Portfolio drag and macro swing name tied to crude and consumer scale.",
+    alertReason: "Alert around O2C margins, crude moves, and Jio ARPU commentary.",
+    riskCluster: "Crude / O2C",
+    latestSignal: "Crude relief helps India, but refining spread visibility is uneven.",
+    relatedEarnings: "Reports today; refining and retail commentary are high impact.",
+  },
+  TATAMOTORS: {
+    reasonWatched: "Momentum leader with higher-beta JLR and EV exposure.",
+    alertReason: "Alert if JLR margin or export-demand commentary weakens.",
+    riskCluster: "Auto exports",
+    latestSignal: "Strong recent result kept momentum intact.",
+    relatedEarnings: "Recent JLR margin surprise still drives the stock read.",
+  },
+  BHARTIARTL: {
+    reasonWatched: "Telecom ARPU upgrade cycle and defensive growth exposure.",
+    alertReason: "Alert on tariff action, ARPU changes, or regulatory pressure.",
+    riskCluster: "Telecom ARPU",
+    latestSignal: "Telecom names firmed as upgrade-cycle confidence improved.",
+    relatedEarnings: "Watch sector commentary more than a single event.",
+  },
+  ZOMATO: {
+    reasonWatched: "High-momentum consumer internet name with quick-commerce upside.",
+    alertReason: "Alert if quick-commerce margins or valuation sentiment turn.",
+    riskCluster: "High-growth valuation",
+    latestSignal: "Momentum extended on quick-commerce margin optimism.",
+    relatedEarnings: "Margins and order frequency are the next useful checks.",
+  },
+};
+
+export const EARNINGS_EVENT_CONTEXT: Record<string, EarningsEventContext> = {
+  "reliance-q4": {
+    importance: "High impact",
+    relevance: ["Portfolio relevant", "Watchlist relevant", "Sector bellwether"],
+    theme: "Energy / consumer",
+    whyItMatters: "Reliance can move portfolio returns through crude, retail, and Jio commentary at the same time.",
+    watchFor: "Refining spread, retail margin, and Jio ARPU.",
+  },
+  "tcs-q4": {
+    importance: "High impact",
+    relevance: ["Portfolio relevant", "Sector bellwether"],
+    theme: "IT services",
+    whyItMatters: "TCS sets the demand tone for Indian IT and helps confirm whether currency support is enough.",
+    watchFor: "Order book, BFSI demand, and margin guidance.",
+  },
+  "hdfc-bank-q4": {
+    importance: "High impact",
+    relevance: ["Portfolio relevant", "Sector bellwether"],
+    theme: "Private banks",
+    whyItMatters: "HDFC Bank can confirm whether bank leadership is durable or only index-heavy.",
+    watchFor: "Deposit growth, NIM stability, and asset quality.",
+  },
+  "infosys-recent": {
+    importance: "Medium impact",
+    relevance: ["Portfolio relevant", "Watchlist relevant"],
+    theme: "IT services",
+    whyItMatters: "Infosys is the cleaner check on whether deal wins can offset cautious guidance.",
+    watchFor: "BFSI spending recovery and large deal conversion.",
+  },
+  "tatamotors-recent": {
+    importance: "High impact",
+    relevance: ["Portfolio relevant", "Watchlist relevant"],
+    theme: "Auto / exports",
+    whyItMatters: "Tata Motors is a major upside contributor, but the read depends on JLR margins holding.",
+    watchFor: "JLR margin, EV volume, and commodity cost pressure.",
+  },
+};
 
 export const WATCHLIST_NEWS: WatchlistNewsItem[] = [
   { ticker: "ICICIBANK", source: "Broker note", time: "18 minutes ago", headline: "Private bank leadership broadens as credit growth stabilizes" },

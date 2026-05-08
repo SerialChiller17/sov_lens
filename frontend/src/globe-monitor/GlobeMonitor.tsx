@@ -676,7 +676,7 @@ function IntelligencePanel({
               <span>Suggested Plays</span>
               <div>
                 {activeDetail.suggestedPlays.map((play) => (
-                  <button key={play.id} type="button" aria-label={`Suggested play: ${play.title}`}>
+                  <article key={play.id} className="monitor-suggested-play-card" aria-label={`Suggested play: ${play.title}`}>
                     <strong>{play.title}</strong>
                     <p>{play.thesis}</p>
                     <small>
@@ -684,7 +684,7 @@ function IntelligencePanel({
                       <span>{play.horizon}</span>
                       <span>{play.confidence}</span>
                     </small>
-                  </button>
+                  </article>
                 ))}
               </div>
             </section>

@@ -122,7 +122,6 @@ function suggestedPlays(id: string, sectors: MonitorAffectedSector[], stocks: Mo
   const primarySector = sectors[0];
   const secondarySector = sectors[1] ?? sectors[0];
   const primaryStock = stocks[0];
-  const secondaryStock = stocks[1] ?? stocks[0];
 
   return [
     {

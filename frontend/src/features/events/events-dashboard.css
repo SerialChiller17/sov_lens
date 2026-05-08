@@ -621,44 +621,4 @@
   }
 }
 
-@media (max-width: 640px) {
-  .events-wordmark {
-    font-size: 0.78rem;
-    gap: 0.3rem;
-  }
-
-  .events-search input {
-    height: 2.25rem;
-    font-size: 0.72rem;
-  }
-
-  .events-panel h2 {
-    font-size: 0.82rem;
-  }
-
-  .events-panel p {
-    font-size: 0.64rem;
-  }
-
-  .events-globe-stage {
-    height: 23rem;
-  }
-
-  .events-map-callout {
-    padding: 0.8rem;
-  }
-
-  .events-map-callout h1 {
-    font-size: 0.9rem;
-  }
-
-  .archive-sort-controls {
-    display: none;
-  }
-
-  .events-table-wrap table {
-    min-width: 48rem;
-  }
-}
-
 /* Home dashboard premium alignment with the Global Events Pulse screen. */

@@ -100,42 +100,76 @@ const placeholderCardStyle: CSSProperties = {
   backdropFilter: "blur(18px) saturate(1.04)",
 };
 
-const wireframeShellStyle: CSSProperties = {
+const previewPanelStyle: CSSProperties = {
   position: "relative",
-  minHeight: "19rem",
+  display: "grid",
+  alignContent: "start",
+  gap: "0.92rem",
+  minHeight: "14rem",
   marginTop: "0.78rem",
   border: "1px solid rgba(255, 242, 209, 0.12)",
   borderRadius: OUTER_RADIUS,
   overflow: "hidden",
-  padding: "1rem",
+  padding: "1.05rem",
   background:
-    "linear-gradient(145deg, rgba(255, 242, 209, 0.04), transparent 42%), linear-gradient(180deg, rgba(10, 10, 9, 0.46), rgba(0, 0, 0, 0.26))",
+    "linear-gradient(145deg, rgba(255, 242, 209, 0.04), transparent 42%), linear-gradient(180deg, rgba(12, 12, 11, 0.54), rgba(0, 0, 0, 0.3))",
 };
 
-const developmentChipStyle: CSSProperties = {
-  position: "absolute",
-  top: "0.72rem",
-  right: "0.72rem",
-  zIndex: 2,
+const previewBadgeStyle: CSSProperties = {
+  justifySelf: "start",
   border: "1px solid rgba(255, 242, 209, 0.14)",
   borderRadius: CHIP_RADIUS,
-  padding: "0.22rem 0.48rem",
+  padding: "0.24rem 0.5rem",
   color: "rgba(255, 242, 209, 0.62)",
   background: "rgba(255, 242, 209, 0.04)",
   fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-  fontSize: "0.48rem",
+  fontSize: "0.52rem",
   fontWeight: 700,
   lineHeight: 1,
   textTransform: "uppercase",
 };
 
-const wireShapeBaseStyle: CSSProperties = {
-  border: "1px solid rgba(255, 242, 209, 0.18)",
+const previewPointGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: "0.62rem",
+};
+
+const previewPointStyle: CSSProperties = {
+  border: "1px solid rgba(255, 242, 209, 0.105)",
   borderRadius: OUTER_RADIUS,
-  background:
-    "linear-gradient(135deg, rgba(255, 242, 209, 0.18), rgba(255, 242, 209, 0.09)), rgba(255, 255, 255, 0.035)",
-  boxShadow: "inset 0 1px 0 rgba(255, 250, 235, 0.08)",
-  opacity: 1,
+  padding: "0.72rem",
+  color: "rgba(238, 231, 214, 0.72)",
+  background: "rgba(255, 255, 255, 0.026)",
+  fontSize: "0.78rem",
+  lineHeight: 1.35,
+};
+
+const FUND_TAB_PREVIEWS: Record<
+  Exclude<ComparisonTab, "Performance">,
+  { eyebrow: string; title: string; description: string; points: string[]; note: string }
+> = {
+  Allocation: {
+    eyebrow: "Preview: data not connected",
+    title: "Allocation view preview",
+    description: "This view should compare equity, debt, cash, sector, and market-cap exposure once full fund holdings are connected.",
+    points: ["Asset mix", "Sector weights", "Market-cap tilt"],
+    note: "Not connected to full fund holdings data in demo.",
+  },
+  Risk: {
+    eyebrow: "Preview: data not connected",
+    title: "Risk comparison preview",
+    description: "This view should compare drawdown, volatility, beta, Sharpe, Sortino, and recovery time without pretending mock risk is complete.",
+    points: ["Drawdown", "Volatility", "Recovery"],
+    note: "Requires richer risk history before this can support decisions.",
+  },
+  Overlap: {
+    eyebrow: "Preview: holdings required",
+    title: "Overlap analysis preview",
+    description: "This view should show shared holdings, sector crowding, and whether adding a fund actually diversifies the selected set.",
+    points: ["Shared holdings", "Sector crowding", "True diversification"],
+    note: "Overlap analysis requires holdings-level fund data.",
+  },
 };
 
 function initialFundSlots(): FundSlot[] {
@@ -144,200 +178,58 @@ function initialFundSlots(): FundSlot[] {
   return [largeCap, flexiCap, null, null];
 }
 
-function WireShape({ style }: { style?: CSSProperties }) {
-  return <span aria-hidden="true" style={{ ...wireShapeBaseStyle, ...style }} />;
-}
+function FundPreviewTab({ tab }: { tab: ComparisonTab }) {
+  if (tab === "Performance") return null;
 
-function InDevelopmentChip() {
-  return <span style={developmentChipStyle}>IN DEVELOPMENT</span>;
-}
+  const preview = FUND_TAB_PREVIEWS[tab];
 
-function ChartFrame({ height = "13.5rem" }: { height?: string }) {
   return (
-    <div style={{ ...wireShapeBaseStyle, position: "relative", height, overflow: "hidden" }}>
-      {[18, 38, 58, 78].map((top) => (
-        <span
-          key={top}
-          aria-hidden="true"
+    <section aria-label={preview.title} style={previewPanelStyle}>
+      <span style={previewBadgeStyle}>{preview.eyebrow}</span>
+      <div>
+        <h2
           style={{
-            position: "absolute",
-            right: "0.85rem",
-            left: "0.85rem",
-            top: `${top}%`,
-            height: "1px",
-            background: "rgba(255, 242, 209, 0.16)",
+            margin: 0,
+            color: "rgba(255, 250, 235, 0.94)",
+            fontSize: "1.05rem",
+            lineHeight: 1.12,
           }}
-        />
-      ))}
-      {[24, 44, 64, 84].map((left) => (
-        <span
-          key={left}
-          aria-hidden="true"
+        >
+          {preview.title}
+        </h2>
+        <p
           style={{
-            position: "absolute",
-            top: "0.85rem",
-            bottom: "1.15rem",
-            left: `${left}%`,
-            width: "1px",
-            background: "rgba(255, 242, 209, 0.12)",
+            maxWidth: "52rem",
+            margin: "0.42rem 0 0",
+            color: "rgba(238, 231, 214, 0.68)",
+            fontSize: "0.82rem",
+            lineHeight: 1.42,
           }}
-        />
-      ))}
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          right: "1rem",
-          bottom: "1.15rem",
-          left: "1.15rem",
-          height: "28%",
-          border: "1px solid rgba(255, 242, 209, 0.2)",
-          borderTop: "0",
-          borderRight: "0",
-        }}
-      />
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          right: "1.3rem",
-          bottom: "2rem",
-          left: "1.35rem",
-          height: "48%",
-          borderRadius: CHIP_RADIUS,
-          borderTop: "2px solid rgba(255, 242, 209, 0.28)",
-          transform: "skewY(-7deg)",
-          transformOrigin: "left bottom",
-        }}
-      />
-    </div>
-  );
-}
-
-function ChartWithLegend({ height = "13.5rem" }: { height?: string }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 11rem", gap: "0.82rem" }}>
-      <ChartFrame height={height} />
-      <div style={{ display: "grid", alignContent: "start", gap: "0.5rem" }}>
-        <WireShape style={{ height: "1.1rem", width: "74%" }} />
-        <WireShape style={{ height: "1.1rem", width: "88%" }} />
-        <WireShape style={{ height: "1.1rem", width: "66%" }} />
-        <WireShape style={{ height: "4.8rem", marginTop: "0.38rem" }} />
+        >
+          {preview.description}
+        </p>
       </div>
-    </div>
-  );
-}
-
-function StackedAllocationBar() {
-  return (
-    <div style={{ ...wireShapeBaseStyle, height: "3.55rem", display: "grid", alignItems: "center", padding: "0.72rem" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "34fr 28fr 21fr 17fr", gap: "0.18rem" }}>
-        {[0, 1, 2, 3].map((item) => (
-          <WireShape key={item} style={{ height: "1.2rem", borderRadius: CHIP_RADIUS }} />
+      <div style={previewPointGridStyle}>
+        {preview.points.map((point) => (
+          <div key={point} style={previewPointStyle}>
+            {point}
+          </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function DonutPlaceholder() {
-  return (
-    <div style={{ ...wireShapeBaseStyle, minHeight: "7.4rem", display: "grid", placeItems: "center" }}>
-      <span
-        aria-hidden="true"
+      <p
         style={{
-          width: "min(5.9rem, 68%)",
-          aspectRatio: "1",
-          border: "0.76rem solid rgba(255, 242, 209, 0.18)",
-          borderTopColor: "rgba(255, 242, 209, 0.28)",
-          borderRightColor: "rgba(255, 242, 209, 0.12)",
-          borderRadius: CHIP_RADIUS,
-          background: "rgba(0, 0, 0, 0.16)",
-          boxShadow: "inset 0 0 0 1px rgba(255, 250, 235, 0.08)",
+          margin: 0,
+          color: "rgba(238, 231, 214, 0.54)",
+          fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
+          fontSize: "0.58rem",
+          lineHeight: 1.35,
+          textTransform: "uppercase",
         }}
-      />
-    </div>
+      >
+        {preview.note}
+      </p>
+    </section>
   );
-}
-
-function OverlapWarningBar() {
-  return (
-    <div style={{ ...wireShapeBaseStyle, height: "3.25rem", display: "grid", alignItems: "center", padding: "0.74rem" }}>
-      <div style={{ position: "relative", height: "1.1rem" }}>
-        <WireShape style={{ position: "absolute", inset: "0 auto 0 0", width: "68%", borderRadius: CHIP_RADIUS }} />
-        <WireShape style={{ position: "absolute", inset: "0 0 0 auto", width: "56%", borderRadius: CHIP_RADIUS, opacity: 0.84 }} />
-      </div>
-    </div>
-  );
-}
-
-function AllocationWireframe() {
-  return (
-    <div style={wireframeShellStyle}>
-      <InDevelopmentChip />
-      <div style={{ display: "grid", gap: "1rem", paddingRight: "7.8rem" }}>
-        <StackedAllocationBar />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.82rem" }}>
-          {[0, 1, 2].map((item) => (
-            <DonutPlaceholder key={item} />
-          ))}
-        </div>
-        <OverlapWarningBar />
-      </div>
-    </div>
-  );
-}
-
-function RiskWireframe() {
-  return (
-    <div style={wireframeShellStyle}>
-      <InDevelopmentChip />
-      <div style={{ display: "grid", gap: "0.9rem", paddingRight: "7.8rem" }}>
-        <ChartFrame height="12.6rem" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "0.64rem" }}>
-          {[0, 1, 2, 3].map((item) => (
-            <WireShape key={item} style={{ height: "3.35rem" }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OverlapWireframe() {
-  return (
-    <div style={wireframeShellStyle}>
-      <InDevelopmentChip />
-      <div style={{ display: "grid", gap: "0.88rem", paddingRight: "7.8rem" }}>
-        <OverlapWarningBar />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.72rem" }}>
-          {["Shared holdings", "Sector crowding", "True diversification"].map((label) => (
-            <div key={label} style={{ ...wireShapeBaseStyle, minHeight: "4rem", display: "grid", placeItems: "center" }}>
-              <span
-                style={{
-                  color: "rgba(238, 231, 214, 0.4)",
-                  fontFamily: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
-                  fontSize: "0.58rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-        <ChartWithLegend height="10.8rem" />
-      </div>
-    </div>
-  );
-}
-
-function TabWireframe({ tab }: { tab: ComparisonTab }) {
-  if (tab === "Allocation") return <AllocationWireframe />;
-  if (tab === "Risk") return <RiskWireframe />;
-  if (tab === "Overlap") return <OverlapWireframe />;
-  return null;
 }
 
 function FundsMarketTape() {
@@ -445,7 +337,7 @@ function ComparisonBody({
         ))}
       </div>
 
-      {activeTab === "Performance" ? <PerformanceTab fundSlots={fundSlots} /> : <TabWireframe tab={activeTab} />}
+      {activeTab === "Performance" ? <PerformanceTab fundSlots={fundSlots} /> : <FundPreviewTab tab={activeTab} />}
     </section>
   );
 }

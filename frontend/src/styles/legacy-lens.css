@@ -1712,30 +1712,6 @@ blockquote {
   }
 }
 
-@media (max-width: 560px) {
-  .panel-title,
-  .market-heading {
-    flex-direction: column;
-  }
-
-  .story-copy {
-    font-size: 0.84rem;
-  }
-
-  .country-heading h1 {
-    font-size: 1.08rem;
-  }
-
-  .score-block strong {
-    font-size: 1.28rem;
-  }
-
-  .movement-grid,
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (min-width: 921px) {
   .pulse-hud {
     top: 3rem;

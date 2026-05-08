@@ -1462,7 +1462,7 @@
   gap: 0.48rem;
 }
 
-.monitor-suggested-plays button {
+.monitor-suggested-play-card {
   position: relative;
   display: grid;
   gap: 0.24rem;
@@ -1481,7 +1481,7 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.42),
     0 0.55rem 1.35rem rgba(0, 0, 0, 0.34),
     0 0 1.15rem rgba(255, 242, 209, 0.052);
-  cursor: pointer;
+  cursor: default;
   text-align: left;
   backdrop-filter: blur(18px) saturate(1.08);
   transition:
@@ -1491,7 +1491,7 @@
     transform 160ms ease;
 }
 
-.monitor-suggested-plays button::before {
+.monitor-suggested-play-card::before {
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1503,7 +1503,7 @@
   pointer-events: none;
 }
 
-.monitor-suggested-plays button::after {
+.monitor-suggested-play-card::after {
   position: absolute;
   inset: 0 auto 0 0;
   width: 2px;
@@ -1513,15 +1513,13 @@
   pointer-events: none;
 }
 
-.monitor-suggested-plays button > * {
+.monitor-suggested-play-card > * {
   position: relative;
   z-index: 1;
 }
 
-.monitor-suggested-plays button:hover,
-.monitor-suggested-plays button:focus-visible {
+.monitor-suggested-play-card:hover {
   border-color: rgba(255, 244, 219, 0.28);
-  outline: none;
   background:
     linear-gradient(145deg, rgba(255, 242, 209, 0.095), rgba(16, 15, 13, 0.7) 54%, rgba(5, 5, 4, 0.8)),
     radial-gradient(circle at 20% 0%, rgba(255, 248, 226, 0.14), transparent 48%),
@@ -1531,7 +1529,6 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.32),
     0 0.7rem 1.55rem rgba(0, 0, 0, 0.4),
     0 0 1.2rem rgba(255, 242, 209, 0.08);
-  transform: translateY(-1px);
 }
 
 .monitor-suggested-plays strong {

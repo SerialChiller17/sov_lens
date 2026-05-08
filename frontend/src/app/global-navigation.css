@@ -3,7 +3,7 @@
   top: 0.46rem;
   left: 50%;
   z-index: 20;
-  width: min(calc(100vw - 2.4rem), 78rem);
+  width: min(calc(100vw - 1.4rem), 88rem);
   transform: translateX(-50%);
 }
 
@@ -203,7 +203,11 @@
 }
 
 .global-nav-link-lens.is-active,
+.global-nav-link-markets.is-active,
+.global-nav-link-earnings.is-active,
 .global-nav-link-funds.is-active,
+.global-nav-link-screener.is-active,
+.global-nav-link-watchlist.is-active,
 .global-nav-link-portfolio.is-active {
   border-color: rgba(222, 207, 164, 0.46);
   color: rgba(255, 255, 255, 0.96);
@@ -223,8 +227,16 @@
 
 .global-nav-link-lens.is-active::before,
 .global-nav-link-lens.is-active::after,
+.global-nav-link-markets.is-active::before,
+.global-nav-link-markets.is-active::after,
+.global-nav-link-earnings.is-active::before,
+.global-nav-link-earnings.is-active::after,
 .global-nav-link-funds.is-active::before,
 .global-nav-link-funds.is-active::after,
+.global-nav-link-screener.is-active::before,
+.global-nav-link-screener.is-active::after,
+.global-nav-link-watchlist.is-active::before,
+.global-nav-link-watchlist.is-active::after,
 .global-nav-link-portfolio.is-active::before,
 .global-nav-link-portfolio.is-active::after {
   position: absolute;
@@ -234,7 +246,11 @@
 }
 
 .global-nav-link-lens.is-active::before,
+.global-nav-link-markets.is-active::before,
+.global-nav-link-earnings.is-active::before,
 .global-nav-link-funds.is-active::before,
+.global-nav-link-screener.is-active::before,
+.global-nav-link-watchlist.is-active::before,
 .global-nav-link-portfolio.is-active::before {
   z-index: 1;
   background:
@@ -245,7 +261,11 @@
 }
 
 .global-nav-link-lens.is-active::after,
+.global-nav-link-markets.is-active::after,
+.global-nav-link-earnings.is-active::after,
 .global-nav-link-funds.is-active::after,
+.global-nav-link-screener.is-active::after,
+.global-nav-link-watchlist.is-active::after,
 .global-nav-link-portfolio.is-active::after {
   z-index: 1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.35' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.72'/%3E%3C/svg%3E");
@@ -255,7 +275,11 @@
 }
 
 .global-nav-link-lens.is-active span,
+.global-nav-link-markets.is-active span,
+.global-nav-link-earnings.is-active span,
 .global-nav-link-funds.is-active span,
+.global-nav-link-screener.is-active span,
+.global-nav-link-watchlist.is-active span,
 .global-nav-link-portfolio.is-active span {
   color: rgba(255, 255, 255, 0.97);
   text-shadow:
@@ -313,7 +337,22 @@
     0 0.28rem 0.9rem rgba(0, 0, 0, 0.22);
 }
 
+.global-nav-login:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.global-nav-login:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.74);
+  background:
+    linear-gradient(115deg, transparent 0 22%, rgba(255, 255, 255, 0.08) 42%, transparent 58% 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.01) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.016)),
+    rgba(0, 0, 0, 0.34);
+  box-shadow: none;
+}
+
 .global-nav-login:active {
   transform: translateY(1px);
 }
-

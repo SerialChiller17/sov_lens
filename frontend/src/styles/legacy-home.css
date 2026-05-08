@@ -420,22 +420,6 @@
   }
 }
 
-@media (max-width: 640px) {
-  .home-wordmark {
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-  }
-
-  .home-news-button {
-    font-size: 0.5rem;
-  }
-
-  .home-search input {
-    height: 2.05rem;
-    font-size: 0.68rem;
-  }
-}
-
 .command-dashboard {
   background:
     radial-gradient(circle at 50% 18%, rgba(34, 53, 74, 0.28), transparent 34%),
@@ -1033,73 +1017,6 @@
     bottom: 7rem;
     left: 1rem;
     transform: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .command-header {
-    top: 1rem;
-    right: 1rem;
-    left: 1rem;
-  }
-
-  .command-brand-cluster {
-    gap: 0.8rem;
-  }
-
-  .command-partner-lockup {
-    min-width: 0;
-  }
-
-  .command-brand-emblem {
-    width: 2.5rem;
-    height: 3.8rem;
-  }
-
-  .command-brand-title {
-    font-size: 0.92rem;
-    letter-spacing: 0.12em;
-  }
-
-  .command-brand-lockup p {
-    font-size: 0.62rem;
-  }
-
-  .command-actions {
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .command-icon-button,
-  .command-locale-button {
-    width: 2.4rem;
-    height: 2.4rem;
-  }
-
-  .command-assist-button {
-    min-height: 2.4rem;
-    padding-inline: 0.85rem;
-  }
-
-  .command-dashboard .home-search input,
-  .command-news-button {
-    min-height: 3.2rem;
-    height: 3.2rem;
-  }
-
-  .command-drawer {
-    top: 13.5rem;
-  }
-
-  .command-country-card {
-    right: 1rem;
-    left: 1rem;
-    width: auto;
-  }
-
-  .command-country-stats dt,
-  .command-country-stats dd {
-    font-size: 0.78rem;
   }
 }
 

@@ -15,6 +15,15 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event("resize"));
+}
+
 const bootstrap: BootstrapData = {
   countries: [
     {
@@ -199,6 +208,7 @@ const bootstrap: BootstrapData = {
 
 beforeEach(() => {
   window.history.pushState({}, "", "/");
+  setViewportWidth(1024);
   vi.stubGlobal("ResizeObserver", ResizeObserverMock);
   vi.stubGlobal(
     "fetch",
@@ -220,6 +230,30 @@ beforeEach(() => {
 });
 
 describe("Sovereign Lens app", () => {
+  it("shows the desktop-first message instead of the app on phone widths", () => {
+    setViewportWidth(390);
+
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { name: /Finance Terminal is currently available on larger screens/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/This product is designed for PC, laptops, and tablets/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Mobile version and app are coming soon/i)).toBeInTheDocument();
+    expect(screen.getByText(/Please open this on a PC, laptop, or tablet/i)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Global Intelligence Monitor/i })).not.toBeInTheDocument();
+  });
+
+  it("renders the product at the tablet breakpoint", async () => {
+    setViewportWidth(768);
+
+    render(<App />);
+
+    expect(await screen.findByRole("region", { name: /Global Intelligence Monitor/i })).toBeInTheDocument();
+  });
+
   it("renders the cinematic global intelligence monitor", async () => {
     render(<App />);
 
@@ -280,6 +314,110 @@ describe("Sovereign Lens app", () => {
     expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/Current Portfolio Value/i);
     expect(screen.getByRole("complementary", { name: /Portfolio AI intelligence/i })).toHaveTextContent(/News Affecting Portfolio/i);
     expect(window.location.pathname).toBe("/portfolio");
+  });
+
+  it("opens the top-level screener screen from the top navigation", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open screener/i }));
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Screener screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Indian equity screener/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/screener");
+  });
+
+  it("opens Indian Markets from the top navigation", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open Indian Markets/i }));
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Indian market overview/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/markets");
+  });
+
+  it("opens Earnings from the top navigation", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open earnings/i }));
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Earnings screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Earnings calendar/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/earnings");
+  });
+
+  it("opens Watchlist from the top navigation", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open watchlist/i }));
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Watchlist screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Tracked Indian assets/i })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/watchlist");
+  });
+
+  it("opens the screener from a direct route with the query initialized", async () => {
+    window.history.pushState({}, "", "/screener?q=TCS");
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Screener screen/i })).toBeInTheDocument());
+    expect(screen.getAllByDisplayValue("TCS").length).toBeGreaterThan(0);
+    expect(screen.getByText("Tata Consultancy Services")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/screener");
+  });
+
+  it("opens standalone finance sections from direct routes", async () => {
+    window.history.pushState({}, "", "/markets");
+    const { unmount } = render(<App />);
+    await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Indian market overview/i })).toBeInTheDocument();
+    unmount();
+
+    window.history.pushState({}, "", "/earnings");
+    const earningsView = render(<App />);
+    await waitFor(() => expect(screen.getByRole("region", { name: /Earnings screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Earnings calendar/i })).toBeInTheDocument();
+    earningsView.unmount();
+
+    window.history.pushState({}, "", "/watchlist");
+    render(<App />);
+    await waitFor(() => expect(screen.getByRole("region", { name: /Watchlist screen/i })).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: /Tracked Indian assets/i })).toBeInTheDocument();
+  });
+
+  it("keeps standalone finance sections out of the portfolio workspace", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open your portfolio/i }));
+
+    await screen.findByRole("region", { name: /Synced portfolio screen/i });
+    expect(screen.queryByRole("tablist", { name: /Portfolio finance sections/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Indian market overview/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Earnings calendar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Tracked Indian assets/i })).not.toBeInTheDocument();
+  });
+
+  it("redirects portfolio workspace search to the top-level screener", async () => {
+    render(<App />);
+    await screen.findByRole("region", { name: /Global Intelligence Monitor/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /Open your portfolio/i }));
+    await screen.findByRole("region", { name: /Synced portfolio screen/i });
+
+    const searchInput = screen.getByPlaceholderText("Search Indian stocks, sectors, funds...");
+    fireEvent.change(searchInput, { target: { value: "RELIANCE" } });
+    fireEvent.submit(searchInput.closest("form")!);
+
+    await waitFor(() => expect(screen.getByRole("region", { name: /Screener screen/i })).toBeInTheDocument());
+    expect(window.location.pathname).toBe("/screener");
+    expect(window.location.search).toBe("?q=RELIANCE");
+    expect(screen.getAllByDisplayValue("RELIANCE").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reliance Industries")).toBeInTheDocument();
   });
 
   it("opens the global events dashboard from a direct route", async () => {
