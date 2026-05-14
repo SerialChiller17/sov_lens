@@ -1,7 +1,8 @@
-export type AppView = "lens" | "news" | "article" | "markets" | "earnings" | "screener" | "funds" | "watchlist" | "portfolio";
+export type AppView = "lens" | "news" | "article" | "answer" | "markets" | "earnings" | "screener" | "funds" | "watchlist" | "portfolio";
 
 export const NEWS_DASHBOARD_PATH = "/news-pulse";
 export const NEWS_ARTICLE_PREFIX = `${NEWS_DASHBOARD_PATH}/`;
+export const ANSWER_PATH = "/answer";
 export const MARKETS_PATH = "/markets";
 export const EARNINGS_PATH = "/earnings";
 export const FUNDS_PATH = "/funds";
@@ -11,6 +12,7 @@ export const PORTFOLIO_PATH = "/portfolio";
 
 export function routeToView(pathname: string): AppView {
   if (pathname.startsWith(NEWS_ARTICLE_PREFIX)) return "article";
+  if (pathname === ANSWER_PATH) return "answer";
   if (pathname === MARKETS_PATH) return "markets";
   if (pathname === EARNINGS_PATH) return "earnings";
   if (pathname === FUNDS_PATH) return "funds";

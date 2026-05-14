@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type FocusEvent } from "react";
 import { PORTFOLIO_ALLOCATION_COLORS, PORTFOLIO_DONUT_SEGMENT_GAP } from "./portfolioData";
 import type { PortfolioHolding } from "./portfolioTypes";
 
@@ -11,6 +11,14 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
     .reduce((sum, holding) => sum + holding.allocation, 0);
   const equityAllocation = Math.max(totalAllocation - fundAllocation, 0);
   let cumulativeAllocation = 0;
+  const legendItems = [...holdings].sort((first, second) => second.allocation - first.allocation).slice(0, 6);
+
+  const handleCompositionBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+    if (!nextTarget || !event.currentTarget.contains(nextTarget)) {
+      setActiveTicker(null);
+    }
+  };
 
   const segments = holdings.map((holding) => {
     const normalizedShare = (holding.allocation / totalAllocation) * 100;
@@ -34,7 +42,7 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
   });
 
   return (
-    <div className="portfolio-donut-composition" onMouseLeave={() => setActiveTicker(null)} onBlur={() => setActiveTicker(null)}>
+    <div className="portfolio-donut-composition" onMouseLeave={() => setActiveTicker(null)} onBlur={handleCompositionBlur}>
       <div className="portfolio-donut-stage">
         <svg className="portfolio-donut-chart" viewBox="0 0 112 112" role="img" aria-label="Stock allocation donut chart. Focus or hover a segment to preview its allocation.">
           <circle className="portfolio-donut-track" cx="56" cy="56" r="42" />
@@ -99,6 +107,27 @@ export function PortfolioCompositionDonut({ holdings }: { holdings: PortfolioHol
             </div>
           )}
         </div>
+      </div>
+      <div className="portfolio-donut-legend" aria-label="Portfolio allocation legend">
+        {legendItems.map((holding) => (
+          <button
+            key={holding.ticker}
+            type="button"
+            className={holding.ticker === activeTicker ? "is-active" : ""}
+            style={
+              {
+                "--legend-color": PORTFOLIO_ALLOCATION_COLORS[holding.ticker] ?? "#fff2d1",
+              } as CSSProperties
+            }
+            onMouseEnter={() => setActiveTicker(holding.ticker)}
+            onFocus={() => setActiveTicker(holding.ticker)}
+            onClick={() => setActiveTicker(holding.ticker)}
+          >
+            <span aria-hidden="true" />
+            <strong>{holding.ticker}</strong>
+            <em>{holding.allocation.toFixed(1)}%</em>
+          </button>
+        ))}
       </div>
     </div>
   );

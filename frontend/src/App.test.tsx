@@ -311,8 +311,11 @@ describe("Sovereign Lens app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Open your portfolio/i }));
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Synced portfolio screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/Current Portfolio Value/i);
-    expect(screen.getByRole("complementary", { name: /Portfolio AI intelligence/i })).toHaveTextContent(/News Affecting Portfolio/i);
+    expect(screen.getByRole("tablist", { name: /Portfolio workspace sections/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/Today's primary portfolio action/i);
+    expect(screen.getByRole("region", { name: /Today's primary portfolio action/i })).toHaveTextContent(/Reduce private-bank concentration/i);
+    expect(screen.getByRole("heading", { name: /Today's P&L/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Market drivers affecting your portfolio/i })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/portfolio");
   });
 

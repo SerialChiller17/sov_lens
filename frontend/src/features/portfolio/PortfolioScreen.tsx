@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUpRight, Bell, RefreshCw, Search, SlidersHorizontal, Star } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { ArrowUpRight, Bell, ChevronDown, Maximize2, RefreshCw, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { GlobalBrandNav } from "../../app/GlobalBrandNav";
 import type { AppView } from "../../app/routes";
+import { DetailedSparkline } from "../../components/charts/DetailedSparkline";
 import {
   NIFTY_50_PERFORMANCE,
+  PORTFOLIO_ALLOCATION_COLORS,
   PORTFOLIO_AI_NEWS,
   PORTFOLIO_AI_TRUST,
+  PORTFOLIO_COCKPIT,
   PORTFOLIO_DAY_RETURN_PERCENT,
   PORTFOLIO_HOLDING_CONTEXT,
   PORTFOLIO_HOLDINGS,
@@ -20,17 +24,19 @@ import {
   formatSignedPortfolioMove,
   formatSignedPortfolioPercent,
 } from "./portfolioFormatters";
-import { PortfolioCompositionDonut } from "./PortfolioCompositionDonut";
+import { MarketSummary } from "./MarketSummary";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import {
   EARNINGS_DAYS,
   EARNINGS_EVENTS,
   MARKET_BREADTH,
+  MARKET_DATA_NOTICE,
   MARKET_DEVELOPMENTS,
   MARKET_HEATMAP_TILES,
   MARKET_INDEX_CARDS,
-  MARKET_INSIGHTS,
   MARKET_MOVERS,
+  MARKET_SUMMARY_ITEMS,
+  MARKET_SUMMARY_SOURCES,
   MARKET_STANDOUTS,
   EARNINGS_EVENT_CONTEXT,
   SCREENER_PRESETS,
@@ -42,8 +48,11 @@ import {
   WATCHLIST_MOVEMENTS,
   WATCHLIST_NEWS,
   type EarningsEvent,
+  type MarketHeatmapTile,
   type MarketIndexCard,
+  type MarketDevelopment,
   type MarketMover,
+  type MarketStandout,
   type ScreenerRow,
   type WorkspaceTone,
 } from "./portfolioWorkspaceData";
@@ -56,6 +65,7 @@ interface FinanceNavigationProps {
   onScreener: (query?: string) => void;
   onWatchlist: () => void;
   onPortfolio: () => void;
+  onAnswer: (request: { id?: string; query: string; title?: string; summary?: string }) => void | Promise<void>;
 }
 
 type PortfolioScreenProps = FinanceNavigationProps;
@@ -127,6 +137,272 @@ function formatCompactCrores(value: number) {
   return `${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr`;
 }
 
+interface HeatmapRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface HeatmapTileLayout extends HeatmapRect {
+  stock: MarketHeatmapTile;
+  labelLevel: "full" | "medium" | "compact" | "micro";
+}
+
+interface HeatmapSectorLayout extends HeatmapRect {
+  sector: string;
+  industries: string;
+  totalWeight: number;
+  weightedMove: number;
+  tiles: HeatmapTileLayout[];
+}
+
+interface HeatmapLayout {
+  sectors: HeatmapSectorLayout[];
+  tiles: HeatmapTileLayout[];
+}
+
+interface WeightedHeatmapItem<T> {
+  item: T;
+  area: number;
+}
+
+function sumWeighted<T>(items: T[], getWeight: (item: T) => number) {
+  return items.reduce((sum, item) => sum + Math.max(getWeight(item), 0.001), 0);
+}
+
+function heatmapWeight(stock: MarketHeatmapTile) {
+  return Math.max(stock.marketCapCr, 1);
+}
+
+function insetHeatmapRect(rect: HeatmapRect, horizontalGap: number, verticalGap = horizontalGap): HeatmapRect {
+  return {
+    x: rect.x + horizontalGap,
+    y: rect.y + verticalGap,
+    width: Math.max(rect.width - horizontalGap * 2, 0.08),
+    height: Math.max(rect.height - verticalGap * 2, 0.08),
+  };
+}
+
+function getWorstHeatmapRatio<T>(row: Array<WeightedHeatmapItem<T>>, sideLength: number) {
+  if (!row.length) return Number.POSITIVE_INFINITY;
+
+  const rowArea = row.reduce((sum, entry) => sum + entry.area, 0);
+  const minArea = Math.min(...row.map((entry) => entry.area));
+  const maxArea = Math.max(...row.map((entry) => entry.area));
+  const sideSquared = sideLength * sideLength;
+
+  return Math.max((sideSquared * maxArea) / (rowArea * rowArea), (rowArea * rowArea) / (sideSquared * minArea));
+}
+
+function layoutHeatmapRow<T>(row: Array<WeightedHeatmapItem<T>>, rect: HeatmapRect) {
+  const rowArea = row.reduce((sum, entry) => sum + entry.area, 0);
+  const output: Array<{ item: T; rect: HeatmapRect }> = [];
+
+  if (rect.width >= rect.height) {
+    const rowWidth = rowArea / Math.max(rect.height, 0.001);
+    let nextY = rect.y;
+
+    row.forEach((entry, index) => {
+      const itemHeight = index === row.length - 1 ? rect.y + rect.height - nextY : entry.area / Math.max(rowWidth, 0.001);
+      output.push({ item: entry.item, rect: { x: rect.x, y: nextY, width: rowWidth, height: Math.max(itemHeight, 0.001) } });
+      nextY += itemHeight;
+    });
+
+    return {
+      output,
+      remainingRect: { x: rect.x + rowWidth, y: rect.y, width: Math.max(rect.width - rowWidth, 0.001), height: rect.height },
+    };
+  }
+
+  const rowHeight = rowArea / Math.max(rect.width, 0.001);
+  let nextX = rect.x;
+
+  row.forEach((entry, index) => {
+    const itemWidth = index === row.length - 1 ? rect.x + rect.width - nextX : entry.area / Math.max(rowHeight, 0.001);
+    output.push({ item: entry.item, rect: { x: nextX, y: rect.y, width: Math.max(itemWidth, 0.001), height: rowHeight } });
+    nextX += itemWidth;
+  });
+
+  return {
+    output,
+    remainingRect: { x: rect.x, y: rect.y + rowHeight, width: rect.width, height: Math.max(rect.height - rowHeight, 0.001) },
+  };
+}
+
+function buildWeightedRects<T>(
+  items: T[],
+  rect: HeatmapRect,
+  getWeight: (item: T) => number,
+): Array<{ item: T; rect: HeatmapRect }> {
+  if (!items.length) return [];
+
+  const totalWeight = sumWeighted(items, getWeight);
+  const totalArea = rect.width * rect.height;
+  const remainingItems = items.map((item) => ({
+    item,
+    area: (Math.max(getWeight(item), 0.001) / Math.max(totalWeight, 0.001)) * totalArea,
+  }));
+  const output: Array<{ item: T; rect: HeatmapRect }> = [];
+  let remainingRect = rect;
+  let row: Array<WeightedHeatmapItem<T>> = [];
+
+  while (remainingItems.length) {
+    const nextItem = remainingItems[0];
+    const sideLength = Math.min(remainingRect.width, remainingRect.height);
+    const currentRatio = getWorstHeatmapRatio(row, sideLength);
+    const nextRatio = getWorstHeatmapRatio([...row, nextItem], sideLength);
+
+    if (!row.length || nextRatio <= currentRatio) {
+      row.push(nextItem);
+      remainingItems.shift();
+    } else {
+      const rowLayout = layoutHeatmapRow(row, remainingRect);
+      output.push(...rowLayout.output);
+      remainingRect = rowLayout.remainingRect;
+      row = [];
+    }
+  }
+
+  if (row.length) {
+    output.push(...layoutHeatmapRow(row, remainingRect).output);
+  }
+
+  return output;
+}
+
+function getHeatmapLabelLevel(rect: HeatmapRect): HeatmapTileLayout["labelLevel"] {
+  const area = rect.width * rect.height;
+  const shortSide = Math.min(rect.width, rect.height);
+
+  if (area >= 96 && shortSide >= 4.8) return "full";
+  if (area >= 38 && shortSide >= 3.1) return "medium";
+  if (area >= 12 && shortSide >= 1.9) return "compact";
+  return "micro";
+}
+
+function getWeightedMove(stocks: MarketHeatmapTile[]) {
+  const totalWeight = sumWeighted(stocks, heatmapWeight);
+  return stocks.reduce((sum, stock) => sum + stock.changePercent * heatmapWeight(stock), 0) / Math.max(totalWeight, 0.001);
+}
+
+function buildNiftyHeatmapLayout(stocks: MarketHeatmapTile[]): HeatmapLayout {
+  const sectors = Array.from(
+    stocks.reduce((sectorMap, stock) => {
+      const existing = sectorMap.get(stock.sector) ?? [];
+      existing.push(stock);
+      sectorMap.set(stock.sector, existing);
+      return sectorMap;
+    }, new Map<string, MarketHeatmapTile[]>()),
+  )
+    .map(([sector, sectorStocks]) => ({
+      sector,
+      stocks: [...sectorStocks].sort((a, b) => heatmapWeight(b) - heatmapWeight(a)),
+      totalWeight: sumWeighted(sectorStocks, heatmapWeight),
+      weightedMove: getWeightedMove(sectorStocks),
+    }))
+    .sort((a, b) => b.totalWeight - a.totalWeight);
+
+  const sectorRects = buildWeightedRects(sectors, { x: 0, y: 0, width: 100, height: 100 }, (sector) => sector.totalWeight);
+
+  const sectorLayouts = sectorRects.map(({ item: sector, rect }) => {
+    const industries = Array.from(
+      sector.stocks.reduce((industryMap, stock) => {
+        industryMap.set(stock.industry, (industryMap.get(stock.industry) ?? 0) + heatmapWeight(stock));
+        return industryMap;
+      }, new Map<string, number>()),
+    )
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([industry]) => industry)
+      .join(" / ");
+    const headerHeight = rect.height >= 7.6 && rect.width >= 7 ? Math.min(3.4, Math.max(1.7, rect.height * 0.11)) : 0;
+    const bodyRect = insetHeatmapRect(
+      {
+        x: rect.x,
+        y: rect.y + headerHeight,
+        width: rect.width,
+        height: Math.max(rect.height - headerHeight, 0.1),
+      },
+      0.08,
+      0.08,
+    );
+    const tileRects = buildWeightedRects(sector.stocks, bodyRect, heatmapWeight);
+    const tiles = tileRects.map(({ item: stock, rect: tileRect }) => {
+      const insetRect = insetHeatmapRect(tileRect, 0.04, 0.04);
+      return {
+        ...insetRect,
+        stock,
+        labelLevel: getHeatmapLabelLevel(insetRect),
+      };
+    });
+
+    return {
+      ...insetHeatmapRect(rect, 0.08, 0.08),
+      sector: sector.sector,
+      industries,
+      totalWeight: sector.totalWeight,
+      weightedMove: sector.weightedMove,
+      tiles,
+    };
+  });
+
+  return {
+    sectors: sectorLayouts,
+    tiles: sectorLayouts.flatMap((sector) => sector.tiles),
+  };
+}
+
+function formatCompactVolume(value: number) {
+  if (value >= 10000000) return `${(value / 10000000).toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr`;
+  if (value >= 100000) return `${(value / 100000).toLocaleString("en-IN", { maximumFractionDigits: 1 })} L`;
+  return value.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+}
+
+function heatmapToneStyles(value: number) {
+  const clampedValue = Math.max(-3, Math.min(3, value));
+  const absValue = Math.abs(clampedValue);
+
+  if (absValue < 0.08) {
+    return {
+      "--heatmap-bg": "#333332",
+      "--heatmap-border": "rgba(255, 255, 255, 0.07)",
+      "--heatmap-accent": "rgba(235, 235, 230, 0.68)",
+      "--heatmap-text": "rgba(245, 245, 240, 0.84)",
+    } as React.CSSProperties;
+  }
+
+  if (clampedValue > 0) {
+    const tone =
+      absValue >= 2
+        ? { bg: "#5a8f46", border: "rgba(176, 218, 145, 0.24)", accent: "rgba(234, 246, 223, 0.86)" }
+        : absValue >= 1
+          ? { bg: "#3f6d35", border: "rgba(154, 196, 128, 0.2)", accent: "rgba(226, 240, 216, 0.8)" }
+          : { bg: "#334f2f", border: "rgba(135, 176, 110, 0.17)", accent: "rgba(215, 233, 205, 0.74)" };
+
+    return {
+      "--heatmap-bg": tone.bg,
+      "--heatmap-border": tone.border,
+      "--heatmap-accent": tone.accent,
+      "--heatmap-text": "rgba(244, 249, 240, 0.9)",
+    } as React.CSSProperties;
+  }
+
+  const tone =
+    absValue >= 2
+      ? { bg: "#a44e61", border: "rgba(229, 142, 161, 0.26)", accent: "rgba(255, 229, 234, 0.86)" }
+      : absValue >= 1
+        ? { bg: "#783d49", border: "rgba(216, 128, 146, 0.2)", accent: "rgba(248, 218, 224, 0.8)" }
+        : { bg: "#553036", border: "rgba(190, 107, 123, 0.17)", accent: "rgba(237, 203, 211, 0.74)" };
+
+  return {
+    "--heatmap-bg": tone.bg,
+    "--heatmap-border": tone.border,
+    "--heatmap-accent": tone.accent,
+    "--heatmap-text": "rgba(250, 239, 241, 0.9)",
+  } as React.CSSProperties;
+}
+
 function formatScreenerMetric(row: ScreenerRow, key: keyof ScreenerRow) {
   if (key === "marketCapCr") return formatCompactCrores(row.marketCapCr);
   if (key === "price") return formatPortfolioTapePrice(row.price);
@@ -181,23 +457,29 @@ function CompanyAvatar({ name, ticker }: { name: string; ticker: string }) {
   );
 }
 
-function MiniSparkline({ points, tone = "positive" }: { points: number[]; tone?: WorkspaceTone }) {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = Math.max(max - min, 1);
-  const path = points
-    .map((point, index) => {
-      const x = 4 + (index / Math.max(points.length - 1, 1)) * 92;
-      const y = 34 - ((point - min) / range) * 26;
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
+function sourceInitials(name: string) {
+  return name
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function sourceFaviconUrl(domain?: string) {
+  if (!domain) return "";
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+}
+
+function RecentDevelopmentSourceIcon({ source }: { source: MarketDevelopment["sources"][number] }) {
+  const [hasImageError, setHasImageError] = useState(false);
+  const iconUrl = sourceFaviconUrl(source.domain);
 
   return (
-    <svg className={`portfolio-mini-sparkline ${toneClass(tone)}`} viewBox="0 0 100 40" role="img" aria-label="Price trend sparkline">
-      <path className="portfolio-mini-sparkline-grid" d="M 4 20 H 96" />
-      <path className="portfolio-mini-sparkline-line" d={path} />
-    </svg>
+    <span className="portfolio-development-source-icon" aria-hidden="true">
+      {iconUrl && !hasImageError ? <img src={iconUrl} alt="" loading="lazy" onError={() => setHasImageError(true)} /> : sourceInitials(source.name)}
+    </span>
   );
 }
 
@@ -265,10 +547,14 @@ function WorkspaceLayout({
   label,
   children,
   rail,
+  fullWidth,
+  continuation,
 }: {
   label: string;
   children: React.ReactNode;
   rail: React.ReactNode;
+  fullWidth?: React.ReactNode;
+  continuation?: React.ReactNode;
 }) {
   return (
     <section className="portfolio-finance-grid" aria-label={label}>
@@ -276,6 +562,8 @@ function WorkspaceLayout({
       <aside className="portfolio-finance-rail" aria-label={`${label} intelligence rail`}>
         {rail}
       </aside>
+      {fullWidth ? <div className="portfolio-finance-full-span">{fullWidth}</div> : null}
+      {continuation ? <div className="portfolio-finance-main portfolio-finance-main-continuation">{continuation}</div> : null}
     </section>
   );
 }
@@ -293,7 +581,12 @@ function MarketIndexTile({ item }: { item: MarketIndexCard }) {
           {formatPercent(item.changePercent)} {item.changeValue}
         </em>
       </div>
-      <MiniSparkline points={item.points} tone={item.changePercent >= 0 ? "positive" : "negative"} />
+      <DetailedSparkline
+        className="portfolio-mini-sparkline"
+        data={item.points}
+        trend={item.changePercent >= 0 ? "up" : "down"}
+        ariaLabel={`${item.symbol} intraday trend chart`}
+      />
     </article>
   );
 }
@@ -367,44 +660,426 @@ function SectorPerformancePanel() {
   );
 }
 
-function MarketHeatmapPanel() {
+function HeatmapLegend() {
+  const steps = [
+    "loss-strong",
+    "loss",
+    "loss-soft",
+    "flat",
+    "gain-soft",
+    "gain",
+    "gain-strong",
+  ];
+
   return (
-    <section className="portfolio-workspace-panel portfolio-heatmap-panel">
-      <PanelHeading eyebrow="Heatmap" title="Top 500 Heatmap" meta="Expand" />
-      <div className="portfolio-heatmap-grid">
-        {MARKET_HEATMAP_TILES.map((tile) => (
-          <article key={tile.ticker} className={`portfolio-heatmap-tile size-${tile.size} ${toneClass(tile.move)}`}>
-            <strong>{tile.ticker}</strong>
-            <span>{tile.sector}</span>
-            <em>{formatPercent(tile.move)}</em>
-          </article>
+    <div className="portfolio-heatmap-legend" aria-label="Heatmap color legend">
+      <strong>-3%</strong>
+      <div>
+        {steps.map((step) => (
+          <span key={step} className={step} aria-hidden="true" />
         ))}
       </div>
-      <div className="portfolio-heatmap-legend" aria-hidden="true">
-        <span>-3%</span>
-        <span />
-        <strong>0</strong>
-        <em />
-        <span>+3%</span>
+      <strong>+3%</strong>
+    </div>
+  );
+}
+
+const NIFTY_HEATMAP_TIMESTAMP = "May 8, 2026, 12:37 PM GMT+5:30";
+
+function NiftyHeatmapSurface({
+  expanded = false,
+  onExpand,
+  onClose,
+}: {
+  expanded?: boolean;
+  onExpand?: () => void;
+  onClose?: () => void;
+}) {
+  const stocks = MARKET_HEATMAP_TILES;
+  const layout = useMemo(() => buildNiftyHeatmapLayout(stocks), [stocks]);
+  const [tooltip, setTooltip] = useState<{ stock: MarketHeatmapTile; x: number; y: number } | null>(null);
+
+  const updateTooltipPosition = (xPosition: number, yPosition: number, stock: MarketHeatmapTile) => {
+    const viewportWidth = typeof window === "undefined" ? 1280 : window.innerWidth;
+    const viewportHeight = typeof window === "undefined" ? 800 : window.innerHeight;
+    const x = Math.max(12, Math.min(xPosition, viewportWidth - 286));
+    const y = Math.max(12, Math.min(yPosition, viewportHeight - 184));
+    setTooltip({ stock, x, y });
+  };
+
+  const updateTooltipFromPointer = (event: React.MouseEvent<HTMLElement>, stock: MarketHeatmapTile) => {
+    updateTooltipPosition(event.clientX + 14, event.clientY + 14, stock);
+  };
+
+  const updateTooltipFromElement = (element: HTMLElement, stock: MarketHeatmapTile) => {
+    const rect = element.getBoundingClientRect();
+    updateTooltipPosition(rect.left + Math.min(rect.width, 220) + 12, rect.top + Math.min(rect.height, 80), stock);
+  };
+
+  return (
+    <div className={`portfolio-heatmap-surface ${expanded ? "is-expanded" : ""}`}>
+      <header className="portfolio-heatmap-header">
+        <div className="portfolio-heatmap-title-block">
+          <h2>NIFTY 50 Heatmap</h2>
+          {!expanded ? <p>Size by market cap. Color by 1D move.</p> : null}
+        </div>
+        <button
+          type="button"
+          className="portfolio-heatmap-action"
+          onClick={expanded ? onClose : onExpand}
+          aria-label={expanded ? "Close expanded NIFTY 50 heatmap" : "Expand NIFTY 50 heatmap"}
+        >
+          {expanded ? <X size={22} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+        </button>
+      </header>
+
+      <div className="portfolio-heatmap-content">
+        <div
+          className="portfolio-heatmap-stage"
+          role="img"
+          aria-label="NIFTY 50 stock heatmap grouped by sector, sized by market cap, and colored by one day percent move"
+        >
+          {layout.sectors.map((sector) => (
+            <section
+              key={sector.sector}
+              className="portfolio-heatmap-sector"
+              style={{
+                left: `${sector.x}%`,
+                top: `${sector.y}%`,
+                width: `${sector.width}%`,
+                height: `${sector.height}%`,
+              }}
+              aria-label={`${sector.sector} sector, ${formatPercent(sector.weightedMove)} weighted move`}
+            >
+              <div className="portfolio-heatmap-sector-label">
+                <strong>{sector.sector}</strong>
+                {sector.industries ? <span>{sector.industries}</span> : null}
+              </div>
+            </section>
+          ))}
+
+          {layout.tiles.map((tile) => {
+            const stock = tile.stock;
+            const style = {
+              left: `${tile.x}%`,
+              top: `${tile.y}%`,
+              width: `${tile.width}%`,
+              height: `${tile.height}%`,
+              ...heatmapToneStyles(stock.changePercent),
+            } as React.CSSProperties;
+            const displayTicker = expanded ? stock.symbol : stock.ticker;
+
+            return (
+              <button
+                key={stock.ticker}
+                type="button"
+                className={`portfolio-heatmap-tile label-${tile.labelLevel}`}
+                style={style}
+                onMouseEnter={(event) => {
+                  updateTooltipFromPointer(event, stock);
+                }}
+                onMouseMove={(event) => updateTooltipFromPointer(event, stock)}
+                onMouseLeave={() => setTooltip(null)}
+                onFocus={(event) => updateTooltipFromElement(event.currentTarget, stock)}
+                onBlur={() => setTooltip(null)}
+                onClick={(event) => updateTooltipFromElement(event.currentTarget, stock)}
+                aria-label={`${stock.name}, ${formatPercent(stock.changePercent)}, ${stock.sector}, market cap ${formatCompactCrores(stock.marketCapCr)}`}
+              >
+                <strong>{displayTicker}</strong>
+                {tile.labelLevel === "full" || tile.labelLevel === "medium" ? <span>{stock.name}</span> : null}
+                <em>{formatPercent(stock.changePercent)}</em>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <footer className="portfolio-heatmap-footer">
+        <div className="portfolio-heatmap-footer-left">
+          <HeatmapLegend />
+          <time dateTime="2026-05-08T12:37:00+05:30">{NIFTY_HEATMAP_TIMESTAMP}</time>
+        </div>
+        <span>{MARKET_DATA_NOTICE}</span>
+      </footer>
+
+      {tooltip ? (
+        <div
+          className="portfolio-heatmap-tooltip"
+          style={{ left: tooltip.x, top: tooltip.y }}
+          role="status"
+          aria-live="polite"
+        >
+          <header>
+            <strong>{tooltip.stock.symbol}</strong>
+            <em className={toneClass(tooltip.stock.changePercent)}>{formatPercent(tooltip.stock.changePercent)}</em>
+          </header>
+          <p>{tooltip.stock.name}</p>
+          <dl>
+            <div>
+              <dt>Sector</dt>
+              <dd>{tooltip.stock.sector}</dd>
+            </div>
+            <div>
+              <dt>Industry</dt>
+              <dd>{tooltip.stock.industry}</dd>
+            </div>
+            <div>
+              <dt>Market cap</dt>
+              <dd>{formatCompactCrores(tooltip.stock.marketCapCr)}</dd>
+            </div>
+            <div>
+              <dt>Volume</dt>
+              <dd>{formatCompactVolume(tooltip.stock.volume)}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MarketHeatmapPanel() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const expandedHeatmap =
+    isExpanded && typeof document !== "undefined"
+      ? createPortal(
+          <div className="portfolio-heatmap-modal" role="dialog" aria-modal="true" aria-label="Expanded NIFTY 50 heatmap">
+            <div className="portfolio-heatmap-modal-backdrop" onClick={() => setIsExpanded(false)} aria-hidden="true" />
+            <section className="portfolio-heatmap-modal-card">
+              <NiftyHeatmapSurface expanded onClose={() => setIsExpanded(false)} />
+            </section>
+          </div>,
+          document.body,
+        )
+      : null;
+
+  useEffect(() => {
+    if (!isExpanded) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsExpanded(false);
+    };
+
+    document.body.classList.add("portfolio-heatmap-modal-open");
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("portfolio-heatmap-modal-open");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isExpanded]);
+
+  return (
+    <>
+      <section className="portfolio-workspace-panel portfolio-heatmap-panel">
+        <NiftyHeatmapSurface onExpand={() => setIsExpanded(true)} />
+      </section>
+      {expandedHeatmap}
+    </>
+  );
+}
+
+function MarketDevelopmentGrid({ onAnswer }: { onAnswer: FinanceNavigationProps["onAnswer"] }) {
+  const [openingDevelopmentId, setOpeningDevelopmentId] = useState<string | null>(null);
+  const openingDevelopmentRef = useRef<string | null>(null);
+
+  const handleOpenDevelopment = (item: MarketDevelopment) => {
+    if (openingDevelopmentRef.current) return;
+
+    openingDevelopmentRef.current = item.id;
+    setOpeningDevelopmentId(item.id);
+
+    try {
+      const result = onAnswer({
+        id: item.id,
+        query: item.aiQuery,
+        title: item.title,
+        summary: item.summary,
+      });
+
+      if (result && typeof result.finally === "function") {
+        result.finally(() => {
+          openingDevelopmentRef.current = null;
+          setOpeningDevelopmentId(null);
+        });
+      }
+    } catch (error) {
+      openingDevelopmentRef.current = null;
+      setOpeningDevelopmentId(null);
+      throw error;
+    }
+  };
+
+  return (
+    <section className="portfolio-recent-developments-section">
+      <header className="portfolio-recent-developments-heading">
+        <h2>Recent Developments</h2>
+        <strong>Updated 12 minutes ago</strong>
+      </header>
+      <div className="portfolio-development-grid">
+        {MARKET_DEVELOPMENTS.map((item) => {
+          const isOpening = openingDevelopmentId === item.id;
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`portfolio-development-card ${isOpening ? "is-opening" : ""}`}
+              aria-label={`Open AI explanation for ${item.title}`}
+              aria-busy={isOpening}
+              disabled={openingDevelopmentId !== null}
+              onClick={() => void handleOpenDevelopment(item)}
+            >
+              <span className="portfolio-development-meta">
+                <span className="portfolio-development-source-stack" aria-hidden="true">
+                  {item.sources.slice(0, 2).map((source) => (
+                    <RecentDevelopmentSourceIcon key={`${item.id}-${source.name}`} source={source} />
+                  ))}
+                </span>
+                <time>{item.timeAgo}</time>
+              </span>
+              <strong>{item.title}</strong>
+              <span className="portfolio-development-divider" aria-hidden="true" />
+              <p>{item.summary}</p>
+              <span className="portfolio-development-opening" aria-hidden={!isOpening}>
+                {isOpening ? "Opening answer" : ""}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-function MarketDevelopmentGrid() {
+const STANDOUT_CHART_WIDTH = 180;
+const STANDOUT_CHART_HEIGHT = 78;
+const STANDOUT_CHART_PADDING_X = 5;
+const STANDOUT_CHART_PADDING_TOP = 9;
+const STANDOUT_CHART_PADDING_BOTTOM = 11;
+
+interface StandoutChartPoint {
+  x: number;
+  y: number;
+  value: number;
+}
+
+function normalizeStandoutSeries(points: number[]) {
+  const values = points.filter((point) => Number.isFinite(point));
+  if (values.length >= 2) return values;
+  if (values.length === 1) return [values[0], values[0]];
+  return [0, 0];
+}
+
+function getStandoutControlPoint(
+  current: StandoutChartPoint,
+  previous: StandoutChartPoint | undefined,
+  next: StandoutChartPoint | undefined,
+  reverse = false,
+) {
+  const previousPoint = previous ?? current;
+  const nextPoint = next ?? current;
+  const smoothing = 0.16;
+  const angle = Math.atan2(nextPoint.y - previousPoint.y, nextPoint.x - previousPoint.x) + (reverse ? Math.PI : 0);
+  const length = Math.hypot(nextPoint.x - previousPoint.x, nextPoint.y - previousPoint.y) * smoothing;
+
+  return {
+    x: current.x + Math.cos(angle) * length,
+    y: current.y + Math.sin(angle) * length,
+  };
+}
+
+function standoutCubicCommand(points: StandoutChartPoint[], index: number) {
+  const currentPoint = points[index];
+  const nextPoint = points[index + 1];
+  const startControl = getStandoutControlPoint(currentPoint, points[index - 1], nextPoint);
+  const endControl = getStandoutControlPoint(nextPoint, currentPoint, points[index + 2], true);
+
+  return `C ${startControl.x.toFixed(2)} ${startControl.y.toFixed(2)}, ${endControl.x.toFixed(2)} ${endControl.y.toFixed(2)}, ${nextPoint.x.toFixed(2)} ${nextPoint.y.toFixed(2)}`;
+}
+
+function buildStandoutPath(points: StandoutChartPoint[]) {
+  return [`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`]
+    .concat(points.slice(0, -1).map((_, index) => standoutCubicCommand(points, index)))
+    .join(" ");
+}
+
+function MarketStandoutSparkline({ item }: { item: MarketStandout }) {
+  const values = normalizeStandoutSeries(item.points);
+  const baselineValue = values[0];
+  const minValue = Math.min(...values, baselineValue);
+  const maxValue = Math.max(...values, baselineValue);
+  const rawRange = Math.max(maxValue - minValue, 1);
+  const paddedMin = minValue - rawRange * 0.14;
+  const paddedMax = maxValue + rawRange * 0.12;
+  const paddedRange = Math.max(paddedMax - paddedMin, 1);
+  const chartHeight = STANDOUT_CHART_HEIGHT - STANDOUT_CHART_PADDING_TOP - STANDOUT_CHART_PADDING_BOTTOM;
+  const chartWidth = STANDOUT_CHART_WIDTH - STANDOUT_CHART_PADDING_X * 2;
+  const chartBottom = STANDOUT_CHART_HEIGHT - STANDOUT_CHART_PADDING_BOTTOM;
+  const chartRight = STANDOUT_CHART_WIDTH - STANDOUT_CHART_PADDING_X;
+  const yForValue = (value: number) => STANDOUT_CHART_PADDING_TOP + (1 - (value - paddedMin) / paddedRange) * chartHeight;
+  const baselineY = Math.min(Math.max(yForValue(baselineValue), STANDOUT_CHART_PADDING_TOP + 4), chartBottom - 4);
+
+  const coordinates = values.map((value, index) => ({
+    value,
+    x: STANDOUT_CHART_PADDING_X + (index / Math.max(values.length - 1, 1)) * chartWidth,
+    y: yForValue(value),
+  }));
+  const fullPath = buildStandoutPath(coordinates);
+  const areaPath = `${fullPath} L ${coordinates[coordinates.length - 1].x.toFixed(2)} ${chartBottom} L ${coordinates[0].x.toFixed(2)} ${chartBottom} Z`;
+  const endPoint = coordinates[coordinates.length - 1];
+  const gradientId = `standout-area-${item.ticker.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase()}`;
+  const isPositive = item.move >= 0;
+  const segments = coordinates.slice(0, -1).map((point, index) => ({
+    key: `${item.ticker}-${index}`,
+    tone: coordinates[index + 1].value >= baselineValue ? "positive" : "negative",
+    path: `M ${point.x.toFixed(2)} ${point.y.toFixed(2)} ${standoutCubicCommand(coordinates, index)}`,
+  }));
+
   return (
-    <section className="portfolio-workspace-panel">
-      <PanelHeading eyebrow="Recent developments" title="Market summary" meta="Updated 9m ago" />
-      <div className="portfolio-development-grid">
-        {MARKET_DEVELOPMENTS.map((item) => (
-          <article key={item.title} className={`portfolio-development-card ${toneClass(item.tone)}`}>
-            <span>{item.source}</span>
-            <strong>{item.title}</strong>
-            <p>{item.summary}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+    <svg
+      className={`portfolio-standout-sparkline ${isPositive ? "is-positive" : "is-negative"}`}
+      viewBox={`0 0 ${STANDOUT_CHART_WIDTH} ${STANDOUT_CHART_HEIGHT}`}
+      role="img"
+      aria-label={`Intraday price trend for ${item.company}`}
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" x2="0" y1={STANDOUT_CHART_PADDING_TOP} y2={chartBottom} gradientUnits="userSpaceOnUse">
+          <stop offset="0%" />
+          <stop offset="58%" />
+          <stop offset="100%" />
+        </linearGradient>
+      </defs>
+      <path className="portfolio-standout-sparkline-reference" d={`M ${STANDOUT_CHART_PADDING_X} ${baselineY.toFixed(2)} H ${chartRight}`} aria-hidden="true" />
+      <path className="portfolio-standout-sparkline-area" d={areaPath} fill={`url(#${gradientId})`} aria-hidden="true" />
+      <path className="portfolio-standout-sparkline-glow" d={fullPath} aria-hidden="true" />
+      {segments.map((segment) => (
+        <path key={segment.key} className={`portfolio-standout-sparkline-line is-${segment.tone}`} d={segment.path} aria-hidden="true" />
+      ))}
+      <circle className="portfolio-standout-sparkline-end-halo" cx={endPoint.x.toFixed(2)} cy={endPoint.y.toFixed(2)} r="3.6" aria-hidden="true" />
+      <circle className="portfolio-standout-sparkline-end" cx={endPoint.x.toFixed(2)} cy={endPoint.y.toFixed(2)} r="1.75" aria-hidden="true" />
+    </svg>
+  );
+}
+
+function StandoutMetricStrip({ item }: { item: MarketStandout }) {
+  const metrics = [
+    { label: "Volume", value: item.volume },
+    { label: "Market cap", value: item.marketCap },
+    { label: "P/E", value: item.pe },
+    { label: "Dividend", value: item.dividendYield },
+  ];
+
+  return (
+    <div className="portfolio-standout-metrics" aria-label={`${item.company} market metrics`}>
+      {metrics.map((metric) => (
+        <div key={metric.label} className="portfolio-standout-metric">
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -416,24 +1091,19 @@ function MarketStandoutsPanel() {
         {MARKET_STANDOUTS.map((item) => (
           <article key={item.ticker} className="portfolio-standout-card">
             <div className="portfolio-standout-header">
-              <div>
+              <div className="portfolio-standout-identity">
                 <span>
                   {item.ticker} / {item.exchange}
                 </span>
                 <strong>{item.company}</strong>
               </div>
-              <div>
+              <div className="portfolio-standout-price">
                 <strong>{formatPortfolioTapePrice(item.price)}</strong>
                 <em className={toneClass(item.move)}>{formatPercent(item.move)}</em>
               </div>
             </div>
-            <MiniSparkline points={item.points} tone={item.move >= 0 ? "positive" : "negative"} />
-            <div className="portfolio-standout-metrics">
-              <MetricTile label="Volume" value={item.volume} />
-              <MetricTile label="Market cap" value={item.marketCap} />
-              <MetricTile label="P/E" value={item.pe} />
-              <MetricTile label="Dividend" value={item.dividendYield} />
-            </div>
+            <MarketStandoutSparkline item={item} />
+            <StandoutMetricStrip item={item} />
             <p>{item.summary}</p>
           </article>
         ))}
@@ -465,7 +1135,7 @@ function MarketRail() {
   );
 }
 
-function IndianMarketsTab() {
+function IndianMarketsTab({ onAnswer }: { onAnswer: FinanceNavigationProps["onAnswer"] }) {
   return (
     <WorkspaceLayout label="Indian Markets" rail={<MarketRail />}>
       <section className="portfolio-workspace-panel portfolio-market-overview-panel">
@@ -477,17 +1147,7 @@ function IndianMarketsTab() {
         </div>
       </section>
 
-      <section className="portfolio-workspace-panel portfolio-market-summary-panel">
-        <PanelHeading eyebrow="Market summary" title="Broad rally, bank leadership, selective IT" meta="Updated 3m ago" />
-        <div className="portfolio-summary-accordion">
-          {MARKET_INSIGHTS.map((insight) => (
-            <article key={insight.title} className={toneClass(insight.tone)}>
-              <strong>{insight.title}</strong>
-              <p>{insight.summary}</p>
-            </article>
-          ))}
-        </div>
-      </section>
+      <MarketSummary items={MARKET_SUMMARY_ITEMS} sources={MARKET_SUMMARY_SOURCES} />
 
       <MarketHeatmapPanel />
 
@@ -496,7 +1156,7 @@ function IndianMarketsTab() {
         <SectorPerformancePanel />
       </section>
 
-      <MarketDevelopmentGrid />
+      <MarketDevelopmentGrid onAnswer={onAnswer} />
       <MarketStandoutsPanel />
     </WorkspaceLayout>
   );
@@ -1260,7 +1920,12 @@ function WatchlistTab({
           <div className="portfolio-watchlist-mover-chart">
             {visibleItems.slice(0, 4).map((item) => (
               <article key={item.ticker}>
-                <MiniSparkline points={item.points} tone={item.oneDay >= 0 ? "positive" : "negative"} />
+                <DetailedSparkline
+                  className="portfolio-mini-sparkline"
+                  data={item.points}
+                  trend={item.oneDay >= 0 ? "up" : "down"}
+                  ariaLabel={`${item.name} intraday trend chart`}
+                />
                 <div>
                   <strong>{item.name}</strong>
                   <span>
@@ -1311,260 +1976,1236 @@ function WatchlistTab({
   );
 }
 
-function PortfolioMetricStrip({
+interface PortfolioEvidenceDrawerContent {
+  title: string;
+  sourceCount: number;
+  freshness: string;
+  assumptions: string[];
+  supportingSignals: string[];
+  confidence: string;
+  wouldChange: string;
+}
+
+const PORTFOLIO_STAGES = ["Overview", "Portfolio Analysis"] as const;
+type PortfolioStage = (typeof PORTFOLIO_STAGES)[number];
+
+function getPortfolioStageId(stage: PortfolioStage) {
+  return `portfolio-stage-${stage.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function getSuggestedPlay(playId: string) {
+  return PORTFOLIO_SUGGESTED_PLAYS.find((play) => play.id === playId) ?? PORTFOLIO_SUGGESTED_PLAYS[0];
+}
+
+function getHoldingContribution(holding: (typeof PORTFOLIO_HOLDINGS)[number]) {
+  return holding.value * (holding.dayMove / 100);
+}
+
+function getPerformanceReturnPercent(series: typeof PORTFOLIO_PERFORMANCE) {
+  const firstPoint = series[0];
+  const latestPoint = series[series.length - 1];
+  if (!firstPoint || !latestPoint) return 0;
+  return ((latestPoint.value - firstPoint.value) / firstPoint.value) * 100;
+}
+
+function getSectorExposureRows() {
+  return [
+    { label: "Financials", match: /Financials/i },
+    { label: "Auto", match: /Auto/i },
+    { label: "IT", match: /IT Services/i },
+    { label: "Energy", match: /Energy/i },
+    { label: "Industrials", match: /Industrials/i },
+  ].map((sector) => ({
+    label: sector.label,
+    value: PORTFOLIO_HOLDINGS.filter((holding) => sector.match.test(holding.sector)).reduce((sum, holding) => sum + holding.allocation, 0),
+  }));
+}
+
+function getContributionRows() {
+  return PORTFOLIO_HOLDINGS.map((holding) => ({
+    ticker: holding.ticker,
+    name: holding.name,
+    move: holding.dayMove,
+    contribution: getHoldingContribution(holding),
+  })).sort((first, second) => second.contribution - first.contribution);
+}
+
+function getFirstSentence(text: string) {
+  const [firstSentence] = text.split(/(?<=\.)\s+/);
+  return firstSentence || text;
+}
+
+function buildTrustEvidence(freshness = PORTFOLIO_COCKPIT.status.lastUpdated): PortfolioEvidenceDrawerContent {
+  return {
+    title: "AI evidence level",
+    sourceCount: PORTFOLIO_COCKPIT.status.sourceCount,
+    freshness,
+    assumptions: PORTFOLIO_AI_TRUST.assumptions,
+    supportingSignals: PORTFOLIO_AI_TRUST.changedToday,
+    confidence: PORTFOLIO_COCKPIT.status.evidenceLevel,
+    wouldChange: PORTFOLIO_AI_TRUST.needsConfirmation.join("; "),
+  };
+}
+
+function buildActionEvidence(action: (typeof PORTFOLIO_COCKPIT.actions)[number], freshness: string): PortfolioEvidenceDrawerContent {
+  const play = getSuggestedPlay(action.playId);
+
+  return {
+    title: action.title,
+    sourceCount: PORTFOLIO_COCKPIT.status.sourceCount,
+    freshness,
+    assumptions: PORTFOLIO_AI_TRUST.assumptions,
+    supportingSignals: [action.why, ...play.logic],
+    confidence: action.confidence,
+    wouldChange: play.wouldChange ?? "The view changes if affected holdings stop confirming the current signal.",
+  };
+}
+
+function buildRiskEvidence(card: (typeof PORTFOLIO_COCKPIT.riskStrip)[number], freshness: string): PortfolioEvidenceDrawerContent {
+  return {
+    title: card.headline,
+    sourceCount: PORTFOLIO_COCKPIT.status.sourceCount,
+    freshness,
+    assumptions: PORTFOLIO_AI_TRUST.assumptions,
+    supportingSignals: [card.metric, card.whyItMatters, `Affected: ${card.affectedHoldings.join(", ")}`],
+    confidence: PORTFOLIO_COCKPIT.status.evidenceLevel,
+    wouldChange: "This becomes less important if exposure falls or a broader set of holdings starts leading the account.",
+  };
+}
+
+function buildMarketDriverEvidence(driver: (typeof PORTFOLIO_COCKPIT.marketDrivers)[number], freshness: string): PortfolioEvidenceDrawerContent {
+  return {
+    title: driver.headline,
+    sourceCount: driver.sources.length,
+    freshness,
+    assumptions: PORTFOLIO_AI_TRUST.assumptions,
+    supportingSignals: [driver.explanation, `Sources: ${driver.sources.join(", ")}`, `Affected: ${driver.affectedHoldings.join(", ")}`],
+    confidence: driver.impactDirection === "Mixed" ? "Medium" : "Medium-high",
+    wouldChange: "The read changes if the driver stops affecting the named holdings or a stronger company-specific signal appears.",
+  };
+}
+
+function buildHoldingEvidence(ticker: string, freshness: string): PortfolioEvidenceDrawerContent {
+  const holding = PORTFOLIO_HOLDINGS.find((item) => item.ticker === ticker);
+  const decision = PORTFOLIO_COCKPIT.holdingDecisions[ticker];
+  const context = PORTFOLIO_HOLDING_CONTEXT[ticker];
+
+  return {
+    title: `${ticker} holding logic`,
+    sourceCount: PORTFOLIO_COCKPIT.status.sourceCount,
+    freshness,
+    assumptions: PORTFOLIO_AI_TRUST.assumptions,
+    supportingSignals: [
+      decision?.detail ?? "No decision detail available.",
+      context?.signal ?? "",
+      context?.nextCheck ? `Next check: ${context.nextCheck}` : "",
+      holding ? `Weight: ${holding.allocation.toFixed(1)}% / 1D move: ${formatSignedPortfolioMove(holding.dayMove)}` : "",
+    ].filter(Boolean),
+    confidence: holding?.risk === "High" ? "High" : "Medium",
+    wouldChange: context?.nextCheck ?? "The view changes when new company evidence changes the risk/reward.",
+  };
+}
+
+function PortfolioHeader({
+  searchValue,
+  onSearchValueChange,
+  onSearchSubmit,
+  isPortfolioSyncing,
+  portfolioSyncStatus,
+  onRefresh,
+  onOpenEvidence,
+}: {
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
+  onSearchSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  isPortfolioSyncing: boolean;
+  portfolioSyncStatus: string;
+  onRefresh: () => void;
+  onOpenEvidence: () => void;
+}) {
+  return (
+    <header className="portfolio-finance-header portfolio-cockpit-header">
+      <div className="portfolio-finance-header-title">
+        <span className="portfolio-section-kicker">Sovereign Lens Finance</span>
+        <h1>Portfolio</h1>
+        <p>Personal exposure, holdings, performance, and local AI read.</p>
+      </div>
+      <form className="portfolio-finance-search portfolio-cockpit-search" role="search" aria-label="Search portfolio workspace" onSubmit={onSearchSubmit}>
+        <Search aria-hidden="true" />
+        <input value={searchValue} onChange={(event) => onSearchValueChange(event.target.value)} placeholder="Search Indian stocks, sectors, funds..." />
+      </form>
+      <div className="portfolio-cockpit-status-row">
+        <button type="button" className="portfolio-ai-status-pill" aria-label="Open AI evidence level" onClick={onOpenEvidence}>
+          <span>{PORTFOLIO_COCKPIT.status.view}</span>
+          <strong>{PORTFOLIO_COCKPIT.status.sourceCount} sources</strong>
+          <em>{portfolioSyncStatus}</em>
+          <b>{PORTFOLIO_COCKPIT.status.evidenceLevel}</b>
+        </button>
+        <button
+          type="button"
+          className={`portfolio-status-sync-button${isPortfolioSyncing ? " is-syncing" : ""}`}
+          aria-label="Refresh local portfolio view"
+          aria-busy={isPortfolioSyncing}
+          title="Refresh local portfolio view"
+          onClick={onRefresh}
+        >
+          <RefreshCw aria-hidden="true" />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function PortfolioSummaryGrid({
   totalValue,
   oneDayReturn,
   totalReturn,
   totalReturnPercent,
   portfolioSyncStatus,
+  onOpenEvidence,
 }: {
   totalValue: number;
   oneDayReturn: number;
   totalReturn: number;
   totalReturnPercent: number;
   portfolioSyncStatus: string;
+  onOpenEvidence: () => void;
 }) {
+  const cards = [
+    {
+      label: "Current Portfolio Value",
+      value: formatPortfolioCurrency(totalValue),
+      note: portfolioSyncStatus,
+      tone: "neutral",
+    },
+    {
+      label: "Invested Value",
+      value: formatPortfolioCurrency(PORTFOLIO_INVESTED_VALUE),
+      note: "Local sample holdings",
+      tone: "neutral",
+    },
+    {
+      label: "Total Gain / Loss",
+      value: `${formatSignedPortfolioCurrency(totalReturn)} (${formatSignedPortfolioPercent(totalReturnPercent)})`,
+      note: "Since invested value",
+      tone: totalReturn >= 0 ? "positive" : "negative",
+    },
+    {
+      label: "Today's P&L",
+      value: `${formatSignedPortfolioCurrency(oneDayReturn)} (${formatSignedPortfolioPercent(PORTFOLIO_DAY_RETURN_PERCENT)})`,
+      note: "1D local mark",
+      tone: oneDayReturn >= 0 ? "positive" : "negative",
+    },
+  ];
+
   return (
-    <section className="portfolio-terminal-strip" aria-label="Portfolio value summary">
-      <div className="portfolio-terminal-strip-title">
-        <span>Personal exposure</span>
-        <strong>Your Portfolio</strong>
-        <em>{portfolioSyncStatus}</em>
+    <section className="portfolio-summary-area" aria-label="Portfolio value summary">
+      <div className="portfolio-summary-grid">
+        {cards.map((card) => (
+          <article key={card.label} className={`portfolio-summary-card is-${card.tone}`}>
+            <span>{card.label}</span>
+            <strong>{card.value}</strong>
+            <em>{card.note}</em>
+          </article>
+        ))}
       </div>
-      <MetricTile label="Current Portfolio Value" value={formatPortfolioCurrency(totalValue)} />
-      <MetricTile label="Invested value" value={formatPortfolioCurrency(PORTFOLIO_INVESTED_VALUE)} />
-      <MetricTile
-        label="1D return"
-        value={`${formatSignedPortfolioCurrency(oneDayReturn)} (${formatSignedPortfolioPercent(PORTFOLIO_DAY_RETURN_PERCENT)})`}
-        tone={oneDayReturn >= 0 ? "positive" : "negative"}
-      />
-      <MetricTile
-        label="Total return"
-        value={`${formatSignedPortfolioCurrency(totalReturn)} (${formatSignedPortfolioPercent(totalReturnPercent)})`}
-        tone={totalReturn >= 0 ? "positive" : "negative"}
-      />
+      <button type="button" className="portfolio-evidence-summary-bar" onClick={onOpenEvidence}>
+        <span>AI Evidence Level</span>
+        <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
+        <em>{PORTFOLIO_COCKPIT.status.sourceCount} sources</em>
+        <b>Assumptions available</b>
+      </button>
     </section>
   );
 }
 
-function PortfolioReadPanel() {
-  const mainDriver = [...PORTFOLIO_HOLDINGS].sort((a, b) => b.value * b.dayMove - a.value * a.dayMove)[0];
-  const mainDrag = [...PORTFOLIO_HOLDINGS].sort((a, b) => a.value * a.dayMove - b.value * b.dayMove)[0];
-  const financialAllocation = PORTFOLIO_HOLDINGS.filter((holding) => holding.sector === "Financials").reduce(
-    (sum, holding) => sum + holding.allocation,
-    0,
-  );
-
-  return (
-    <section className="portfolio-workspace-panel portfolio-read-panel">
-      <PanelHeading eyebrow="Portfolio read" title="Today's portfolio read" meta="49 sources / updated 9m ago" />
-      <p>
-        Indian markets staged a broad rally, but this portfolio is mostly being driven by private-bank leadership and Tata Motors momentum.
-        <TickerMovePill ticker="ICICIBANK" move={1.86} />
-        and <TickerMovePill ticker="TATAMOTORS" move={2.25} /> carried gains, while{" "}
-        <TickerMovePill ticker="RELIANCE" move={-1.8} /> remains the main drag from crude and O2C uncertainty.
-      </p>
-      <p>
-        The next useful confirmation is whether banks keep breadth after earnings commentary and whether IT demand improves beyond currency support.
-      </p>
-      <div className="portfolio-read-structure">
-        <article>
-          <span>Main driver</span>
-          <strong>{mainDriver.ticker}</strong>
-          <p>{PORTFOLIO_HOLDING_CONTEXT[mainDriver.ticker]?.signal}</p>
-        </article>
-        <article>
-          <span>Main drag</span>
-          <strong>{mainDrag.ticker}</strong>
-          <p>{PORTFOLIO_HOLDING_CONTEXT[mainDrag.ticker]?.signal}</p>
-        </article>
-        <article>
-          <span>Risk cluster</span>
-          <strong>Financials {financialAllocation.toFixed(1)}%</strong>
-          <p>Bank leadership is helpful today, but concentration still needs confirmation.</p>
-        </article>
-        <article>
-          <span>Suggested next check</span>
-          <strong>Confirm breadth</strong>
-          <p>Check whether banks, autos, and capex names move together after earnings commentary.</p>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function PortfolioRail({
-  expandedPlayId,
-  onExpandedPlayChange,
+function AIActionQueue({
+  freshness,
+  onOpenEvidence,
   onFunds,
-  canOpenFundsForPlay,
 }: {
-  expandedPlayId: string | null;
-  onExpandedPlayChange: (id: string | null) => void;
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
   onFunds: () => void;
-  canOpenFundsForPlay: (play: (typeof PORTFOLIO_SUGGESTED_PLAYS)[number]) => boolean;
 }) {
-  const topHolding = [...PORTFOLIO_HOLDINGS].sort((a, b) => b.allocation - a.allocation)[0];
-  const highRiskHoldings = PORTFOLIO_HOLDINGS.filter((holding) => holding.risk === "High");
-  const financialAllocation = PORTFOLIO_HOLDINGS.filter((holding) => holding.sector === "Financials").reduce(
-    (sum, holding) => sum + holding.allocation,
-    0,
-  );
+  const [expandedActionId, setExpandedActionId] = useState(PORTFOLIO_COCKPIT.actions[0]?.id ?? "");
+
+  const handleActionClick = (action: (typeof PORTFOLIO_COCKPIT.actions)[number]) => {
+    if (action.ctaType === "funds") {
+      onFunds();
+      return;
+    }
+
+    onOpenEvidence(buildActionEvidence(action, freshness));
+  };
 
   return (
-    <aside className="portfolio-workspace-rail portfolio-right-column" aria-label="Portfolio AI intelligence">
-      <section className="portfolio-workspace-panel portfolio-ai-trust-panel">
-        <PanelHeading eyebrow="AI trust" title="Evidence level" meta={PORTFOLIO_AI_TRUST.confidence} />
-        <div className="portfolio-product-metric-strip">
-          <MetricTile label="Sources" value={`${PORTFOLIO_AI_TRUST.sourceCount}`} />
-          <MetricTile label="Freshness" value={PORTFOLIO_AI_TRUST.lastUpdated} />
+    <section className="portfolio-action-queue-panel" aria-label="Portfolio action queue">
+      <header>
+        <span>Recommended Plays</span>
+        <h2>What should I do today?</h2>
+      </header>
+      <div className="portfolio-action-queue-list">
+        {PORTFOLIO_COCKPIT.actions.map((action) => {
+          const isExpanded = expandedActionId === action.id;
+
+          return (
+            <article key={action.id} className={`portfolio-cockpit-action-card risk-${action.riskLevel.toLowerCase()}${isExpanded ? " is-expanded" : " is-collapsed"}`}>
+              <button
+                type="button"
+                className="portfolio-action-card-summary"
+                aria-expanded={isExpanded}
+                onClick={() => setExpandedActionId(isExpanded ? "" : action.id)}
+              >
+                <span className={`portfolio-risk-pill risk-${action.riskLevel.toLowerCase()}`}>{action.riskLevel}</span>
+                <strong>{action.title}</strong>
+                <em>{action.assetType}</em>
+                <ChevronDown aria-hidden="true" />
+              </button>
+              <p>{action.why}</p>
+              <div className="portfolio-reason-chip-row" aria-label={`${action.title} affected holdings`}>
+                {action.affectedHoldings.map((ticker) => (
+                  <span key={ticker}>{ticker}</span>
+                ))}
+              </div>
+              {isExpanded ? (
+                <>
+                  <dl>
+                    <div>
+                      <dt>Confidence</dt>
+                      <dd>{action.confidence}</dd>
+                    </div>
+                    <div>
+                      <dt>Main risk</dt>
+                      <dd>{action.mainRisk}</dd>
+                    </div>
+                  </dl>
+                  <button type="button" className="portfolio-action-card-cta" onClick={() => handleActionClick(action)}>
+                    {action.ctaLabel}
+                    {action.ctaType === "funds" ? <ArrowUpRight aria-hidden="true" /> : null}
+                  </button>
+                </>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+      <p className="portfolio-action-queue-note">No broker execution. Local AI decision support only.</p>
+    </section>
+  );
+}
+
+function PortfolioReadCard() {
+  return (
+    <section className="portfolio-read-card" aria-labelledby="portfolio-read-heading">
+      <header>
+        <span>AI portfolio memo</span>
+        <h2 id="portfolio-read-heading">{PORTFOLIO_COCKPIT.read.title}</h2>
+      </header>
+      <p>{PORTFOLIO_COCKPIT.read.summary}</p>
+      <div className="portfolio-read-facts">
+        {PORTFOLIO_COCKPIT.read.facts.map((fact) => (
+          <article key={fact.label}>
+            <span>{fact.label}</span>
+            <strong>{fact.value}</strong>
+            <p>{fact.detail}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RiskConcentrationStrip({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  return (
+    <section className="portfolio-risk-strip" aria-label="Risk and concentration strip">
+      {PORTFOLIO_COCKPIT.riskStrip.map((card) => (
+        <article key={card.id}>
+          <span>{card.label}</span>
+          <strong>{card.headline}</strong>
+          <em>{card.metric}</em>
+          <p>{card.whyItMatters}</p>
+          <div className="portfolio-reason-chip-row">
+            {card.affectedHoldings.map((ticker) => (
+              <span key={ticker}>{ticker}</span>
+            ))}
+          </div>
+          <button type="button" onClick={() => onOpenEvidence(buildRiskEvidence(card, freshness))}>
+            View details
+          </button>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function HoldingsExposureTable({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  const [holdingFilter, setHoldingFilter] = useState("All");
+  const filters = ["All", "Concentration risk", "Positive contributors", "Negative contributors", "Needs confirmation"];
+  const visibleHoldings = PORTFOLIO_HOLDINGS.filter((holding) => {
+    const decision = PORTFOLIO_COCKPIT.holdingDecisions[holding.ticker];
+    const context = PORTFOLIO_HOLDING_CONTEXT[holding.ticker];
+    const contribution = getHoldingContribution(holding);
+
+    if (holdingFilter === "Concentration risk") return /financials|private banks/i.test(`${holding.sector} ${context?.exposureCluster ?? ""}`);
+    if (holdingFilter === "Positive contributors") return contribution >= 0;
+    if (holdingFilter === "Negative contributors") return contribution < 0;
+    if (holdingFilter === "Needs confirmation") return /track|watch|wait|confirm/i.test(`${decision?.action ?? ""} ${decision?.keyRisk ?? ""}`);
+    return true;
+  });
+
+  const handleHoldingRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, ticker: string) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onOpenEvidence(buildHoldingEvidence(ticker, freshness));
+  };
+
+  return (
+    <section className="portfolio-workspace-panel portfolio-holdings-exposure-panel" aria-label="Decision-oriented holdings exposure">
+      <PanelHeading eyebrow="Holdings & risk" title="Holdings decision table" meta="Row opens AI logic" />
+      <div className="portfolio-holding-filter-row" aria-label="Holdings filters">
+        {filters.map((filter) => (
+          <button key={filter} type="button" className={holdingFilter === filter ? "is-active" : ""} aria-pressed={holdingFilter === filter} onClick={() => setHoldingFilter(filter)}>
+            {filter}
+          </button>
+        ))}
+      </div>
+      <div className="portfolio-holdings-table-shell">
+        <table className="portfolio-holdings-table portfolio-decision-table">
+          <thead>
+            <tr>
+              <th>Holding</th>
+              <th>Weight</th>
+              <th>Value</th>
+              <th>1D</th>
+              <th>Contribution</th>
+              <th>Role</th>
+              <th>Risk</th>
+              <th>AI View</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleHoldings.map((holding) => {
+              const decision = PORTFOLIO_COCKPIT.holdingDecisions[holding.ticker];
+              const context = PORTFOLIO_HOLDING_CONTEXT[holding.ticker];
+              const contribution = getHoldingContribution(holding);
+
+              return (
+                <tr
+                  key={holding.ticker}
+                  className={`portfolio-holding-row risk-${holding.risk.toLowerCase()}`}
+                  tabIndex={0}
+                  aria-label={`Open ${holding.ticker} holding logic`}
+                  onClick={() => onOpenEvidence(buildHoldingEvidence(holding.ticker, freshness))}
+                  onKeyDown={(event) => handleHoldingRowKeyDown(event, holding.ticker)}
+                >
+                  <td data-label="Holding">
+                    <strong>{holding.ticker}</strong>
+                    <span>{holding.name}</span>
+                  </td>
+                  <td data-label="Weight">{holding.allocation.toFixed(1)}%</td>
+                  <td data-label="Value">{formatPortfolioCurrency(holding.value)}</td>
+                  <td data-label="1D" className={holding.dayMove >= 0 ? "is-positive" : "is-negative"}>
+                    {formatSignedPortfolioMove(holding.dayMove)}
+                  </td>
+                  <td data-label="Contribution" className={contribution >= 0 ? "is-positive" : "is-negative"}>
+                    {formatSignedPortfolioCurrency(contribution)}
+                  </td>
+                  <td data-label="Role">
+                    <span className="portfolio-table-chip">{context?.exposureCluster ?? holding.sector}</span>
+                  </td>
+                  <td data-label="Risk">
+                    <span className={`portfolio-table-chip risk-${holding.risk.toLowerCase()}`}>{holding.risk}</span>
+                  </td>
+                  <td data-label="AI view">
+                    <div className="portfolio-table-action-cell">
+                      <span>{decision?.verdict}</span>
+                      <ArrowUpRight aria-hidden="true" />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function PortfolioChartsSection() {
+  return (
+    <section className="portfolio-charts-section portfolio-performance-view" aria-label="Portfolio charts">
+      <article className="portfolio-workspace-panel portfolio-chart-card portfolio-performance-card">
+        <PanelHeading eyebrow="Performance" title="Portfolio vs NIFTY 50" meta="Indexed view" />
+        <PortfolioPerformanceChart points={PORTFOLIO_PERFORMANCE} benchmarkPoints={NIFTY_50_PERFORMANCE} />
+      </article>
+      <div className="portfolio-performance-side">
+        <article className="portfolio-workspace-panel portfolio-chart-card portfolio-allocation-card">
+          <PanelHeading eyebrow="Allocation" title="Allocation" meta="Equity 100%" />
+          <PortfolioAllocationView />
+        </article>
+        <article className="portfolio-workspace-panel portfolio-chart-card portfolio-contribution-card">
+          <PanelHeading eyebrow="Contribution" title="Return drivers" meta="1D P&L" />
+          <PortfolioContributionBars compact />
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function MarketImpactStream({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  return (
+    <section className="portfolio-market-impact-section" aria-labelledby="portfolio-market-impact-heading">
+      <PanelHeading eyebrow="Market impact stream" title="Market drivers affecting your portfolio" />
+      <div className="portfolio-market-driver-grid">
+        {PORTFOLIO_COCKPIT.marketDrivers.map((driver) => (
+          <article key={driver.id} className={`portfolio-market-driver-card is-${driver.impactDirection.toLowerCase()}`}>
+            <div className="portfolio-market-driver-topline">
+              <span>{driver.theme}</span>
+              <em>{driver.impactDirection}</em>
+            </div>
+            <strong>{driver.headline}</strong>
+            <p>{getFirstSentence(driver.explanation)}</p>
+            <div className="portfolio-reason-chip-row">
+              {driver.affectedHoldings.map((ticker) => (
+                <span key={ticker}>{ticker}</span>
+              ))}
+            </div>
+            <div className="portfolio-market-driver-actions">
+              <button type="button" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
+                Expand
+              </button>
+              <button type="button" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
+                Sources
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PortfolioStageTabs({
+  activeStage,
+  onStageChange,
+}: {
+  activeStage: PortfolioStage;
+  onStageChange: (stage: PortfolioStage) => void;
+}) {
+  return (
+    <nav className="portfolio-stage-tabs" role="tablist" aria-label="Portfolio workspace sections">
+      {PORTFOLIO_STAGES.map((stage) => {
+        const isActive = activeStage === stage;
+        const panelId = getPortfolioStageId(stage);
+
+        return (
+          <button
+            key={stage}
+            id={`${panelId}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            aria-controls={panelId}
+            className={isActive ? "is-active" : ""}
+            onClick={() => onStageChange(stage)}
+          >
+            {stage}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function PortfolioStatusStrip({
+  totalValue,
+  oneDayReturn,
+  totalReturn,
+  totalReturnPercent,
+  freshness,
+  onOpenEvidence,
+}: {
+  totalValue: number;
+  oneDayReturn: number;
+  totalReturn: number;
+  totalReturnPercent: number;
+  freshness: string;
+  onOpenEvidence: () => void;
+}) {
+  const displayFreshness = freshness.replace(/^Local view updated\s*/i, "");
+  const statusItems = [
+    { label: "Portfolio value", value: formatPortfolioCurrency(totalValue), tone: "neutral" },
+    { label: "Today's P&L", value: formatSignedPortfolioCurrency(oneDayReturn), helper: formatSignedPortfolioPercent(PORTFOLIO_DAY_RETURN_PERCENT), tone: oneDayReturn >= 0 ? "positive" : "negative" },
+    { label: "Total return", value: formatSignedPortfolioCurrency(totalReturn), helper: formatSignedPortfolioPercent(totalReturnPercent), tone: totalReturn >= 0 ? "positive" : "negative" },
+  ];
+
+  return (
+    <section className="portfolio-status-strip" aria-label="Portfolio status today">
+      {statusItems.map((item) => (
+        <div key={item.label} className={`is-${item.tone}`}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+          {item.helper ? <em>{item.helper}</em> : null}
         </div>
-        <div className="portfolio-trust-list">
-          <span>Changed today</span>
-          {PORTFOLIO_AI_TRUST.changedToday.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
+      ))}
+      <button type="button" className="portfolio-status-evidence" onClick={onOpenEvidence}>
+        <span>Evidence</span>
+        <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
+        <em>{PORTFOLIO_COCKPIT.status.sourceCount} sources</em>
+      </button>
+      <div>
+        <span>Updated</span>
+        <strong>{displayFreshness}</strong>
+      </div>
+    </section>
+  );
+}
+
+function PrimaryActionModule({
+  freshness,
+  onOpenEvidence,
+  onShowHoldings,
+  onFunds,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+  onShowHoldings: () => void;
+  onFunds: () => void;
+}) {
+  const [primaryAction, ...otherActions] = PORTFOLIO_COCKPIT.actions;
+  const relianceDriver = PORTFOLIO_COCKPIT.marketDrivers.find((driver) => driver.affectedHoldings.includes("RELIANCE"));
+
+  const handleCompactAction = (action: (typeof PORTFOLIO_COCKPIT.actions)[number]) => {
+    if (action.ctaType === "funds") {
+      onFunds();
+      return;
+    }
+
+    onOpenEvidence(buildActionEvidence(action, freshness));
+  };
+
+  const watchRows = [
+    ...otherActions.slice(0, 1).map((action) => ({
+      id: action.id,
+      label: action.title,
+      holdings: action.affectedHoldings,
+      onClick: () => handleCompactAction(action),
+    })),
+    relianceDriver
+      ? {
+          id: relianceDriver.id,
+          label: "Reliance crude / O2C drag",
+          holdings: relianceDriver.affectedHoldings,
+          onClick: () => onOpenEvidence(buildMarketDriverEvidence(relianceDriver, freshness)),
+        }
+      : null,
+    ...otherActions.slice(1).map((action) => ({
+      id: action.id,
+      label: action.title,
+      holdings: action.affectedHoldings,
+      onClick: () => handleCompactAction(action),
+    })),
+  ].filter((row): row is { id: string; label: string; holdings: string[]; onClick: () => void } => Boolean(row));
+
+  if (!primaryAction) return null;
+
+  return (
+    <section className="portfolio-primary-action-module" aria-label="Today's primary portfolio action">
+      <div className="portfolio-primary-action-main">
+        <header>
+          <div>
+            <span>Today's primary portfolio action</span>
+            <h2>{primaryAction.title}</h2>
+          </div>
+          <span className={`portfolio-risk-pill risk-${primaryAction.riskLevel.toLowerCase()}`}>{primaryAction.riskLevel}</span>
+        </header>
+
+        <p>
+          <strong>Reason:</strong> {primaryAction.why}
+        </p>
+
+        <div className="portfolio-primary-action-facts">
+          <article>
+            <span>Risk</span>
+            <strong>{primaryAction.mainRisk}</strong>
+          </article>
+          <article>
+            <span>Confidence</span>
+            <strong>{primaryAction.confidence}</strong>
+          </article>
+          <article>
+            <span>Action type</span>
+            <strong>Watch / rebalance consideration only</strong>
+          </article>
         </div>
-        <details className="portfolio-trust-details">
-          <summary>Assumptions</summary>
+
+        <div className="portfolio-primary-action-holdings" aria-label="Affected holdings">
+          <span>Affected</span>
+          <div className="portfolio-reason-chip-row">
+            {primaryAction.affectedHoldings.map((ticker) => (
+              <span key={ticker}>{ticker}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="portfolio-primary-action-buttons">
+          <button type="button" className="is-primary" onClick={() => onOpenEvidence(buildActionEvidence(primaryAction, freshness))}>
+            View reasoning
+          </button>
+          <button type="button" onClick={onShowHoldings}>
+            Show affected holdings
+          </button>
+        </div>
+      </div>
+
+      <aside className="portfolio-other-watches" aria-label="Other watches">
+        <h3>Also watch</h3>
+        {watchRows.map((row) => (
+          <button key={row.id} type="button" onClick={row.onClick}>
+            <strong>{row.label}</strong>
+            <em>{row.holdings.join(", ")}</em>
+          </button>
+        ))}
+      </aside>
+    </section>
+  );
+}
+
+function PortfolioDiagnosis() {
+  const [driver, drag, cluster, confirmation] = PORTFOLIO_COCKPIT.read.facts;
+  const diagnosisItems = [
+    { label: "Main driver", value: driver?.value ?? "Private banks + Tata Motors" },
+    { label: "Main drag", value: drag?.value ?? "Reliance" },
+    { label: "Risk cluster", value: cluster?.value ?? "Financials sleeve 32%" },
+    { label: "Next check", value: confirmation?.value ?? "Bank breadth + JLR margin" },
+  ];
+
+  return (
+    <section className="portfolio-diagnosis-module" aria-labelledby="portfolio-diagnosis-heading">
+      <header>
+        <span>Portfolio diagnosis</span>
+        <h2 id="portfolio-diagnosis-heading">What changed today</h2>
+      </header>
+      <div className="portfolio-diagnosis-grid">
+        {diagnosisItems.map((item) => (
+          <article key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </div>
+      <p>Today's upside is being carried by private-bank leadership and Tata Motors momentum, while Reliance remains the clean drag from crude and O2C uncertainty.</p>
+    </section>
+  );
+}
+
+function TodayMovedBy({ oneDayReturn }: { oneDayReturn: number }) {
+  const rows = PORTFOLIO_HOLDINGS.map((holding) => ({
+    ticker: holding.ticker,
+    name: holding.name,
+    move: holding.dayMove,
+    contribution: getHoldingContribution(holding),
+  }));
+  const positiveRows = rows.filter((row) => row.contribution >= 0).sort((first, second) => second.contribution - first.contribution).slice(0, 3);
+  const negativeRows = rows.filter((row) => row.contribution < 0).sort((first, second) => first.contribution - second.contribution).slice(0, 2);
+  const maxContribution = Math.max(...rows.map((row) => Math.abs(row.contribution)), 1);
+
+  const renderRows = (items: typeof positiveRows) =>
+    items.map((row) => {
+      const isPositive = row.contribution >= 0;
+
+      return (
+        <article key={row.ticker} className={isPositive ? "is-positive" : "is-negative"}>
+          <div>
+            <strong>{row.ticker}</strong>
+            <span>{formatSignedPortfolioMove(row.move)}</span>
+          </div>
+          <div className="portfolio-today-moved-track" aria-hidden="true">
+            <span style={{ width: `${((Math.abs(row.contribution) / maxContribution) * 100).toFixed(1)}%` }} />
+          </div>
+          <em>{formatSignedPortfolioCurrency(row.contribution)}</em>
+        </article>
+      );
+    });
+
+  return (
+    <section className="portfolio-today-moved-module" aria-labelledby="portfolio-today-moved-heading">
+      <header>
+        <div>
+          <span>Today moved by</span>
+          <h2 id="portfolio-today-moved-heading">Today's P&L</h2>
+        </div>
+        <strong className={oneDayReturn >= 0 ? "is-positive" : "is-negative"}>{formatSignedPortfolioCurrency(oneDayReturn)}</strong>
+      </header>
+      <div className="portfolio-today-moved-columns">
+        <section aria-label="Positive contributors">
+          <h3>Positive contributors</h3>
+          <div>{renderRows(positiveRows)}</div>
+        </section>
+        <section aria-label="Negative contributors">
+          <h3>Negative contributors</h3>
+          <div>{renderRows(negativeRows)}</div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function MarketSignalRows({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  return (
+    <section className="portfolio-market-signal-list" aria-labelledby="portfolio-market-signal-heading">
+      <header>
+        <span>Market signals</span>
+        <h2 id="portfolio-market-signal-heading">Affecting your portfolio</h2>
+      </header>
+      <div>
+        {PORTFOLIO_COCKPIT.marketDrivers.map((driver) => (
+          <article key={driver.id} className={`is-${driver.impactDirection.toLowerCase()}`}>
+            <button type="button" className="portfolio-market-signal-main" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
+              <em>{driver.impactDirection}</em>
+              <span>{driver.theme}</span>
+              <strong>{driver.headline}</strong>
+              <div className="portfolio-reason-chip-row">
+                {driver.affectedHoldings.map((ticker) => (
+                  <span key={ticker}>{ticker}</span>
+                ))}
+              </div>
+            </button>
+            <button type="button" className="portfolio-market-signal-source" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
+              Sources
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PortfolioContributionBars({ compact = false }: { compact?: boolean }) {
+  const rows = getContributionRows();
+  const maxContribution = Math.max(...rows.map((row) => Math.abs(row.contribution)), 1);
+
+  return (
+    <div className={`portfolio-ranked-contribution-bars${compact ? " is-compact" : ""}`} aria-label="Ranked contribution bars">
+      {rows.map((row) => {
+        const isPositive = row.contribution >= 0;
+
+        return (
+          <article key={row.ticker} className={isPositive ? "is-positive" : "is-negative"}>
+            <div>
+              <strong>{row.ticker}</strong>
+              <span>{formatSignedPortfolioMove(row.move)}</span>
+            </div>
+            <div className="portfolio-ranked-contribution-track" aria-hidden="true">
+              <span style={{ width: `${((Math.abs(row.contribution) / maxContribution) * 100).toFixed(1)}%` }} />
+            </div>
+            <em>{formatSignedPortfolioCurrency(row.contribution)}</em>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function PortfolioAllocationView() {
+  const holdings = [...PORTFOLIO_HOLDINGS].sort((first, second) => second.allocation - first.allocation);
+  const [activeTicker, setActiveTicker] = useState(holdings[0]?.ticker ?? "");
+  const activeHolding = holdings.find((holding) => holding.ticker === activeTicker) ?? holdings[0];
+
+  return (
+    <div className="portfolio-allocation-strip-view" onMouseLeave={() => setActiveTicker(holdings[0]?.ticker ?? "")}>
+      <div className="portfolio-allocation-summary">
+        <span>Equity 100% / Fund 0%</span>
+        <strong>{activeHolding ? `${activeHolding.ticker} ${activeHolding.allocation.toFixed(1)}%` : "7 direct holdings"}</strong>
+      </div>
+
+      <div className="portfolio-allocation-strip" aria-label="Stacked allocation by holding">
+        {holdings.map((holding) => (
+          <button
+            key={holding.ticker}
+            type="button"
+            aria-label={`${holding.ticker} ${holding.allocation.toFixed(1)} percent allocation`}
+            className={holding.ticker === activeTicker ? "is-active" : ""}
+            style={
+              {
+                "--allocation-share": `${holding.allocation}`,
+                "--allocation-color": PORTFOLIO_ALLOCATION_COLORS[holding.ticker] ?? "#d2c4a3",
+              } as CSSProperties
+            }
+            onMouseEnter={() => setActiveTicker(holding.ticker)}
+            onFocus={() => setActiveTicker(holding.ticker)}
+            onClick={() => setActiveTicker(holding.ticker)}
+          />
+        ))}
+      </div>
+
+      <div className="portfolio-allocation-ledger">
+        {holdings.map((holding) => (
+          <button
+            key={holding.ticker}
+            type="button"
+            className={holding.ticker === activeTicker ? "is-active" : ""}
+            style={{ "--allocation-color": PORTFOLIO_ALLOCATION_COLORS[holding.ticker] ?? "#d2c4a3" } as CSSProperties}
+            onMouseEnter={() => setActiveTicker(holding.ticker)}
+            onFocus={() => setActiveTicker(holding.ticker)}
+            onClick={() => setActiveTicker(holding.ticker)}
+          >
+            <span aria-hidden="true" />
+            <strong>{holding.ticker}</strong>
+            <em>{holding.allocation.toFixed(1)}%</em>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SectorExposureBars() {
+  const sectorRows = getSectorExposureRows();
+  const maxValue = Math.max(...sectorRows.map((row) => row.value), 1);
+
+  return (
+    <section className="portfolio-sector-exposure" aria-label="Exposure by sector">
+      <header>
+        <span>Exposure by sector</span>
+        <strong>Concentration lens</strong>
+      </header>
+      <div>
+        {sectorRows.map((row) => (
+          <article key={row.label}>
+            <span>{row.label}</span>
+            <div aria-hidden="true">
+              <span style={{ width: `${((row.value / maxValue) * 100).toFixed(1)}%` }} />
+            </div>
+            <strong>{row.value.toFixed(1)}%</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AnalysisSummaryStrip() {
+  const portfolioReturn = getPerformanceReturnPercent(PORTFOLIO_PERFORMANCE);
+  const niftyReturn = getPerformanceReturnPercent(NIFTY_50_PERFORMANCE);
+  const alpha = portfolioReturn - niftyReturn;
+  const largestSector = [...getSectorExposureRows()].sort((first, second) => second.value - first.value)[0];
+  const contributionRows = getContributionRows();
+  const biggestPositive = contributionRows.find((row) => row.contribution >= 0);
+  const biggestDrag = [...contributionRows].reverse().find((row) => row.contribution < 0);
+  const items = [
+    {
+      label: "Portfolio return",
+      value: formatSignedPortfolioPercent(portfolioReturn),
+      tone: portfolioReturn >= 0 ? "positive" : "negative",
+    },
+    {
+      label: "NIFTY 50 return",
+      value: formatSignedPortfolioPercent(niftyReturn),
+      tone: niftyReturn >= 0 ? "positive" : "negative",
+    },
+    {
+      label: "Alpha",
+      value: formatSignedPortfolioPercent(alpha),
+      tone: alpha >= 0 ? "positive" : "negative",
+    },
+    {
+      label: "Largest sleeve",
+      value: largestSector ? `${largestSector.label} ${largestSector.value.toFixed(1)}%` : "n/a",
+      tone: "neutral",
+    },
+    {
+      label: "Biggest positive driver",
+      value: biggestPositive ? `${biggestPositive.ticker} ${formatSignedPortfolioCurrency(biggestPositive.contribution)}` : "n/a",
+      tone: "positive",
+    },
+    {
+      label: "Biggest drag",
+      value: biggestDrag ? `${biggestDrag.ticker} ${formatSignedPortfolioCurrency(biggestDrag.contribution)}` : "n/a",
+      tone: "negative",
+    },
+  ];
+
+  return (
+    <section className="portfolio-analysis-summary-strip" aria-label="Portfolio analysis summary">
+      {items.map((item) => (
+        <article key={item.label} className={`is-${item.tone}`}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function PortfolioAnalysisView({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  return (
+    <div className="portfolio-analysis-view">
+      <AnalysisSummaryStrip />
+      <PortfolioChartsSection />
+      <SectorExposureBars />
+      <HoldingsExposureTable freshness={freshness} onOpenEvidence={onOpenEvidence} />
+    </div>
+  );
+}
+
+function RiskRadar({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  const severityByRiskId: Record<string, "High" | "Medium"> = {
+    "financials-concentration": "High",
+    "tata-motors-momentum": "Medium",
+    "currency-crude": "Medium",
+  };
+
+  return (
+    <section className="portfolio-risk-radar" aria-labelledby="portfolio-risk-radar-heading">
+      <header>
+        <span>Risk map</span>
+        <h2 id="portfolio-risk-radar-heading">Where portfolio risk sits</h2>
+      </header>
+      <div className="portfolio-risk-radar-grid">
+        {PORTFOLIO_COCKPIT.riskStrip.map((card) => {
+          const severity = severityByRiskId[card.id] ?? "Medium";
+
+          return (
+            <article key={card.id}>
+              <div className="portfolio-risk-map-main">
+                <em className={`severity-${severity.toLowerCase()}`}>{severity}</em>
+                <strong>{card.headline}</strong>
+                <p>{card.whyItMatters}</p>
+              </div>
+              <div className="portfolio-reason-chip-row">
+                {card.affectedHoldings.map((ticker) => (
+                  <span key={ticker}>{ticker}</span>
+                ))}
+              </div>
+              <button type="button" aria-label={`View ${card.headline} details`} onClick={() => onOpenEvidence(buildRiskEvidence(card, freshness))}>
+                Details
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function OverviewPortfolioView({
+  totalValue,
+  oneDayReturn,
+  totalReturn,
+  totalReturnPercent,
+  freshness,
+  onOpenEvidence,
+  onShowHoldings,
+  onFunds,
+}: {
+  totalValue: number;
+  oneDayReturn: number;
+  totalReturn: number;
+  totalReturnPercent: number;
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+  onShowHoldings: () => void;
+  onFunds: () => void;
+}) {
+  return (
+    <div className="portfolio-today-view">
+      <PortfolioStatusStrip
+        totalValue={totalValue}
+        oneDayReturn={oneDayReturn}
+        totalReturn={totalReturn}
+        totalReturnPercent={totalReturnPercent}
+        freshness={freshness}
+        onOpenEvidence={() => onOpenEvidence(buildTrustEvidence(freshness))}
+      />
+      <div className="portfolio-overview-hero-grid">
+        <PrimaryActionModule freshness={freshness} onOpenEvidence={onOpenEvidence} onShowHoldings={onShowHoldings} onFunds={onFunds} />
+        <TodayMovedBy oneDayReturn={oneDayReturn} />
+      </div>
+      <PortfolioDiagnosis />
+      <div className="portfolio-overview-lower-grid">
+        <RiskRadar freshness={freshness} onOpenEvidence={onOpenEvidence} />
+        <MarketSignalRows freshness={freshness} onOpenEvidence={onOpenEvidence} />
+      </div>
+    </div>
+  );
+}
+
+function PortfolioEvidenceTab({
+  freshness,
+  onOpenEvidence,
+}: {
+  freshness: string;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
+}) {
+  return (
+    <section className="portfolio-evidence-tab" aria-labelledby="portfolio-evidence-tab-heading">
+      <header>
+        <div>
+          <span>Evidence</span>
+          <h2 id="portfolio-evidence-tab-heading">AI view support</h2>
+        </div>
+        <button type="button" onClick={() => onOpenEvidence(buildTrustEvidence(freshness))}>
+          Open drawer
+        </button>
+      </header>
+
+      <div className="portfolio-evidence-overview">
+        <article>
+          <span>Sources count</span>
+          <strong>{PORTFOLIO_COCKPIT.status.sourceCount}</strong>
+        </article>
+        <article>
+          <span>Freshness</span>
+          <strong>{freshness}</strong>
+        </article>
+        <article>
+          <span>Evidence level</span>
+          <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
+        </article>
+      </div>
+
+      <div className="portfolio-evidence-grid">
+        <section>
+          <h3>Assumptions</h3>
           <ul>
             {PORTFOLIO_AI_TRUST.assumptions.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </details>
-      </section>
+        </section>
+        <section>
+          <h3>Signals used</h3>
+          <ul>
+            {PORTFOLIO_AI_TRUST.changedToday.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h3>What would change the AI view</h3>
+          <ul>
+            {PORTFOLIO_AI_TRUST.needsConfirmation.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      </div>
 
-      <section className="portfolio-workspace-panel portfolio-portfolio-pulse-panel">
-        <PanelHeading eyebrow="Portfolio AI" title="Portfolio pulse" meta="Local read" />
-        <p className="portfolio-rail-copy">
-          Watching bank concentration, Tata Motors momentum, IT commentary, crude sensitivity, and domestic capex confirmation.
-        </p>
-        <div className="portfolio-rail-mini-table" aria-label="Portfolio AI evidence">
-          <div>
-            <span>Largest holding</span>
-            <strong>
-              {topHolding.ticker} {topHolding.allocation.toFixed(1)}%
-            </strong>
-          </div>
-          <div>
-            <span>Financials sleeve</span>
-            <strong>{financialAllocation.toFixed(1)}%</strong>
-          </div>
-          <div>
-            <span>High-risk name</span>
-            <strong>{highRiskHoldings.map((holding) => holding.ticker).join(" / ")}</strong>
-          </div>
-        </div>
-      </section>
+      <FinanceDisclaimer />
+    </section>
+  );
+}
 
-      <section className="portfolio-workspace-panel">
-        <PanelHeading eyebrow="Questions" title="What to confirm" />
-        <div className="portfolio-alert-list">
+function EvidenceDrawer({
+  content,
+  onClose,
+}: {
+  content: PortfolioEvidenceDrawerContent | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!content) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [content, onClose]);
+
+  if (!content || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="portfolio-evidence-drawer-layer" role="presentation">
+      <button type="button" className="portfolio-evidence-drawer-backdrop" aria-label="Close evidence drawer" onClick={onClose} />
+      <aside className="portfolio-evidence-drawer" role="dialog" aria-modal="true" aria-labelledby="portfolio-evidence-drawer-title">
+        <header>
+          <div>
+            <span>AI evidence</span>
+            <h2 id="portfolio-evidence-drawer-title">{content.title}</h2>
+          </div>
+          <button type="button" aria-label="Close evidence drawer" onClick={onClose}>
+            <X aria-hidden="true" />
+          </button>
+        </header>
+        <div className="portfolio-evidence-drawer-metrics">
           <article>
-            <strong>Does Bank Nifty leadership hold?</strong>
-            <p>ICICI Bank and HDFC Bank decide whether today's gains are broad or just index-heavy.</p>
+            <span>Sources</span>
+            <strong>{content.sourceCount}</strong>
           </article>
           <article>
-            <strong>Is Tata Motors momentum becoming crowding?</strong>
-            <p>JLR margin commentary is the cleaner check before adding more auto risk.</p>
+            <span>Freshness</span>
+            <strong>{content.freshness}</strong>
+          </article>
+          <article>
+            <span>Confidence</span>
+            <strong>{content.confidence}</strong>
           </article>
         </div>
-      </section>
-
-      <section className="portfolio-workspace-panel">
-        <PanelHeading eyebrow="News Affecting Portfolio" title="Impact stream" />
-        <div className="portfolio-impact-news-list">
-          {PORTFOLIO_AI_NEWS.slice(0, 4).map((item) => (
-            <article key={item.id}>
-              <span>{item.impact}</span>
-              <strong>{item.headline}</strong>
-              <p>{item.summary}</p>
-              <div>
-                {item.tickers.map((ticker) => (
-                  <em key={ticker}>{ticker}</em>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="portfolio-workspace-panel">
-        <PanelHeading eyebrow="Recommended Plays" title="Action queue" />
-        <div className="portfolio-action-card-list">
-          {PORTFOLIO_SUGGESTED_PLAYS.map((play) => {
-            const isExpanded = expandedPlayId === play.id;
-            const hasPrimaryAction = canOpenFundsForPlay(play);
-            const disabledReasonId = `portfolio-action-disabled-${play.id}`;
-            const logicId = `portfolio-action-logic-${play.id}`;
-
-            return (
-              <article key={play.id} className={`portfolio-action-card priority-${play.priority.toLowerCase()}`}>
-                <div>
-                  <span>{play.riskLabel}</span>
-                  <em>{play.context}</em>
-                </div>
-                <strong>{play.headline}</strong>
-                <p>{play.analysis}</p>
-                <div className="portfolio-reason-chip-row">
-                  {play.reasons.map((reason) => (
-                    <span key={reason.text}>{reason.emphasis ?? reason.text}</span>
-                  ))}
-                  {play.confidence ? <span>Confidence: {play.confidence}</span> : null}
-                </div>
-                {isExpanded ? (
-                  <div id={logicId} className="portfolio-action-logic">
-                    <ul>
-                      {play.logic.map((line) => (
-                        <li key={line}>{line}</li>
-                      ))}
-                    </ul>
-                    {play.wouldChange ? (
-                      <p>
-                        <strong>What would change this:</strong> {play.wouldChange}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="portfolio-action-card-buttons">
-                  {hasPrimaryAction ? (
-                    <button
-                      type="button"
-                      aria-label={`${play.primaryAction} for recommendation: ${play.headline}`}
-                      title={`${play.primaryAction} for ${play.headline}`}
-                      onClick={() => onFunds()}
-                    >
-                      {play.primaryAction}
-                      <ArrowUpRight aria-hidden="true" />
-                    </button>
-                  ) : (
-                    <span className="portfolio-action-status" aria-describedby={disabledReasonId}>
-                      {play.primaryAction} unavailable
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    aria-expanded={isExpanded}
-                    aria-controls={logicId}
-                    aria-label={`${isExpanded ? "Hide" : "View"} logic for recommendation: ${play.headline}`}
-                    title={`${isExpanded ? "Hide" : "View"} logic for ${play.headline}`}
-                    onClick={() => onExpandedPlayChange(isExpanded ? null : play.id)}
-                  >
-                    {isExpanded ? "Hide logic" : play.secondaryAction}
-                  </button>
-                </div>
-                {!hasPrimaryAction ? (
-                  <p id={disabledReasonId} className="portfolio-action-disabled-note">
-                    Requires portfolio action setup. View logic is available, but no broker action runs in this demo.
-                  </p>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
-      </section>
-    </aside>
+        <section>
+          <h3>Assumptions</h3>
+          <ul>
+            {content.assumptions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h3>Supporting signals</h3>
+          <ul>
+            {content.supportingSignals.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h3>What would change the view</h3>
+          <p>{content.wouldChange}</p>
+        </section>
+        <FinanceDisclaimer />
+      </aside>
+    </div>,
+    document.body,
   );
 }
 
@@ -1574,114 +3215,40 @@ function YourPortfolioTab({
   totalReturn,
   totalReturnPercent,
   portfolioSyncStatus,
-  expandedPlayId,
-  onExpandedPlayChange,
   onFunds,
-  canOpenFundsForPlay,
-  onScreener,
+  onOpenEvidence,
 }: {
   totalValue: number;
   oneDayReturn: number;
   totalReturn: number;
   totalReturnPercent: number;
   portfolioSyncStatus: string;
-  expandedPlayId: string | null;
-  onExpandedPlayChange: (id: string | null) => void;
   onFunds: () => void;
-  canOpenFundsForPlay: (play: (typeof PORTFOLIO_SUGGESTED_PLAYS)[number]) => boolean;
-  onScreener: (query: string) => void;
+  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
 }) {
+  const [activeStage, setActiveStage] = useState<PortfolioStage>("Overview");
+  const panelId = getPortfolioStageId(activeStage);
+
   return (
-    <section className="portfolio-command-grid portfolio-workspace-command-grid portfolio-terminal-layout" aria-label="Portfolio command center">
-      <section className="portfolio-dashboard portfolio-left-column portfolio-terminal-main" aria-label="Portfolio dashboard">
-        <PortfolioMetricStrip
-          totalValue={totalValue}
-          oneDayReturn={oneDayReturn}
-          totalReturn={totalReturn}
-          totalReturnPercent={totalReturnPercent}
-          portfolioSyncStatus={portfolioSyncStatus}
-        />
+    <section className="portfolio-dashboard portfolio-staged-workspace" aria-label="Portfolio dashboard">
+      <PortfolioStageTabs activeStage={activeStage} onStageChange={setActiveStage} />
 
-        <PortfolioReadPanel />
+      <section id={panelId} className="portfolio-stage-panel" role="tabpanel" aria-labelledby={`${panelId}-tab`}>
+        {activeStage === "Overview" ? (
+          <OverviewPortfolioView
+            totalValue={totalValue}
+            oneDayReturn={oneDayReturn}
+            totalReturn={totalReturn}
+            totalReturnPercent={totalReturnPercent}
+            freshness={portfolioSyncStatus}
+            onOpenEvidence={onOpenEvidence}
+            onShowHoldings={() => setActiveStage("Portfolio Analysis")}
+            onFunds={onFunds}
+          />
+        ) : null}
 
-        <section className="portfolio-dashboard portfolio-main-dashboard portfolio-terminal-dashboard" aria-label="Portfolio holdings and performance">
-          <article className="portfolio-workspace-panel portfolio-table-panel portfolio-holdings-terminal-panel">
-            <PanelHeading eyebrow="Holdings" title="Impact table" meta="Stock-wise exposure" />
-            <table className="portfolio-holdings-table portfolio-holdings-table-upgraded">
-              <thead>
-                <tr>
-                  <th>Company</th>
-                  <th>Value</th>
-                  <th>1D</th>
-                  <th>Contribution</th>
-                  <th>Alloc.</th>
-                  <th>Risk</th>
-                  <th>Signal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PORTFOLIO_HOLDINGS.map((holding) => {
-                  const context = PORTFOLIO_HOLDING_CONTEXT[holding.ticker];
-                  const contribution = holding.value * (holding.dayMove / 100);
-
-                  return (
-                    <tr key={holding.ticker} className={`portfolio-holding-row risk-${holding.risk.toLowerCase()}`}>
-                      <td>
-                        <strong>{holding.ticker}</strong>
-                        <span>
-                          {holding.name}
-                          {holding.exchange ? ` / ${holding.exchange}` : ""}
-                          {` / ${holding.sector}`}
-                        </span>
-                        <button
-                          type="button"
-                          className="portfolio-inline-link-button"
-                          aria-label={`Open ${holding.name} in Screener`}
-                          title={`Open ${holding.name} in Screener`}
-                          onClick={() => onScreener(holding.ticker)}
-                        >
-                          Open screener
-                        </button>
-                      </td>
-                      <td>{formatPortfolioCurrency(holding.value)}</td>
-                      <td className={holding.dayMove >= 0 ? "is-positive" : "is-negative"}>{formatSignedPortfolioMove(holding.dayMove)}</td>
-                      <td className={contribution >= 0 ? "is-positive" : "is-negative"}>{formatSignedPortfolioCurrency(contribution)}</td>
-                      <td>{holding.allocation.toFixed(1)}%</td>
-                      <td>
-                        <em className={`portfolio-risk-pill risk-${holding.risk.toLowerCase()}`}>{holding.risk}</em>
-                        <span>{context?.riskReason}</span>
-                      </td>
-                      <td>
-                        <span>{context?.signal}</span>
-                        <em className="portfolio-table-signal">{context?.exposureCluster}</em>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </article>
-
-          <div className="portfolio-workspace-split portfolio-secondary-market-panels">
-            <article className="portfolio-workspace-panel portfolio-performance-panel">
-              <PanelHeading eyebrow="Performance" title="6M vs NIFTY 50" />
-              <PortfolioPerformanceChart points={PORTFOLIO_PERFORMANCE} benchmarkPoints={NIFTY_50_PERFORMANCE} />
-            </article>
-
-            <article className="portfolio-workspace-panel portfolio-composition-panel">
-              <PanelHeading eyebrow="Composition" title="Allocation" />
-              <PortfolioCompositionDonut holdings={PORTFOLIO_HOLDINGS} />
-            </article>
-          </div>
-        </section>
+        {activeStage === "Portfolio Analysis" ? <PortfolioAnalysisView freshness={portfolioSyncStatus} onOpenEvidence={onOpenEvidence} /> : null}
       </section>
-
-      <PortfolioRail
-        expandedPlayId={expandedPlayId}
-        onExpandedPlayChange={onExpandedPlayChange}
-        onFunds={onFunds}
-        canOpenFundsForPlay={canOpenFundsForPlay}
-      />
     </section>
   );
 }
@@ -1719,7 +3286,7 @@ function FinanceScreenShell({
   const financeAppRef = useRef<HTMLElement | null>(null);
 
   return (
-    <main ref={financeAppRef} className="app-shell portfolio-app">
+    <main ref={financeAppRef} className={`app-shell portfolio-app portfolio-app-view-${activeView}`}>
       <GlobalBrandNav
         activeView={activeView}
         onHome={onHome}
@@ -1792,7 +3359,7 @@ export function IndianMarketsScreen(props: FinanceNavigationProps) {
       onSearchValueChange={setWorkspaceSearchQuery}
       onSearchSubmit={handleWorkspaceSearch}
     >
-      <IndianMarketsTab />
+      <IndianMarketsTab onAnswer={props.onAnswer} />
     </FinanceScreenShell>
   );
 }
@@ -2011,7 +3578,7 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
   const [portfolioSyncStatus, setPortfolioSyncStatus] = useState("Local view updated 2m ago");
   const [isPortfolioSyncing, setIsPortfolioSyncing] = useState(false);
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState("");
-  const [expandedPlayId, setExpandedPlayId] = useState<string | null>(null);
+  const [evidenceDrawer, setEvidenceDrawer] = useState<PortfolioEvidenceDrawerContent | null>(null);
 
   const totalValue = PORTFOLIO_HOLDINGS.reduce((sum, holding) => sum + holding.value, 0);
   const oneDayReturn = totalValue * (PORTFOLIO_DAY_RETURN_PERCENT / 100);
@@ -2054,11 +3621,8 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
     onScreener(query);
   };
 
-  const canOpenFundsForPlay = (play: (typeof PORTFOLIO_SUGGESTED_PLAYS)[number]) =>
-    /fund|etf/i.test(`${play.primaryAction} ${play.context} ${play.command}`);
-
   return (
-    <main ref={portfolioAppRef} className="app-shell portfolio-app">
+    <main ref={portfolioAppRef} className="app-shell portfolio-app portfolio-app-view-portfolio">
       <GlobalBrandNav
         activeView="portfolio"
         onHome={onHome}
@@ -2073,43 +3637,15 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
       <section className="portfolio-screen portfolio-workspace-screen" aria-label="Synced portfolio screen">
         <div className="portfolio-background-grid" aria-hidden="true" />
 
-        <header className="portfolio-finance-header">
-          <div className="portfolio-finance-header-title">
-            <span className="portfolio-section-kicker">Sovereign Lens Finance</span>
-            <h1>Portfolio</h1>
-            <p>Personal exposure, holdings, performance, and local AI read.</p>
-            <span className="portfolio-page-meta">Local browser view</span>
-          </div>
-          <form className="portfolio-finance-search" role="search" aria-label="Search portfolio workspace" onSubmit={handleWorkspaceSearch}>
-            <Search aria-hidden="true" />
-            <input
-              value={workspaceSearchQuery}
-              onChange={(event) => setWorkspaceSearchQuery(event.target.value)}
-              placeholder="Search Indian stocks, sectors, funds..."
-            />
-          </form>
-          <div className="portfolio-market-status" aria-label="Market status">
-            <div className="portfolio-sentiment-bars" aria-hidden="true">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <span key={index} />
-              ))}
-            </div>
-            <div>
-              <strong>Bullish Sentiment</strong>
-              <span>Markets Closed - 6 May 2026, IST</span>
-            </div>
-            <button
-              type="button"
-              className={`portfolio-status-sync-button${isPortfolioSyncing ? " is-syncing" : ""}`}
-              aria-label="Refresh local portfolio view"
-              aria-busy={isPortfolioSyncing}
-              title="Refresh local portfolio view"
-              onClick={handlePortfolioSync}
-            >
-              <RefreshCw aria-hidden="true" />
-            </button>
-          </div>
-        </header>
+        <PortfolioHeader
+          searchValue={workspaceSearchQuery}
+          onSearchValueChange={setWorkspaceSearchQuery}
+          onSearchSubmit={handleWorkspaceSearch}
+          isPortfolioSyncing={isPortfolioSyncing}
+          portfolioSyncStatus={portfolioSyncStatus}
+          onRefresh={handlePortfolioSync}
+          onOpenEvidence={() => setEvidenceDrawer(buildTrustEvidence(portfolioSyncStatus))}
+        />
 
         <YourPortfolioTab
           totalValue={totalValue}
@@ -2117,17 +3653,15 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
           totalReturn={totalReturn}
           totalReturnPercent={totalReturnPercent}
           portfolioSyncStatus={portfolioSyncStatus}
-          expandedPlayId={expandedPlayId}
-          onExpandedPlayChange={setExpandedPlayId}
           onFunds={onFunds}
-          canOpenFundsForPlay={canOpenFundsForPlay}
-          onScreener={onScreener}
+          onOpenEvidence={setEvidenceDrawer}
         />
 
         <button type="button" className="portfolio-scroll-cue" aria-label="Scroll portfolio screen down" onClick={scrollPortfolioDown}>
           <span />
         </button>
       </section>
+      <EvidenceDrawer content={evidenceDrawer} onClose={() => setEvidenceDrawer(null)} />
     </main>
   );
 }

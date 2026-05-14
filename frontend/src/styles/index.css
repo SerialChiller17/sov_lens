@@ -3,6 +3,7 @@
 @import "../features/events/events-dashboard.css";
 @import "./legacy-home.css";
 @import "../features/events/news-article.css";
+@import "../features/answer/ai-answer.css";
 @import "../globe-monitor/GlobeMonitor.css";
 @import "../app/global-navigation.css";
 @import "../app/desktop-only-gate.css";

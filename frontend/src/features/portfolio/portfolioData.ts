@@ -1,6 +1,13 @@
 import type { MarketTapeBasket } from "../../types";
 import { formatPortfolioTapePrice } from "./portfolioFormatters";
-import type { PortfolioHolding, PortfolioHoldingContext, PortfolioNewsCard, PortfolioPerformancePoint, PortfolioSuggestedPlay } from "./portfolioTypes";
+import type {
+  PortfolioCockpitData,
+  PortfolioHolding,
+  PortfolioHoldingContext,
+  PortfolioNewsCard,
+  PortfolioPerformancePoint,
+  PortfolioSuggestedPlay,
+} from "./portfolioTypes";
 
 export const PORTFOLIO_HOLDINGS: PortfolioHolding[] = [
   {
@@ -168,33 +175,33 @@ export const PORTFOLIO_INVESTED_VALUE = 900000;
 export const PORTFOLIO_DAY_RETURN_PERCENT = 0.86;
 
 export const PORTFOLIO_ALLOCATION_COLORS: Record<string, string> = {
-  ICICIBANK: "#ecd76e",
-  TATAMOTORS: "#ffb25f",
-  TCS: "#57d7d2",
-  HDFCBANK: "#74e59c",
-  LT: "#9b7cff",
-  RELIANCE: "#ff7aa8",
-  INFY: "#8fd3ff",
+  ICICIBANK: "#c7ad68",
+  TATAMOTORS: "#9dad88",
+  TCS: "#6f8998",
+  HDFCBANK: "#8faf96",
+  LT: "#aa9479",
+  RELIANCE: "#c9827a",
+  INFY: "#7f9ba7",
 };
 
 export const PORTFOLIO_DONUT_SEGMENT_GAP = 0.38;
 
 export const PORTFOLIO_PERFORMANCE: PortfolioPerformancePoint[] = [
-  { label: "Jan", value: 825000 },
-  { label: "Feb", value: 846500 },
-  { label: "Mar", value: 832200 },
-  { label: "Apr", value: 885400 },
-  { label: "May", value: 912800 },
+  { label: "Jan", value: 900000 },
+  { label: "Feb", value: 892400 },
+  { label: "Mar", value: 909800 },
+  { label: "Apr", value: 923900 },
+  { label: "May", value: 931600 },
   { label: "Jun", value: 946507 },
 ];
 
 export const NIFTY_50_PERFORMANCE: PortfolioPerformancePoint[] = [
-  { label: "Jan", value: 825000 },
-  { label: "Feb", value: 837600 },
-  { label: "Mar", value: 829900 },
-  { label: "Apr", value: 858300 },
-  { label: "May", value: 884100 },
-  { label: "Jun", value: 910500 },
+  { label: "Jan", value: 900000 },
+  { label: "Feb", value: 881500 },
+  { label: "Mar", value: 874900 },
+  { label: "Apr", value: 868300 },
+  { label: "May", value: 861400 },
+  { label: "Jun", value: 853200 },
 ];
 
 export const PORTFOLIO_AI_NEWS: PortfolioNewsCard[] = [
@@ -337,3 +344,192 @@ export const PORTFOLIO_SUGGESTED_PLAYS: PortfolioSuggestedPlay[] = [
     ],
   },
 ];
+
+export const PORTFOLIO_COCKPIT: PortfolioCockpitData = {
+  status: {
+    view: "Local browser view",
+    evidenceLevel: PORTFOLIO_AI_TRUST.confidence,
+    lastUpdated: PORTFOLIO_AI_TRUST.lastUpdated,
+    sourceCount: PORTFOLIO_AI_TRUST.sourceCount,
+  },
+  actions: [
+    {
+      id: "bank-concentration-queue",
+      playId: "trim-concentration",
+      riskLevel: "High",
+      assetType: "Portfolio",
+      title: "Reduce private-bank concentration",
+      why: "ICICI Bank and HDFC Bank now make the portfolio depend too heavily on one financials cycle.",
+      affectedHoldings: ["ICICIBANK", "HDFCBANK"],
+      confidence: "Medium",
+      mainRisk: "Financials sleeve above the 30% target.",
+      ctaLabel: "View logic",
+      ctaType: "logic",
+    },
+    {
+      id: "jlr-margin-queue",
+      playId: "watch-auto-beta",
+      riskLevel: "High",
+      assetType: "Stock",
+      title: "Wait for JLR margin confirmation",
+      why: "Tata Motors is driving upside, but export demand and JLR margins still decide the next leg.",
+      affectedHoldings: ["TATAMOTORS"],
+      confidence: "High",
+      mainRisk: "Auto momentum reverses if JLR margin commentary weakens.",
+      ctaLabel: "Track margin",
+      ctaType: "track",
+    },
+    {
+      id: "fund-buffer-queue",
+      playId: "add-fund-buffer",
+      riskLevel: "Medium",
+      assetType: "Mutual Fund",
+      title: "Add a broad fund buffer",
+      why: "A diversified large-cap or flexi-cap sleeve can reduce single-stock risk while keeping India equity exposure.",
+      affectedHoldings: ["ICICIBANK", "HDFCBANK", "TCS"],
+      confidence: "Medium",
+      mainRisk: "Seven direct stocks still drive almost all portfolio behavior.",
+      ctaLabel: "Compare funds",
+      ctaType: "funds",
+    },
+  ],
+  read: {
+    title: "Today's portfolio read",
+    summary:
+      "Indian markets staged a broad rally, but your portfolio is mostly being carried by private-bank leadership and Tata Motors momentum. Reliance is the clean drag from crude and O2C uncertainty, so the useful checks are whether bank breadth widens and whether JLR margins confirm the auto move.",
+    facts: [
+      {
+        label: "Main upside driver",
+        value: "Private banks + Tata Motors",
+        detail: "ICICI Bank, HDFC Bank, and Tata Motors explain most of today's upside.",
+      },
+      {
+        label: "Main drag",
+        value: "Reliance",
+        detail: "Crude-linked O2C uncertainty is offsetting the broader market rally.",
+      },
+      {
+        label: "Main concentration risk",
+        value: "Financials sleeve 32.0%",
+        detail: "ICICI Bank and HDFC Bank are quality holdings, but they move with the same cycle.",
+      },
+      {
+        label: "Next confirmation",
+        value: "Bank breadth + JLR margin",
+        detail: "Watch whether bank leadership expands and Tata Motors gets margin support.",
+      },
+    ],
+  },
+  riskStrip: [
+    {
+      id: "financials-concentration",
+      label: "Largest risk cluster",
+      headline: "Financials sleeve: 32%",
+      metric: "ICICI + HDFC concentration",
+      affectedHoldings: ["ICICIBANK", "HDFCBANK"],
+      whyItMatters: "Helpful leadership today, but the portfolio is crowded in one private-bank cycle.",
+    },
+    {
+      id: "tata-motors-momentum",
+      label: "Momentum watch",
+      headline: "Tata Motors driving upside",
+      metric: "JLR margin confirmation needed",
+      affectedHoldings: ["TATAMOTORS"],
+      whyItMatters: "Momentum is strong, but the holding has export and margin beta.",
+    },
+    {
+      id: "currency-crude",
+      label: "Currency / crude sensitivity",
+      headline: "Reliance and IT exposure",
+      metric: "Crude drag / rupee support",
+      affectedHoldings: ["RELIANCE", "TCS", "INFY"],
+      whyItMatters: "Refining spreads can pressure Reliance while currency helps IT translation.",
+    },
+  ],
+  holdingDecisions: {
+    ICICIBANK: {
+      verdict: "Core; concentration high",
+      keyRisk: "Bank cycle crowding",
+      action: "Hold / cap sleeve",
+      detail: "Quality private-bank exposure, but adding more before the sleeve falls below 30% increases concentration risk.",
+    },
+    TATAMOTORS: {
+      verdict: "Momentum strong",
+      keyRisk: "JLR margin beta",
+      action: "Track margin",
+      detail: "Let momentum work, but wait for JLR margin and EV volume confirmation before increasing exposure.",
+    },
+    TCS: {
+      verdict: "Quality anchor",
+      keyRisk: "US demand",
+      action: "Watch demand",
+      detail: "Currency support helps, but the next signal still comes from BFSI demand and order-book tone.",
+    },
+    HDFCBANK: {
+      verdict: "Stable bank sleeve",
+      keyRisk: "Deposit costs",
+      action: "Hold / confirm NIM",
+      detail: "Stability is useful, but this adds to the same financials cluster as ICICI Bank.",
+    },
+    LT: {
+      verdict: "Capex exposure",
+      keyRisk: "Execution margin",
+      action: "Hold",
+      detail: "Domestic capex and order-book visibility keep this as the cleaner industrial exposure.",
+    },
+    RELIANCE: {
+      verdict: "Crude-linked drag",
+      keyRisk: "Refining spreads",
+      action: "Watch O2C",
+      detail: "Energy and O2C uncertainty are the main drag; Jio and retail need to offset refining pressure.",
+    },
+    INFY: {
+      verdict: "Currency support",
+      keyRisk: "Demand risk",
+      action: "Wait for guidance",
+      detail: "Rupee translation helps, but demand recovery and FY guidance decide whether this turns constructive.",
+    },
+  },
+  marketDrivers: [
+    {
+      id: "banks-credit-driver",
+      theme: "Banks / Credit",
+      headline: "Private-bank leadership widens as credit growth steadies",
+      explanation:
+        "The portfolio benefits because ICICI Bank and HDFC Bank are both participating in the rally. The risk is that the same driver now controls too much of the account.",
+      affectedHoldings: ["ICICIBANK", "HDFCBANK"],
+      impactDirection: "Positive",
+      sources: ["Exchange feed", "Bank Nifty breadth", "Market desk"],
+    },
+    {
+      id: "crude-margin-driver",
+      theme: "Crude / Margins",
+      headline: "Reliance stays sensitive to refining spreads and O2C uncertainty",
+      explanation:
+        "Crude-linked volatility is holding back Reliance even as broader markets rally. Watch refining spreads and whether consumer businesses offset the drag.",
+      affectedHoldings: ["RELIANCE"],
+      impactDirection: "Negative",
+      sources: ["Reuters", "Commodity desk", "Company filings"],
+    },
+    {
+      id: "it-currency-driver",
+      theme: "IT / Currency",
+      headline: "Rupee softness supports IT translation, demand still matters",
+      explanation:
+        "TCS and Infosys get a translation cushion from currency, but demand commentary remains the bigger confirmation. The impact is supportive, not decisive.",
+      affectedHoldings: ["TCS", "INFY"],
+      impactDirection: "Mixed",
+      sources: ["Market desk", "Broker note", "Company commentary"],
+    },
+    {
+      id: "capex-orders-driver",
+      theme: "Capex / Orders",
+      headline: "Domestic capex visibility keeps L&T as the steadier industrial read",
+      explanation:
+        "L&T supports the portfolio with order-book visibility and domestic infrastructure exposure. The next check is whether margins convert with execution.",
+      affectedHoldings: ["LT"],
+      impactDirection: "Positive",
+      sources: ["Company filings", "Capex tracker", "Order book updates"],
+    },
+  ],
+};

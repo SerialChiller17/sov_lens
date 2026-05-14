@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getBootstrapData } from "../api";
 import { GLOBAL_MARKET_TAPE } from "../features/market-tape/marketTapeData";
 import { MarketTape } from "../features/market-tape/MarketTape";
+import { AiAnswerView } from "../features/answer/AiAnswerView";
 import { EventsDashboard } from "../features/events/EventsDashboard";
 import { DEFAULT_NEWS_ID, GEO_NEWS_FEED } from "../features/events/eventsData";
 import { NewsArticleView } from "../features/events/NewsArticleView";
@@ -11,6 +12,7 @@ import { GlobeMonitor } from "../globe-monitor/GlobeMonitor";
 import type { BootstrapData } from "../types";
 import { GlobalBrandNav } from "./GlobalBrandNav";
 import {
+  ANSWER_PATH,
   EARNINGS_PATH,
   FUNDS_PATH,
   MARKETS_PATH,
@@ -30,7 +32,7 @@ function App() {
   const [activeView, setActiveView] = useState(() => routeToView(window.location.pathname));
 
   useEffect(() => {
-    if (["markets", "earnings", "screener", "funds", "watchlist", "portfolio"].includes(activeView) || data) return;
+    if (["answer", "markets", "earnings", "screener", "funds", "watchlist", "portfolio"].includes(activeView) || data) return;
 
     getBootstrapData()
       .then(setData)
@@ -113,6 +115,20 @@ function App() {
     }
   };
 
+  const navigateToAnswer = ({ id, query, title, summary }: { id?: string; query: string; title?: string; summary?: string }) => {
+    const params = new URLSearchParams();
+    if (id) params.set("event", id);
+    if (query.trim()) params.set("q", query.trim());
+    if (title?.trim()) params.set("title", title.trim());
+    if (summary?.trim()) params.set("summary", summary.trim());
+    const nextPath = `${ANSWER_PATH}?${params.toString()}`;
+
+    setActiveView("answer");
+    if (`${window.location.pathname}${window.location.search}` !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+  };
+
   const financeNavigation = {
     onHome: navigateToLensDashboard,
     onMarkets: navigateToMarkets,
@@ -121,6 +137,7 @@ function App() {
     onScreener: navigateToScreener,
     onWatchlist: navigateToWatchlist,
     onPortfolio: navigateToPortfolio,
+    onAnswer: navigateToAnswer,
   };
 
   if (activeView === "markets") {
@@ -159,6 +176,10 @@ function App() {
 
   if (activeView === "portfolio") {
     return <PortfolioScreen {...financeNavigation} />;
+  }
+
+  if (activeView === "answer") {
+    return <AiAnswerView onBackToMarkets={navigateToMarkets} />;
   }
 
   if (error) {

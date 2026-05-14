@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import createGlobe, { type Globe, type Marker } from "cobe";
 import { InsightCompanion, dispatchInsightCompanionLookAt } from "../InsightCompanion";
 import { MONITOR_EVENT_DETAILS } from "./mockDetails";
@@ -8,13 +8,15 @@ import type { GlobeMonitorEvent, MonitorEventCategory, MonitorEventDetail } from
 type MonitorFilter = MonitorEventCategory | "All";
 
 const INITIAL_SELECTED_EVENT_ID = "red-sea-shipping-risk";
+const MONITOR_VISUAL_BASELINE_SCALE = 0.9;
 const GLOBE_RADIUS = 0.875;
-const LABEL_SAFE_TOP = 76;
-const LABEL_SAFE_BOTTOM = 18;
-const LABEL_SAFE_EDGE = 12;
-const LABEL_BOX_WIDTH = 116;
-const LABEL_BOX_HEIGHT = 38;
-const HOTSPOT_SAFE_EDGE = 56;
+const LABEL_SAFE_TOP = 76 * MONITOR_VISUAL_BASELINE_SCALE;
+const LABEL_SAFE_BOTTOM = 18 * MONITOR_VISUAL_BASELINE_SCALE;
+const LABEL_SAFE_EDGE = 12 * MONITOR_VISUAL_BASELINE_SCALE;
+const LABEL_BOX_WIDTH = 116 * MONITOR_VISUAL_BASELINE_SCALE;
+const LABEL_BOX_HEIGHT = 38 * MONITOR_VISUAL_BASELINE_SCALE;
+const HOTSPOT_SAFE_EDGE = 56 * MONITOR_VISUAL_BASELINE_SCALE;
+const GLOBE_DRAG_PX_PER_RADIAN = 260 * MONITOR_VISUAL_BASELINE_SCALE;
 
 interface ProjectedPosition {
   x: number;
@@ -166,15 +168,127 @@ function clampNumber(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function cssLengthToPx(value: string, element: Element, fallbackPx: number) {
+  const trimmedValue = value.trim();
+  const parsedValue = Number.parseFloat(trimmedValue);
+  if (!Number.isFinite(parsedValue)) return fallbackPx;
+
+  if (trimmedValue.endsWith("rem")) {
+    const rootFontSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize);
+    return Number.isFinite(rootFontSize) ? parsedValue * rootFontSize : fallbackPx;
+  }
+
+  if (trimmedValue.endsWith("em")) {
+    const fontSize = Number.parseFloat(window.getComputedStyle(element).fontSize);
+    return Number.isFinite(fontSize) ? parsedValue * fontSize : fallbackPx;
+  }
+
+  return parsedValue;
+}
+
+function fittedTextWidth(text: string, style: CSSStyleDeclaration, fontSizePx: number, element: HTMLElement) {
+  const displayText = style.textTransform === "uppercase" ? text.toUpperCase() : style.textTransform === "lowercase" ? text.toLowerCase() : text;
+  const letterSpacing = Number.parseFloat(style.letterSpacing);
+  const letterSpacingWidth = Number.isFinite(letterSpacing) ? Math.max(displayText.length - 1, 0) * letterSpacing : 0;
+
+  try {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (context) {
+      context.font = `${style.fontStyle} ${style.fontWeight} ${fontSizePx}px ${style.fontFamily}`;
+      return context.measureText(displayText).width + letterSpacingWidth;
+    }
+  } catch {
+    // Fall back to DOM measurement in test/browser environments without canvas text metrics.
+  }
+
+  const previousFontSize = element.style.fontSize;
+  element.style.fontSize = `${fontSizePx}px`;
+  const measuredWidth = element.scrollWidth;
+  element.style.fontSize = previousFontSize;
+  return measuredWidth + letterSpacingWidth;
+}
+
+function FitText({ children, className = "monitor-filter-name" }: { children: string; className?: string }) {
+  const textRef = useRef<HTMLSpanElement | null>(null);
+  const [fontSize, setFontSize] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const textElement = textRef.current;
+    const parentElement = textElement?.parentElement;
+    if (!textElement || !parentElement || typeof window === "undefined") return;
+
+    let frame = 0;
+    let isDisposed = false;
+
+    const measure = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        if (isDisposed) return;
+
+        const textStyle = window.getComputedStyle(textElement);
+        const parentStyle = window.getComputedStyle(parentElement);
+        const parentWidth = parentElement.getBoundingClientRect().width;
+        const paddingX = cssLengthToPx(parentStyle.paddingLeft, parentElement, 0) + cssLengthToPx(parentStyle.paddingRight, parentElement, 0);
+        const gap = cssLengthToPx(parentStyle.columnGap || parentStyle.gap, parentElement, 0);
+        const visibleChildren = Array.from(parentElement.children).filter((child) => window.getComputedStyle(child).display !== "none");
+        const siblingsWidth = visibleChildren
+          .filter((child) => child !== textElement)
+          .reduce((width, child) => width + child.getBoundingClientRect().width, 0);
+        const availableWidth = parentWidth - paddingX - siblingsWidth - Math.max(visibleChildren.length - 1, 0) * gap;
+
+        if (availableWidth <= 0) return;
+
+        const currentFontSize = Number.parseFloat(textStyle.fontSize);
+        const maxFontSize = cssLengthToPx(textStyle.getPropertyValue("--monitor-fit-max-font-size"), textElement, currentFontSize);
+        const minFontSize = cssLengthToPx(textStyle.getPropertyValue("--monitor-fit-min-font-size"), textElement, Math.max(maxFontSize * 0.62, 6));
+        const fullWidth = fittedTextWidth(textElement.textContent ?? "", textStyle, maxFontSize, textElement);
+        const nextFontSize = clampNumber((availableWidth / Math.max(fullWidth, 1)) * maxFontSize, minFontSize, maxFontSize);
+
+        setFontSize((currentSize) => (currentSize !== null && Math.abs(currentSize - nextFontSize) < 0.1 ? currentSize : nextFontSize));
+      });
+    };
+
+    measure();
+
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    observer?.observe(parentElement);
+    observer?.observe(textElement);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    document.fonts?.ready.then(measure).catch(() => {});
+
+    return () => {
+      isDisposed = true;
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
+  }, [children]);
+
+  const style = fontSize
+    ? ({
+        "--monitor-fit-font-size": `${fontSize.toFixed(2)}px`,
+      } as CSSProperties & Record<string, string>)
+    : undefined;
+
+  return (
+    <span ref={textRef} className={`${className} monitor-fit-text`} style={style}>
+      {children}
+    </span>
+  );
+}
+
 function globeRenderScale(width: number, height: number) {
-  const minSide = Math.min(width, height);
+  const minSide = Math.min(width, height) / MONITOR_VISUAL_BASELINE_SCALE;
   const haloGuardPx = clampNumber(minSide * 0.05, 36, 58);
   const safeBodyRadius = 1 - (haloGuardPx * 2) / Math.max(minSide, 1);
   return clampNumber(safeBodyRadius / 0.8, 1.04, 1.18);
 }
 
 function maxVisibleLabels(stageSize: { width: number; height: number }) {
-  const minSide = Math.min(stageSize.width, stageSize.height);
+  const minSide = Math.min(stageSize.width, stageSize.height) / MONITOR_VISUAL_BASELINE_SCALE;
   if (minSide < 620) return 5;
   if (minSide < 760) return 7;
   if (minSide < 980) return 9;
@@ -182,8 +296,8 @@ function maxVisibleLabels(stageSize: { width: number; height: number }) {
 }
 
 function labelAnchor(event: GlobeMonitorEvent, position: ProjectedPosition, stageSize: { width: number; height: number }): LabelAnchor {
-  const preferredX = position.x + (event.labelOffset?.x ?? 0);
-  const preferredY = position.y - LABEL_BOX_HEIGHT + (event.labelOffset?.y ?? 0);
+  const preferredX = position.x + (event.labelOffset?.x ?? 0) * MONITOR_VISUAL_BASELINE_SCALE;
+  const preferredY = position.y - LABEL_BOX_HEIGHT + (event.labelOffset?.y ?? 0) * MONITOR_VISUAL_BASELINE_SCALE;
   const halfWidth = LABEL_BOX_WIDTH / 2;
   const halfHeight = LABEL_BOX_HEIGHT / 2;
 
@@ -244,7 +358,8 @@ function GlobeHotspotLayer({
     const accepted: GlobeMonitorEvent[] = [];
     const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = [];
     const labelLimit = maxVisibleLabels(size);
-    const collisionPadding = size.width < 760 ? 12 : 8;
+    const effectiveWidth = size.width / MONITOR_VISUAL_BASELINE_SCALE;
+    const collisionPadding = (effectiveWidth < 760 ? 12 : 8) * MONITOR_VISUAL_BASELINE_SCALE;
 
     for (const event of sorted) {
       const isPinned = selectedEventIds.includes(event.id) || event.id === hoveredEventId;
@@ -388,7 +503,7 @@ function GlobeHotspotLayer({
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (pointerStartRef.current === null) return;
     const delta = event.clientX - pointerStartRef.current;
-    phiRef.current = dragStartPhiRef.current + delta / 260;
+    phiRef.current = dragStartPhiRef.current + delta / GLOBE_DRAG_PX_PER_RADIAN;
   };
 
   const endPointerInteraction = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -484,8 +599,8 @@ function hotspotPositionStyle(
     "--screen-y": typeof safeY === "number" ? `${safeY.toFixed(2)}px` : undefined,
     "--fallback-x": `${event.fallbackPosition?.x ?? 50}%`,
     "--fallback-y": `${event.fallbackPosition?.y ?? 50}%`,
-    "--label-x": `${event.labelOffset?.x ?? 0}px`,
-    "--label-y": `${event.labelOffset?.y ?? 0}px`,
+    "--label-x": `${((event.labelOffset?.x ?? 0) * MONITOR_VISUAL_BASELINE_SCALE).toFixed(2)}px`,
+    "--label-y": `${((event.labelOffset?.y ?? 0) * MONITOR_VISUAL_BASELINE_SCALE).toFixed(2)}px`,
   } as React.CSSProperties & Record<string, string | undefined>;
 }
 
@@ -602,7 +717,7 @@ function IntelligencePanel({
             aria-label="Filter"
             onClick={() => setIsFilterMenuOpen((isOpen) => !isOpen)}
           >
-            <span className="monitor-filter-name">Filter</span>
+            <FitText>Filter</FitText>
             <span className="monitor-filter-chevron" aria-hidden="true" />
           </button>
           <div className="monitor-filter-menu" role="menu" hidden={!isFilterMenuOpen}>
@@ -616,7 +731,7 @@ function IntelligencePanel({
                 onClick={() => selectFilter(filter)}
                 title={filter}
               >
-                <span className="monitor-filter-name">{filter}</span>
+                <FitText>{filter}</FitText>
               </button>
             ))}
           </div>

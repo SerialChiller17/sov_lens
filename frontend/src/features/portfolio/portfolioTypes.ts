@@ -57,3 +57,69 @@ export interface PortfolioNewsCard {
   severity: "High Impact" | "Medium Impact" | "Low Impact";
   tickers: string[];
 }
+
+export type PortfolioActionCtaType = "logic" | "funds" | "track";
+
+export interface PortfolioCockpitAction {
+  id: string;
+  playId: string;
+  riskLevel: "High" | "Medium" | "Low";
+  assetType: "Portfolio" | "Stock" | "Mutual Fund";
+  title: string;
+  why: string;
+  affectedHoldings: string[];
+  confidence: "High" | "Medium" | "Low";
+  mainRisk: string;
+  ctaLabel: string;
+  ctaType: PortfolioActionCtaType;
+}
+
+export interface PortfolioReadFact {
+  label: string;
+  value: string;
+  detail: string;
+}
+
+export interface PortfolioRiskCard {
+  id: string;
+  label: string;
+  headline: string;
+  metric: string;
+  affectedHoldings: string[];
+  whyItMatters: string;
+}
+
+export interface PortfolioHoldingDecision {
+  verdict: string;
+  keyRisk: string;
+  action: string;
+  detail: string;
+}
+
+export interface PortfolioMarketDriver {
+  id: string;
+  theme: string;
+  headline: string;
+  explanation: string;
+  affectedHoldings: string[];
+  impactDirection: "Positive" | "Negative" | "Mixed";
+  sources: string[];
+}
+
+export interface PortfolioCockpitData {
+  status: {
+    view: string;
+    evidenceLevel: string;
+    lastUpdated: string;
+    sourceCount: number;
+  };
+  actions: PortfolioCockpitAction[];
+  read: {
+    title: string;
+    summary: string;
+    facts: PortfolioReadFact[];
+  };
+  riskStrip: PortfolioRiskCard[];
+  holdingDecisions: Record<string, PortfolioHoldingDecision>;
+  marketDrivers: PortfolioMarketDriver[];
+}

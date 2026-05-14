@@ -7,6 +7,15 @@
     linear-gradient(120deg, #030303 0%, #0b0b0c 42%, #020202 100%);
 }
 
+.global-monitor-app {
+  --monitor-visual-baseline: 0.9;
+}
+
+html:has(.global-monitor-app) {
+  --monitor-visual-baseline: 0.9;
+  font-size: calc(100% * var(--monitor-visual-baseline, 1));
+}
+
 .global-monitor-app::before,
 .global-monitor-app::after {
   display: none;
@@ -843,6 +852,8 @@
 .monitor-filter-trigger,
 .monitor-filter-list > button,
 .monitor-filter-more > button {
+  --monitor-fit-min-font-size: 0.42rem;
+  --monitor-fit-max-font-size: 0.66rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -868,10 +879,14 @@
 }
 
 .monitor-filter-trigger {
+  --monitor-fit-min-font-size: 0.34rem;
+  --monitor-fit-max-font-size: 0.56rem;
   position: relative;
   justify-content: center;
   gap: 0.3rem;
-  width: 4.55rem;
+  min-width: 4.55rem;
+  width: max-content;
+  max-width: min(7.5rem, calc(100vw - 2rem));
   min-height: 1.36rem;
   border-color: rgba(255, 242, 209, 0.32);
   padding: 0 0.44rem;
@@ -926,10 +941,18 @@
 }
 
 .monitor-filter-name {
+  display: block;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--monitor-fit-font-size, var(--monitor-fit-max-font-size, 1em));
+  text-overflow: clip;
   white-space: nowrap;
+}
+
+.monitor-filter-trigger .monitor-filter-name {
+  flex: 0 1 auto;
 }
 
 .monitor-filter-count {
@@ -1030,6 +1053,8 @@
 }
 
 .monitor-filter-menu button {
+  --monitor-fit-min-font-size: 0.4rem;
+  --monitor-fit-max-font-size: 0.5rem;
   display: block;
   width: 100%;
   min-height: 1.38rem;
@@ -1112,17 +1137,17 @@
 .monitor-ai-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 44px;
+  gap: 0.5rem;
+  min-height: 2.75rem;
   overflow: visible;
 }
 
 .insight-companion {
   position: relative;
   display: block;
-  flex: 0 0 38px;
-  width: 38px;
-  height: 38px;
+  flex: 0 0 2.375rem;
+  width: 2.375rem;
+  height: 2.375rem;
   contain: layout style;
   overflow: visible;
   perspective: 7rem;

@@ -1,6 +1,15 @@
 // Sample Indian-market data for the frontend-only Portfolio workspace.
 // Replace this file with API-backed data when market, earnings, screener, and watchlist endpoints exist.
 
+import {
+  MOCK_MARKET_DATA_NOTICE,
+  getHeatmapData,
+  getMarketMovers,
+  getScreenerRows,
+  getWatchlistItems,
+  type MockMarketInstrument,
+} from "../../data/mockMarketData";
+
 export type WorkspaceTone = "positive" | "negative" | "neutral";
 
 export interface MarketIndexCard {
@@ -28,24 +37,58 @@ export interface SectorPerformanceItem {
 }
 
 export interface MarketInsight {
+  id?: string;
   title: string;
   summary: string;
   tone: WorkspaceTone;
 }
 
-export interface MarketHeatmapTile {
-  ticker: string;
-  company: string;
-  sector: string;
-  move: number;
-  size: "large" | "medium" | "small";
+export interface MarketSummaryItem {
+  id: string;
+  title: string;
+  summary: string;
+  tone: WorkspaceTone;
 }
+
+export interface MarketSummarySource {
+  sourceName: string;
+  sourceType: "news" | "video" | "broker" | "exchange" | "market-data";
+  domain?: string;
+  title: string;
+  snippet: string;
+  url?: string;
+  relatedSummaryIds?: string[];
+}
+
+export type MarketHeatmapTile = MockMarketInstrument;
 
 export interface MarketDevelopment {
+  id: string;
   title: string;
-  source: string;
   summary: string;
+  timeAgo: string;
+  sources: MarketDevelopmentSource[];
+  aiQuery: string;
+  answer: MarketDevelopmentAnswer;
   tone: WorkspaceTone;
+}
+
+export interface MarketDevelopmentSource {
+  name: string;
+  domain?: string;
+  url?: string;
+}
+
+export interface MarketDevelopmentAnswerSection {
+  title: string;
+  body: string;
+  citations?: string[];
+}
+
+export interface MarketDevelopmentAnswer {
+  shortAnswer: string;
+  lead: string;
+  sections: MarketDevelopmentAnswerSection[];
 }
 
 export interface MarketQuestion {
@@ -167,7 +210,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "24,330.95",
     changePercent: 1.24,
     changeValue: "+298.15",
-    points: [24, 23, 22, 22, 21, 21, 23, 28, 34, 36, 35],
+    points: [31, 30, 28, 27, 26, 27, 29, 28, 31, 34, 33, 35, 38, 40, 39, 42, 45, 47, 46, 49, 51, 50],
   },
   {
     symbol: "SENSEX",
@@ -175,7 +218,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "77,958.52",
     changePercent: 1.22,
     changeValue: "+940.73",
-    points: [25, 24, 22, 21, 22, 21, 24, 31, 38, 39, 37],
+    points: [33, 32, 29, 28, 27, 28, 27, 30, 34, 36, 35, 37, 41, 43, 42, 45, 48, 47, 50, 53, 52, 54],
   },
   {
     symbol: "BANK NIFTY",
@@ -183,7 +226,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "55,981.05",
     changePercent: 2.63,
     changeValue: "+1,434.00",
-    points: [20, 20, 19, 19, 20, 22, 26, 30, 35, 39, 41],
+    points: [24, 24, 23, 25, 26, 25, 29, 32, 34, 33, 37, 40, 42, 45, 44, 48, 52, 55, 54, 58, 61, 63],
   },
   {
     symbol: "MIDCAP 150",
@@ -191,7 +234,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "22,904.12",
     changePercent: 0.58,
     changeValue: "+132.40",
-    points: [28, 28, 27, 26, 27, 29, 30, 31, 32, 33, 33],
+    points: [35, 35, 34, 33, 32, 33, 35, 34, 36, 37, 36, 38, 39, 41, 40, 42, 43, 42, 44, 45, 44, 46],
   },
   {
     symbol: "SMALLCAP 250",
@@ -199,7 +242,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "18,226.45",
     changePercent: -0.18,
     changeValue: "-32.84",
-    points: [33, 32, 31, 30, 29, 30, 28, 27, 26, 26, 25],
+    points: [42, 43, 41, 40, 38, 39, 37, 36, 35, 36, 34, 33, 32, 33, 31, 30, 29, 30, 28, 27, 28, 26],
   },
   {
     symbol: "NIFTY IT",
@@ -207,7 +250,7 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     value: "34,812.80",
     changePercent: -0.32,
     changeValue: "-111.60",
-    points: [34, 33, 33, 31, 31, 29, 30, 29, 28, 27, 27],
+    points: [46, 45, 46, 44, 42, 43, 41, 39, 40, 38, 37, 39, 36, 35, 34, 35, 33, 32, 31, 32, 30, 29],
   },
 ];
 
@@ -221,25 +264,21 @@ export const MARKET_BREADTH = {
   diiFlowCr: 1835,
 };
 
+const mapMarketMover = (stock: MockMarketInstrument): MarketMover => ({
+  name: stock.name,
+  ticker: stock.ticker,
+  exchange: stock.exchange,
+  price: stock.price,
+  move: stock.changePercent,
+  sector: stock.sector,
+});
+
+const NIFTY_50_MOVERS = getMarketMovers(4);
+
 export const MARKET_MOVERS = {
-  gainers: [
-    { name: "Firstsource Solutions", ticker: "FSL", exchange: "BSE", price: 243.35, move: 11.3, sector: "IT Services" },
-    { name: "Coforge", ticker: "COFORGE", exchange: "NSE", price: 1280.7, move: 9.62, sector: "IT Services" },
-    { name: "SRF", ticker: "SRF", exchange: "BSE", price: 2719.4, move: 7.59, sector: "Chemicals" },
-    { name: "YES Bank", ticker: "YESBANK", exchange: "BSE", price: 22.13, move: 7.95, sector: "Financials" },
-  ] satisfies MarketMover[],
-  losers: [
-    { name: "ONGC", ticker: "ONGC", exchange: "NSE", price: 252.4, move: -3.16, sector: "Energy" },
-    { name: "Hindustan Unilever", ticker: "HINDUNILVR", exchange: "NSE", price: 2344.1, move: -1.42, sector: "Consumer" },
-    { name: "Reliance Industries", ticker: "RELIANCE", exchange: "NSE", price: 1437.85, move: -1.8, sector: "Energy / Consumer" },
-    { name: "Infosys", ticker: "INFY", exchange: "NSE", price: 1167.2, move: -0.93, sector: "IT Services" },
-  ] satisfies MarketMover[],
-  active: [
-    { name: "ICICI Bank", ticker: "ICICIBANK", exchange: "NSE", price: 1809.9, move: 1.86, sector: "Financials" },
-    { name: "Tata Motors", ticker: "TATAMOTORS", exchange: "NSE", price: 846.4, move: 2.25, sector: "Auto" },
-    { name: "Zomato", ticker: "ZOMATO", exchange: "NSE", price: 203.5, move: 3.8, sector: "Consumer Internet" },
-    { name: "Bharti Airtel", ticker: "BHARTIARTL", exchange: "NSE", price: 1398.6, move: 1.53, sector: "Telecom" },
-  ] satisfies MarketMover[],
+  gainers: NIFTY_50_MOVERS.gainers.map(mapMarketMover),
+  losers: NIFTY_50_MOVERS.losers.map(mapMarketMover),
+  active: NIFTY_50_MOVERS.active.map(mapMarketMover),
 };
 
 export const SECTOR_PERFORMANCE: SectorPerformanceItem[] = [
@@ -270,37 +309,355 @@ export const MARKET_INSIGHTS: MarketInsight[] = [
   },
 ];
 
-export const MARKET_HEATMAP_TILES: MarketHeatmapTile[] = [
-  { ticker: "ICICIBANK", company: "ICICI Bank", sector: "Financials", move: 1.86, size: "large" },
-  { ticker: "HDFCBANK", company: "HDFC Bank", sector: "Financials", move: 1.4, size: "medium" },
-  { ticker: "TATAMOTORS", company: "Tata Motors", sector: "Auto", move: 2.25, size: "large" },
-  { ticker: "BHARTIARTL", company: "Bharti Airtel", sector: "Telecom", move: 1.53, size: "medium" },
-  { ticker: "LT", company: "Larsen & Toubro", sector: "Capital Goods", move: 0.74, size: "medium" },
-  { ticker: "TCS", company: "TCS", sector: "IT Services", move: 0.52, size: "small" },
-  { ticker: "INFY", company: "Infosys", sector: "IT Services", move: -0.93, size: "medium" },
-  { ticker: "RELIANCE", company: "Reliance", sector: "Energy", move: -1.8, size: "large" },
-  { ticker: "ASIANPAINT", company: "Asian Paints", sector: "Consumer", move: -0.44, size: "small" },
-  { ticker: "ZOMATO", company: "Zomato", sector: "Consumer Internet", move: 3.8, size: "medium" },
-  { ticker: "ADANIGREEN", company: "Adani Green", sector: "Utilities", move: 1.1, size: "small" },
-];
-
-export const MARKET_DEVELOPMENTS: MarketDevelopment[] = [
+export const MARKET_SUMMARY_ITEMS: MarketSummaryItem[] = [
   {
-    title: "Indian benchmarks post strong gains as crude pressure cools",
-    source: "Market desk",
-    summary: "Banks and autos led a broad risk-on session while IT stayed more selective.",
+    id: "markets-open-higher",
+    title: "Indian Markets Open Higher After Four Sessions of Losses",
+    summary:
+      "Indian benchmark indices bounced back on Wednesday, May 13, opening in positive territory after four consecutive sessions of steep declines. Persistent foreign outflows and elevated crude prices remain headwinds, though sentiment improved modestly.",
     tone: "positive",
   },
   {
-    title: "FII buying returns, but domestic flows remain the steadier support",
-    source: "Flow tracker",
-    summary: "The cleaner confirmation is still breadth outside the top five index weights.",
+    id: "gold-silver-duty",
+    title: "Gold & Silver Import Duty Hiked to 15% - Jewellery Stocks in Focus",
+    summary:
+      "The government sharply raised import duties on gold and silver to 15% from 6%, comprising a 10% basic customs duty and a 5% AIDC, to curb imports and support the rupee amid forex reserve pressures linked to the West Asia crisis. On MCX, gold surged past ₹1,63,000 and silver touched ₹2,96,600, both rising over 6%, putting Titan, Senco Gold, and other jewellery stocks squarely in the spotlight.",
     tone: "neutral",
   },
   {
-    title: "Reliance slips as investors wait for O2C margin clarity",
-    source: "Broker note",
-    summary: "Crude relief helps India broadly, but refining spread visibility remains uneven.",
+    id: "berger-paints-q4",
+    title: "Berger Paints Q4 FY26: Net Profit Jumps 27.8% YoY",
+    summary:
+      "Berger Paints delivered a strong quarterly performance with consolidated net profit rising to ₹335 crore from ₹262 crore in Q4 FY25, driven by improved margins and steady revenue growth. The company also declared a final dividend and approved the reappointment of its MD & CEO, adding to positive investor sentiment.",
+    tone: "positive",
+  },
+  {
+    id: "dixon-tech-q4",
+    title: "Dixon Technologies Q4 FY26: Net Profit Slumps 36% YoY",
+    summary:
+      "Dixon Technologies reported weaker quarterly earnings, with net profit falling sharply year-on-year. The move puts focus on margin pressure, order visibility, and whether the electronics manufacturing theme can sustain premium valuations.",
+    tone: "negative",
+  },
+  {
+    id: "dr-reddy-q4",
+    title: "Dr Reddy's Laboratories Q4 FY26: PAT Craters 86% on North America Weakness",
+    summary:
+      "Dr Reddy's reported a steep decline in profit after tax, pressured by weakness in North America and softer operating performance. Investors will watch management commentary on pricing, US generics, and margin recovery.",
+    tone: "negative",
+  },
+  {
+    id: "air-india-fuel",
+    title: "Air India Slashes ~200 Weekly Flights Amid Soaring Jet Fuel Costs",
+    summary:
+      "Air India has cut multiple weekly flights as rising fuel prices pressure airline economics. Higher ATF prices can weigh on aviation margins and may also affect travel-linked sectors.",
+    tone: "negative",
+  },
+];
+
+export const MARKET_SUMMARY_SOURCES: MarketSummarySource[] = [
+  {
+    sourceName: "upstox",
+    sourceType: "broker",
+    domain: "upstox.com",
+    title: "Stocks to watch, May 13: Tata Motors, Dixon Tech, Berger Paints, Bharti Airtel, Tata Power, jewellery stocks",
+    snippet: "Stocks to watch: Berger Paints reported a good set of fourth-quarter earnings, driven by improved margins and steady revenue growth.",
+    url: "https://upstox.com",
+    relatedSummaryIds: ["berger-paints-q4", "dixon-tech-q4", "gold-silver-duty"],
+  },
+  {
+    sourceName: "youtube",
+    sourceType: "video",
+    domain: "youtube.com",
+    title: "Stock Market Updates Live: Business & Finance | 13 May 2026 | CNBC Awaaz",
+    snippet: "Live market update coverage tracking the first trade, index recovery, commodity moves, and major stock-specific triggers.",
+    url: "https://www.youtube.com",
+    relatedSummaryIds: ["markets-open-higher"],
+  },
+  {
+    sourceName: "timesofindia.indiatimes",
+    sourceType: "news",
+    domain: "timesofindia.indiatimes.com",
+    title: "Gold gets costlier: Why govt raised import duty and what changes for buyers",
+    snippet: "The government raised import duties on gold and silver to 15% from 6% as part of a broader effort to curb imports.",
+    url: "https://timesofindia.indiatimes.com",
+    relatedSummaryIds: ["gold-silver-duty"],
+  },
+  {
+    sourceName: "economictimes",
+    sourceType: "news",
+    domain: "economictimes.indiatimes.com",
+    title: "India raises gold, silver import duty to 15% to curb imports, support rupee amid West Asia crisis",
+    snippet: "India significantly raised customs duties on precious-metal imports, keeping jewellery stocks and bullion demand in focus.",
+    url: "https://economictimes.indiatimes.com",
+    relatedSummaryIds: ["gold-silver-duty"],
+  },
+  {
+    sourceName: "reuters",
+    sourceType: "news",
+    domain: "reuters.com",
+    title: "Indian shares open higher after four sessions of losses",
+    snippet: "Indian shares opened higher after four sessions of steep losses while elevated crude prices and persistent foreign outflows remained key overhangs.",
+    url: "https://www.reuters.com",
+    relatedSummaryIds: ["markets-open-higher"],
+  },
+  {
+    sourceName: "economictimes",
+    sourceType: "news",
+    domain: "economictimes.indiatimes.com",
+    title: "Air India terminates flights to multiple destinations as fuel price bites",
+    snippet: "Airline capacity cuts put attention on aviation costs, ATF inflation, and demand resilience across travel-linked businesses.",
+    url: "https://economictimes.indiatimes.com",
+    relatedSummaryIds: ["air-india-fuel"],
+  },
+  {
+    sourceName: "business-standard",
+    sourceType: "news",
+    domain: "business-standard.com",
+    title: "Berger Paints Q4 result: Profit rises on better margins, board approves dividend",
+    snippet: "Berger Paints' quarterly update showed margin improvement, revenue growth, and a stronger bottom-line performance.",
+    url: "https://www.business-standard.com",
+    relatedSummaryIds: ["berger-paints-q4"],
+  },
+  {
+    sourceName: "moneycontrol",
+    sourceType: "market-data",
+    domain: "moneycontrol.com",
+    title: "Berger Paints share price reacts to Q4 earnings and management continuity",
+    snippet: "Investors tracked the earnings beat, dividend announcement, and reappointment of senior leadership.",
+    url: "https://www.moneycontrol.com",
+    relatedSummaryIds: ["berger-paints-q4"],
+  },
+  {
+    sourceName: "livemint",
+    sourceType: "news",
+    domain: "livemint.com",
+    title: "Dixon Technologies Q4 profit slips as margin pressure weighs on electronics manufacturing",
+    snippet: "Dixon's weaker profitability shifted focus to operating leverage, order visibility, and premium valuation support.",
+    url: "https://www.livemint.com",
+    relatedSummaryIds: ["dixon-tech-q4"],
+  },
+  {
+    sourceName: "cnbctv18",
+    sourceType: "news",
+    domain: "cnbctv18.com",
+    title: "Dixon Technologies earnings miss puts spotlight on EMS growth durability",
+    snippet: "The market read focused on whether electronics manufacturing momentum can offset near-term margin compression.",
+    url: "https://www.cnbctv18.com",
+    relatedSummaryIds: ["dixon-tech-q4"],
+  },
+  {
+    sourceName: "ndtvprofit",
+    sourceType: "news",
+    domain: "ndtvprofit.com",
+    title: "Dr Reddy's Q4 PAT drops sharply on North America weakness",
+    snippet: "North America softness and weaker operating performance weighed on Dr Reddy's quarterly profit after tax.",
+    url: "https://www.ndtvprofit.com",
+    relatedSummaryIds: ["dr-reddy-q4"],
+  },
+  {
+    sourceName: "financialexpress",
+    sourceType: "news",
+    domain: "financialexpress.com",
+    title: "Dr Reddy's Laboratories result: Investors watch US generics pricing and margin recovery",
+    snippet: "Management commentary around US pricing, launch cadence, and gross margin recovery remains central to the stock setup.",
+    url: "https://www.financialexpress.com",
+    relatedSummaryIds: ["dr-reddy-q4"],
+  },
+  {
+    sourceName: "thehindubusinessline",
+    sourceType: "news",
+    domain: "thehindubusinessline.com",
+    title: "Market opens higher; banks and select large caps steady after four-day slide",
+    snippet: "Indian equities attempted a rebound as domestic investors looked past the recent selloff and tracked global risk cues.",
+    url: "https://www.thehindubusinessline.com",
+    relatedSummaryIds: ["markets-open-higher"],
+  },
+  {
+    sourceName: "nseindia",
+    sourceType: "exchange",
+    domain: "nseindia.com",
+    title: "Index snapshot: Nifty 50, Bank Nifty, sectoral breadth",
+    snippet: "Exchange-level index and breadth data supported the read-through on broad-market participation and sector leadership.",
+    url: "https://www.nseindia.com",
+    relatedSummaryIds: ["markets-open-higher"],
+  },
+  {
+    sourceName: "bseindia",
+    sourceType: "exchange",
+    domain: "bseindia.com",
+    title: "BSE market statistics and Sensex constituent movement",
+    snippet: "BSE market data helped confirm the recovery tone in benchmark constituents and broader cash-market activity.",
+    url: "https://www.bseindia.com",
+    relatedSummaryIds: ["markets-open-higher"],
+  },
+  {
+    sourceName: "zeebusiness",
+    sourceType: "news",
+    domain: "zeebiz.com",
+    title: "Jewellery stocks in focus after import duty hike; Titan and Senco watched",
+    snippet: "The duty change moved attention to jewellery demand, inventory gains, and listed retail jewellery names.",
+    url: "https://www.zeebiz.com",
+    relatedSummaryIds: ["gold-silver-duty"],
+  },
+  {
+    sourceName: "business-today",
+    sourceType: "news",
+    domain: "businesstoday.in",
+    title: "Aviation stocks watch fuel-price risk as Air India trims weekly flights",
+    snippet: "Higher jet fuel costs can pressure airline margins and ripple through travel, hotels, and airport-linked sectors.",
+    url: "https://www.businesstoday.in",
+    relatedSummaryIds: ["air-india-fuel"],
+  },
+];
+
+export const MARKET_DATA_NOTICE = MOCK_MARKET_DATA_NOTICE;
+export const MARKET_HEATMAP_TILES: MarketHeatmapTile[] = getHeatmapData(50);
+
+export const MARKET_DEVELOPMENTS: MarketDevelopment[] = [
+  {
+    id: "sensex-nifty-four-day-streak",
+    title: "Sensex, Nifty Break Four-Day Losing Streak Wednesday",
+    summary:
+      "Indian benchmark indices opened higher on May 13 after the U.S. and China jointly agreed to bar shipping tolls in the Strait of Hormuz. The Sensex began at 74,631.05 and the Nifty 50 opened at 23,382.90, ending a four-session slide.",
+    timeAgo: "1 hour ago",
+    sources: [
+      { name: "Economic Times", domain: "economictimes.indiatimes.com", url: "https://economictimes.indiatimes.com" },
+      { name: "Reuters", domain: "reuters.com", url: "https://www.reuters.com" },
+    ],
+    aiQuery:
+      "Explain why Sensex and Nifty broke their four-day losing streak. Cover market context, key drivers, affected sectors, FII flows, crude oil impact, rupee impact, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "Sensex and Nifty snapped a four-day losing streak as traders covered shorts, crude-risk pressure eased modestly, and large-cap banks helped stabilize index breadth.",
+      lead:
+        "The rebound was less a clean risk-on reset and more a relief move after several sessions of selling. Benchmark buyers returned where earnings visibility and domestic liquidity looked sturdier, while crude, rupee pressure, and foreign flows remained the variables that could quickly test the bounce.",
+      sections: [
+        {
+          title: "Market Context",
+          body:
+            "The four-day decline had already pushed sentiment into defensive territory, so even a modest improvement in global shipping and crude-risk headlines was enough to invite tactical buying. Opening gains in the Sensex and Nifty 50 signal that investors were willing to rebuild exposure, but the move still needs breadth confirmation beyond the heaviest index constituents.",
+          citations: ["Economic Times", "Reuters"],
+        },
+        {
+          title: "Key Drivers",
+          body:
+            "The strongest near-term driver was relief around energy and shipping risk. For India, lower perceived disruption risk can soften the import-cost narrative, support margins for oil-sensitive sectors, and reduce pressure on the rupee. Short covering after the selloff likely amplified the first move higher.",
+          citations: ["Reuters"],
+        },
+        {
+          title: "Affected Sectors",
+          body:
+            "Private banks, autos, capital goods, and select domestic cyclicals benefit first when macro stress cools. IT remains more stock-specific because its driver is global client spending, not only domestic risk appetite. Energy and OMC-linked names still need crude and refining spreads to settle before the signal becomes durable.",
+        },
+        {
+          title: "FII Flows And Rupee Impact",
+          body:
+            "Foreign flows remain the key vulnerability. If FIIs continue selling, the index rebound can fade even when domestic institutions absorb supply. A weaker rupee can help exporters but raises import-cost and inflation concerns, making the quality of flows more important than the opening index print.",
+        },
+        {
+          title: "What To Watch Next",
+          body:
+            "Watch Brent crude, USD/INR, FII cash-market flow, Bank Nifty breadth, and whether midcaps join the move. A healthy rally should broaden through banks and domestic cyclicals rather than rely only on a few large index weights.",
+        },
+      ],
+    },
+    tone: "positive",
+  },
+  {
+    id: "it-shares-openai-enterprise",
+    title: "IT Shares Tumble Following OpenAI Enterprise Investment...",
+    summary:
+      "The Nifty IT index dropped 3.7% on Tuesday to its lowest close in three years after OpenAI announced over $4 billion in funding for an enterprise AI deployment firm, raising concerns about margin pressure on traditional Indian software services.",
+    timeAgo: "6 hours ago",
+    sources: [
+      { name: "Economic Times", domain: "economictimes.indiatimes.com", url: "https://economictimes.indiatimes.com" },
+      { name: "CNBC", domain: "cnbc.com", url: "https://www.cnbc.com" },
+    ],
+    aiQuery:
+      "Explain why Indian IT shares are falling after OpenAI's enterprise AI investment. Cover impact on Indian IT companies, margin pressure, client spending risk, affected stocks, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "Indian IT shares fell because investors read OpenAI's enterprise push as a direct challenge to traditional services pricing, margins, and discretionary tech budgets.",
+      lead:
+        "The selloff reflects a valuation reset more than a single-day earnings event. If AI tools compress project timelines or shift client budgets toward automation platforms, Indian IT vendors may face slower revenue growth, tougher pricing, and higher reinvestment needs at the same time.",
+      sections: [
+        {
+          title: "Market Context",
+          body:
+            "Nifty IT was already trading with weak demand expectations and cautious global client spending. A large enterprise AI investment sharpened the market's concern that consulting, application maintenance, and low-complexity outsourcing work could see pricing pressure faster than expected.",
+          citations: ["Economic Times", "CNBC"],
+        },
+        {
+          title: "Impact On Indian IT Companies",
+          body:
+            "Large IT services firms can benefit from AI implementation work, but the transition is not automatically margin-accretive. Clients may demand productivity pass-throughs, reduce headcount-linked billing, and consolidate vendors around platforms that show measurable automation savings.",
+        },
+        {
+          title: "Margin Pressure",
+          body:
+            "The margin risk comes from two sides: lower pricing for repeatable services and higher spending on AI talent, partnerships, and internal tooling. Companies with stronger consulting depth and platform-led offerings are better positioned than firms dependent on commoditized run-the-business work.",
+        },
+        {
+          title: "Affected Stocks",
+          body:
+            "The market will likely differentiate between large-cap IT names with deep client relationships and mid-tier firms with more concentrated service lines. Infosys, TCS, Wipro, HCLTech, Tech Mahindra, Coforge, and Persistent can all be repriced depending on management commentary around AI-led productivity.",
+        },
+        {
+          title: "What To Watch Next",
+          body:
+            "Watch deal wins, BFSI and retail client budgets, AI revenue disclosure, headcount trends, utilization, and whether management teams guide for pricing concessions. A recovery needs evidence that AI is expanding project scope rather than only reducing billable effort.",
+        },
+      ],
+    },
+    tone: "negative",
+  },
+  {
+    id: "fii-outflows-8400-crore",
+    title: "FII Outflows Exceeding ₹8,400 Crore Weigh on Equities",
+    summary:
+      "Foreign institutional investors offloaded more than ₹8,400 crore in Tuesday's session, compounding pressure from elevated crude oil prices and a weakening rupee. India VIX rose to 19.28, up 3.94%, signaling heightened market volatility.",
+    timeAgo: "2 hours ago",
+    sources: [
+      { name: "Economic Times", domain: "economictimes.indiatimes.com", url: "https://economictimes.indiatimes.com" },
+      { name: "NewsOnAir", domain: "newsonair.gov.in", url: "https://newsonair.gov.in" },
+    ],
+    aiQuery:
+      "Explain how FII outflows exceeding ₹8,400 crore are affecting Indian equities. Cover crude oil, rupee weakness, India VIX, market sentiment, affected sectors, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "FII selling above ₹8,400 crore adds pressure to Indian equities by tightening liquidity, weakening sentiment, and amplifying concerns around crude, the rupee, and volatility.",
+      lead:
+        "Foreign institutional selling matters because it can turn macro stress into direct equity supply. When outflows coincide with elevated crude and rupee weakness, investors demand a higher risk premium from import-heavy sectors, richly valued cyclicals, and foreign-owned large caps.",
+      sections: [
+        {
+          title: "Market Context",
+          body:
+            "The FII selloff landed while Indian equities were already dealing with global risk aversion, higher energy prices, and currency pressure. That combination raises the cost of capital and makes investors less forgiving of expensive valuations or weak earnings visibility.",
+          citations: ["Economic Times", "NewsOnAir"],
+        },
+        {
+          title: "FII Trends",
+          body:
+            "Large single-session outflows can pressure index heavyweights because foreign investors are concentrated in liquid large caps. Domestic institutions may cushion the move, but persistent FII selling can still weigh on multiples and delay any durable rebound.",
+          citations: ["Economic Times"],
+        },
+        {
+          title: "Crude, Rupee, And India VIX",
+          body:
+            "Higher crude hurts India's import bill and can pressure the rupee. A weaker rupee can feed inflation concerns and reduce foreign investor appetite. The India VIX move toward 19 signals that traders are paying more for protection and expecting wider index swings.",
+        },
+        {
+          title: "Affected Sectors",
+          body:
+            "Banks, NBFCs, autos, airlines, OMCs, and other import-sensitive sectors can feel the pressure first. IT and pharma may get some currency translation support, but that is not enough if global risk appetite is deteriorating.",
+        },
+        {
+          title: "Investor Implications",
+          body:
+            "The key is whether selling remains a one-day risk event or becomes a flow trend. Watch daily FII/DII data, USD/INR, Brent crude, India VIX, Bank Nifty, and breadth outside the top five index weights.",
+        },
+      ],
+    },
     tone: "negative",
   },
 ];
@@ -341,7 +698,7 @@ export const MARKET_STANDOUTS: MarketStandout[] = [
     pe: "27.28",
     dividendYield: "2.26%",
     summary: "Sharp post-result momentum after stronger margin commentary and buy-side upgrades.",
-    points: [20, 20, 21, 22, 24, 28, 31, 35, 39],
+    points: [22, 21, 23, 22, 25, 27, 26, 29, 32, 35, 34, 38, 41, 43, 42, 45, 49, 52, 51, 54],
   },
   {
     ticker: "COFORGE",
@@ -354,7 +711,7 @@ export const MARKET_STANDOUTS: MarketStandout[] = [
     pe: "45.35",
     dividendYield: "1.23%",
     summary: "Investors rewarded better full-year growth commentary and order pipeline visibility.",
-    points: [21, 22, 22, 24, 26, 30, 31, 34, 36],
+    points: [24, 25, 24, 27, 28, 27, 31, 33, 32, 36, 38, 37, 40, 43, 45, 44, 47, 50, 49, 52],
   },
   {
     ticker: "YESBANK",
@@ -367,7 +724,7 @@ export const MARKET_STANDOUTS: MarketStandout[] = [
     pe: "19.76",
     dividendYield: "N/A",
     summary: "High volume move on improving sector sentiment and broad banking participation.",
-    points: [20, 20, 21, 21, 22, 23, 25, 27, 28],
+    points: [18, 19, 18, 20, 19, 21, 23, 22, 24, 25, 27, 26, 29, 31, 30, 33, 34, 36, 35, 38],
   },
 ];
 
@@ -469,19 +826,7 @@ export const SCREENER_PRESETS = [
   "Dividend",
 ] as const;
 
-export const SCREENER_ROWS: ScreenerRow[] = [
-  { ticker: "RELIANCE", name: "Reliance Industries", exchange: "NSE", sector: "Energy / Consumer", marketCapCr: 1945000, price: 1437.85, pe: 27.4, oneDay: -1.8, oneMonth: 1.6, oneYear: 12.2, revenueGrowth: 7.8, profitGrowth: 8.4, roe: 9.7, debtEquity: 0.36, dividendYield: 0.35 },
-  { ticker: "TCS", name: "Tata Consultancy Services", exchange: "NSE", sector: "IT Services", marketCapCr: 1432000, price: 3952.1, pe: 31.8, oneDay: 0.52, oneMonth: -1.2, oneYear: 9.4, revenueGrowth: 5.6, profitGrowth: 7.2, roe: 49.2, debtEquity: 0.08, dividendYield: 1.35 },
-  { ticker: "HDFCBANK", name: "HDFC Bank", exchange: "NSE", sector: "Financials", marketCapCr: 1361000, price: 1784.2, pe: 19.6, oneDay: 1.4, oneMonth: 4.8, oneYear: 16.1, revenueGrowth: 11.4, profitGrowth: 9.2, roe: 14.8, debtEquity: 0.0, dividendYield: 1.1 },
-  { ticker: "ICICIBANK", name: "ICICI Bank", exchange: "NSE", sector: "Financials", marketCapCr: 1278000, price: 1809.9, pe: 18.2, oneDay: 1.86, oneMonth: 6.1, oneYear: 21.4, revenueGrowth: 12.5, profitGrowth: 13.8, roe: 17.1, debtEquity: 0.0, dividendYield: 0.72 },
-  { ticker: "INFY", name: "Infosys", exchange: "NSE", sector: "IT Services", marketCapCr: 484000, price: 1167.2, pe: 24.8, oneDay: -0.93, oneMonth: -2.33, oneYear: -6.8, revenueGrowth: 6.4, profitGrowth: 8.1, roe: 31.4, debtEquity: 0.07, dividendYield: 2.2 },
-  { ticker: "LT", name: "Larsen & Toubro", exchange: "NSE", sector: "Industrials", marketCapCr: 506000, price: 3684.5, pe: 34.6, oneDay: 0.74, oneMonth: 3.8, oneYear: 28.6, revenueGrowth: 17.2, profitGrowth: 18.4, roe: 15.9, debtEquity: 0.42, dividendYield: 0.78 },
-  { ticker: "TATAMOTORS", name: "Tata Motors", exchange: "NSE", sector: "Auto", marketCapCr: 311000, price: 846.4, pe: 12.7, oneDay: 2.25, oneMonth: 8.8, oneYear: 34.5, revenueGrowth: 14.2, profitGrowth: 18.6, roe: 28.1, debtEquity: 0.71, dividendYield: 0.42 },
-  { ticker: "BHARTIARTL", name: "Bharti Airtel", exchange: "NSE", sector: "Telecom", marketCapCr: 837000, price: 1398.6, pe: 54.2, oneDay: 1.53, oneMonth: 5.9, oneYear: 42.1, revenueGrowth: 12.8, profitGrowth: 22.4, roe: 11.2, debtEquity: 1.08, dividendYield: 0.35 },
-  { ticker: "ASIANPAINT", name: "Asian Paints", exchange: "NSE", sector: "Consumer", marketCapCr: 281000, price: 2928.4, pe: 52.8, oneDay: -0.44, oneMonth: 1.1, oneYear: -3.2, revenueGrowth: 4.1, profitGrowth: 6.3, roe: 28.6, debtEquity: 0.12, dividendYield: 1.05 },
-  { ticker: "ZOMATO", name: "Zomato", exchange: "NSE", sector: "Consumer Internet", marketCapCr: 183000, price: 203.5, pe: 86.0, oneDay: 3.8, oneMonth: 11.2, oneYear: 62.4, revenueGrowth: 34.5, profitGrowth: 120.0, roe: 6.8, debtEquity: 0.04, dividendYield: 0 },
-  { ticker: "ADANIGREEN", name: "Adani Green Energy", exchange: "NSE", sector: "Utilities", marketCapCr: 276000, price: 1742.2, pe: 104.3, oneDay: 1.1, oneMonth: 4.2, oneYear: 24.8, revenueGrowth: 28.8, profitGrowth: 33.0, roe: 18.4, debtEquity: 5.2, dividendYield: 0 },
-];
+export const SCREENER_ROWS: ScreenerRow[] = getScreenerRows(50);
 
 export const SCREENER_ROW_CONTEXT: Record<string, ScreenerRowContext> = {
   RELIANCE: {
@@ -552,14 +897,34 @@ export const SCREENER_ROW_CONTEXT: Record<string, ScreenerRowContext> = {
   },
 };
 
-export const WATCHLIST_ITEMS: WatchlistItem[] = [
-  { ticker: "INFY", name: "Infosys", exchange: "NSE", sector: "IT Services", price: 1167.2, oneDay: -0.93, fiveDay: -2.33, oneMonth: -6.48, sixMonth: -20.42, ytd: -7.2, alert: true, note: "Watch guidance tone and BFSI demand.", points: [35, 34, 32, 31, 32, 30, 29, 28] },
-  { ticker: "ICICIBANK", name: "ICICI Bank", exchange: "NSE", sector: "Financials", price: 1809.9, oneDay: 1.86, fiveDay: 2.72, oneMonth: 5.66, sixMonth: -9.55, ytd: 8.4, alert: false, note: "Leadership name for Bank Nifty confirmation.", points: [22, 23, 24, 26, 28, 31, 32, 34] },
-  { ticker: "RELIANCE", name: "Reliance Industries", exchange: "NSE", sector: "Energy / Consumer", price: 1437.85, oneDay: -1.8, fiveDay: 0.53, oneMonth: 10.2, sixMonth: -3.87, ytd: 6.3, alert: true, note: "Track crude, refining spread, and Jio commentary.", points: [31, 32, 31, 30, 28, 27, 28, 27] },
-  { ticker: "TATAMOTORS", name: "Tata Motors", exchange: "NSE", sector: "Auto", price: 846.4, oneDay: 2.25, fiveDay: 4.1, oneMonth: 8.8, sixMonth: 18.4, ytd: 17.8, alert: false, note: "Momentum name; confirm JLR margin trend.", points: [21, 22, 24, 27, 30, 32, 35, 36] },
-  { ticker: "BHARTIARTL", name: "Bharti Airtel", exchange: "NSE", sector: "Telecom", price: 1398.6, oneDay: 1.53, fiveDay: 3.7, oneMonth: 5.9, sixMonth: 22.6, ytd: 14.1, alert: false, note: "ARPU and tariff action remain the main catalysts.", points: [24, 25, 25, 27, 28, 30, 31, 33] },
-  { ticker: "ZOMATO", name: "Zomato", exchange: "NSE", sector: "Consumer Internet", price: 203.5, oneDay: 3.8, fiveDay: 7.2, oneMonth: 11.2, sixMonth: 38.4, ytd: 31.2, alert: true, note: "High momentum; watch quick-commerce margins.", points: [18, 19, 22, 25, 29, 32, 36, 39] },
-];
+const WATCHLIST_NOTES: Record<string, string> = {
+  INFY: "Watch guidance tone and BFSI demand.",
+  ICICIBANK: "Leadership name for Bank Nifty confirmation.",
+  RELIANCE: "Track crude, refining spread, and Jio commentary.",
+  TATAMOTORS: "Momentum name; confirm JLR margin trend.",
+  BHARTIARTL: "ARPU and tariff action remain the main catalysts.",
+  ZOMATO: "High momentum; watch quick-commerce margins.",
+};
+
+const WATCHLIST_ALERT_TICKERS = new Set(["INFY", "RELIANCE", "ZOMATO"]);
+
+const roundWorkspaceMetric = (value: number) => Number(value.toFixed(2));
+
+export const WATCHLIST_ITEMS: WatchlistItem[] = getWatchlistItems().map((stock) => ({
+  ticker: stock.ticker,
+  name: stock.name,
+  exchange: stock.exchange,
+  sector: stock.sector,
+  price: stock.price,
+  oneDay: stock.changePercent,
+  fiveDay: roundWorkspaceMetric(stock.changePercent * 1.65 + stock.oneMonth * 0.16),
+  oneMonth: stock.oneMonth,
+  sixMonth: roundWorkspaceMetric(stock.oneYear * 0.46 + stock.oneMonth * 0.82),
+  ytd: roundWorkspaceMetric(stock.oneYear * 0.36 + stock.oneMonth * 0.42),
+  alert: WATCHLIST_ALERT_TICKERS.has(stock.ticker),
+  note: WATCHLIST_NOTES[stock.ticker] ?? `${stock.sector} constituent in the NIFTY 50 demo universe.`,
+  points: stock.sparkline,
+}));
 
 export const WATCHLIST_ITEM_CONTEXT: Record<string, WatchlistItemContext> = {
   INFY: {
