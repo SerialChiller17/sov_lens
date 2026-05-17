@@ -154,11 +154,7 @@ function App() {
   }
 
   if (activeView === "funds") {
-    return (
-      <FundsScreen
-        navigation={<GlobalBrandNav activeView="funds" {...financeNavigation} />}
-      />
-    );
+    return <FundsScreen {...financeNavigation} />;
   }
 
   if (activeView === "screener") {
@@ -179,7 +175,7 @@ function App() {
   }
 
   if (activeView === "answer") {
-    return <AiAnswerView onBackToMarkets={navigateToMarkets} />;
+    return <AiAnswerView {...financeNavigation} />;
   }
 
   if (error) {
@@ -206,7 +202,7 @@ function App() {
   }
 
   if (activeView === "news") {
-    return <EventsDashboard data={data} onBack={navigateToLensDashboard} />;
+    return <EventsDashboard data={data} {...financeNavigation} />;
   }
 
   if (activeView === "article") {
@@ -215,9 +211,9 @@ function App() {
         news={selectedNews}
         sectors={sectors}
         selectedSectorId={selectedSector?.id ?? selectedSectorId}
-        onBack={navigateToLensDashboard}
         onOpenFeed={navigateToNewsDashboard}
         onSectorSelect={setSelectedSectorId}
+        {...financeNavigation}
       />
     );
   }

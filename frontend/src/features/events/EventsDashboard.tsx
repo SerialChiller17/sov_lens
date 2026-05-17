@@ -1,13 +1,13 @@
 import { useMemo, type CSSProperties } from "react";
+import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import globeTextureUrl from "../../assets/globe-premium-dark.svg";
 import type { BootstrapData, PulseAlert } from "../../types";
 import { EVENT_ARCHIVE_ROWS, HORIZON_EVENTS, PREMIUM_ORANGE_THEME } from "./eventsData";
 import type { EventArchiveRow } from "./eventsTypes";
 import { formatAlertAge } from "./eventsUtils";
 
-interface EventsDashboardProps {
+interface EventsDashboardProps extends GlobalBrandNavHandlers {
   data: BootstrapData;
-  onBack: () => void;
 }
 
 function archiveRowFromAlert(alert: PulseAlert, index: number): EventArchiveRow {
@@ -34,7 +34,7 @@ function archiveRowFromAlert(alert: PulseAlert, index: number): EventArchiveRow 
   };
 }
 
-export function EventsDashboard({ data, onBack }: EventsDashboardProps) {
+export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) {
   const archiveRows = useMemo(
     () => [...data.globalPulse.alerts.map(archiveRowFromAlert), ...EVENT_ARCHIVE_ROWS],
     [data.globalPulse.alerts],
@@ -51,17 +51,10 @@ export function EventsDashboard({ data, onBack }: EventsDashboardProps) {
         } as CSSProperties
       }
     >
-      <header className="events-dashboard-topbar">
-        <button type="button" className="events-wordmark" onClick={onBack}>
-          <span>Global</span>
-          <strong>Events</strong>
-          <span>Pulse</span>
-        </button>
-        <span className="events-topbar-rule" aria-hidden="true" />
+      <GlobalBrandNav activeView="news" {...navHandlers} />
+
+      <header className="events-dashboard-contextbar">
         <p>Worldwide event analysis</p>
-        <button type="button" className="events-back-button" onClick={onBack}>
-          Lens
-        </button>
         <label className="events-search">
           <span className="sr-only">Search events, regions, or topics</span>
           <input type="search" placeholder="Search events, regions, or topics..." />

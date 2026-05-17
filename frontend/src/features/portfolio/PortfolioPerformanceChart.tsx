@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useState, type PointerEvent } from "react";
 import { formatPortfolioCurrency, formatSignedPortfolioPercent } from "./portfolioFormatters";
 import type { PortfolioPerformancePoint } from "./portfolioTypes";
 
@@ -7,8 +7,18 @@ interface PortfolioPerformanceChartProps {
   benchmarkPoints: PortfolioPerformancePoint[];
 }
 
-const TIMEFRAMES = ["1M", "3M", "6M", "1Y"] as const;
+const TIMEFRAMES = [
+  { label: "1M", points: 2 },
+  { label: "3M", points: 4 },
+  { label: "6M", points: 6 },
+] as const;
+type TimeframeLabel = (typeof TIMEFRAMES)[number]["label"];
 const VIEW_BOX = { width: 640, height: 320, left: 58, right: 612, top: 34, bottom: 264 };
+
+function sliceSeriesForTimeframe(series: PortfolioPerformancePoint[], timeframe: TimeframeLabel) {
+  const config = TIMEFRAMES.find((item) => item.label === timeframe) ?? TIMEFRAMES[TIMEFRAMES.length - 1];
+  return series.slice(Math.max(series.length - config.points, 0));
+}
 
 function toReturnPercent(series: PortfolioPerformancePoint[], index: number) {
   const firstPoint = series[0];
@@ -40,11 +50,17 @@ function getPath(points: Array<PortfolioPerformancePoint & { x: number; y: numbe
 }
 
 export function PortfolioPerformanceChart({ points, benchmarkPoints }: PortfolioPerformanceChartProps) {
-  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("6M");
+  const [timeframe, setTimeframe] = useState<TimeframeLabel>("6M");
   const [activeIndex, setActiveIndex] = useState(points.length - 1);
+  const visiblePoints = useMemo(() => sliceSeriesForTimeframe(points, timeframe), [points, timeframe]);
+  const visibleBenchmarkPoints = useMemo(() => sliceSeriesForTimeframe(benchmarkPoints, timeframe), [benchmarkPoints, timeframe]);
+
+  useEffect(() => {
+    setActiveIndex(visiblePoints.length - 1);
+  }, [visiblePoints.length]);
 
   const chart = useMemo(() => {
-    const values = [...points, ...benchmarkPoints].map((point) => point.value);
+    const values = [...visiblePoints, ...visibleBenchmarkPoints].map((point) => point.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = Math.max(max - min, 1);
@@ -58,8 +74,8 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
         y: VIEW_BOX.bottom - ((point.value - min) / range) * plotHeight,
       }));
 
-    const portfolio = coordinates(points);
-    const benchmark = coordinates(benchmarkPoints);
+    const portfolio = coordinates(visiblePoints);
+    const benchmark = coordinates(visibleBenchmarkPoints);
     const yTicks = [max, min + range / 2, min].map((value) => ({
       value,
       y: VIEW_BOX.bottom - ((value - min) / range) * plotHeight,
@@ -72,15 +88,15 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
       benchmarkPath: getPath(benchmark),
       yTicks,
     };
-  }, [benchmarkPoints, points]);
+  }, [visibleBenchmarkPoints, visiblePoints]);
 
-  const safeActiveIndex = Math.min(Math.max(activeIndex, 0), points.length - 1);
+  const safeActiveIndex = Math.min(Math.max(activeIndex, 0), visiblePoints.length - 1);
   const activePortfolioPoint = chart.portfolio[safeActiveIndex] ?? chart.portfolio[chart.portfolio.length - 1];
   const activeBenchmarkPoint = chart.benchmark[safeActiveIndex] ?? chart.benchmark[chart.benchmark.length - 1];
-  const portfolioReturn = toReturnPercent(points, safeActiveIndex);
-  const benchmarkReturn = toReturnPercent(benchmarkPoints, safeActiveIndex);
-  const latestPortfolioReturn = toReturnPercent(points, points.length - 1);
-  const latestBenchmarkReturn = toReturnPercent(benchmarkPoints, benchmarkPoints.length - 1);
+  const portfolioReturn = toReturnPercent(visiblePoints, safeActiveIndex);
+  const benchmarkReturn = toReturnPercent(visibleBenchmarkPoints, safeActiveIndex);
+  const latestPortfolioReturn = toReturnPercent(visiblePoints, visiblePoints.length - 1);
+  const latestBenchmarkReturn = toReturnPercent(visibleBenchmarkPoints, visibleBenchmarkPoints.length - 1);
   const latestPortfolioPoint = chart.portfolio[chart.portfolio.length - 1];
   const latestBenchmarkPoint = chart.benchmark[chart.benchmark.length - 1];
   const clampDirectLabelY = (value?: number) => Math.min(Math.max(value ?? VIEW_BOX.top, VIEW_BOX.top + 12), VIEW_BOX.bottom - 10);
@@ -89,8 +105,8 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
     const rect = event.currentTarget.getBoundingClientRect();
     const cursorX = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * VIEW_BOX.width;
     const constrainedX = Math.min(Math.max(cursorX, VIEW_BOX.left), VIEW_BOX.right);
-    const nextIndex = Math.round(((constrainedX - VIEW_BOX.left) / (VIEW_BOX.right - VIEW_BOX.left)) * Math.max(points.length - 1, 1));
-    setActiveIndex(Math.min(Math.max(nextIndex, 0), points.length - 1));
+    const nextIndex = Math.round(((constrainedX - VIEW_BOX.left) / (VIEW_BOX.right - VIEW_BOX.left)) * Math.max(visiblePoints.length - 1, 1));
+    setActiveIndex(Math.min(Math.max(nextIndex, 0), visiblePoints.length - 1));
   };
 
   return (
@@ -102,13 +118,13 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
         <div className="portfolio-timeframe-chips">
           {TIMEFRAMES.map((item) => (
             <button
-              key={item}
+              key={item.label}
               type="button"
-              className={timeframe === item ? "is-active" : ""}
-              aria-pressed={timeframe === item}
-              onClick={() => setTimeframe(item)}
+              className={timeframe === item.label ? "is-active" : ""}
+              aria-pressed={timeframe === item.label}
+              onClick={() => setTimeframe(item.label)}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </div>
@@ -122,17 +138,17 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
           aria-label="Portfolio value compared with NIFTY 50"
           preserveAspectRatio="none"
           onPointerMove={handleChartPointerMove}
-          onPointerLeave={() => setActiveIndex(points.length - 1)}
+          onPointerLeave={() => setActiveIndex(visiblePoints.length - 1)}
         >
           <defs>
             <linearGradient id="portfolioPerformanceArea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="rgba(157, 176, 139, 0.24)" />
-              <stop offset="58%" stopColor="rgba(157, 176, 139, 0.08)" />
-              <stop offset="100%" stopColor="rgba(157, 176, 139, 0)" />
+              <stop offset="0%" stopColor="rgba(114, 191, 135, 0.22)" />
+              <stop offset="58%" stopColor="rgba(114, 191, 135, 0.08)" />
+              <stop offset="100%" stopColor="rgba(114, 191, 135, 0)" />
             </linearGradient>
             <linearGradient id="portfolioPerformanceLine" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%" stopColor="#d0bb78" />
-              <stop offset="100%" stopColor="#9daf8d" />
+              <stop offset="0%" stopColor="#72bf87" />
+              <stop offset="100%" stopColor="#9caf88" />
             </linearGradient>
           </defs>
 
@@ -200,6 +216,9 @@ export function PortfolioPerformanceChart({ points, benchmarkPoints }: Portfolio
         <span className="is-portfolio">Portfolio Value</span>
         <span className="is-benchmark">NIFTY 50</span>
       </div>
+      <p className="portfolio-chart-interpretation">
+        Portfolio remains ahead of NIFTY 50 in the selected window. Next check: whether private-bank breadth holds while Reliance stays a drag.
+      </p>
     </div>
   );
 }

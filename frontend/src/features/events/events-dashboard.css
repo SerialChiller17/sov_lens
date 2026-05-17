@@ -78,20 +78,17 @@
     linear-gradient(90deg, rgba(0, 0, 0, 0.74), transparent 34%, transparent 72%, rgba(0, 0, 0, 0.56));
 }
 
-.events-dashboard-topbar {
-  position: absolute;
-  top: 0;
-  right: clamp(1rem, 3vw, 3.5rem);
-  left: clamp(1rem, 3.8vw, 4.8rem);
+.events-dashboard-contextbar {
+  position: relative;
   z-index: 5;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   min-height: 2.95rem;
   color: rgba(232, 224, 214, 0.74);
 }
 
-.events-wordmark,
 .events-back-button {
   border: 0;
   color: var(--text);
@@ -99,30 +96,7 @@
   cursor: pointer;
 }
 
-.events-wordmark {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.42rem;
-  padding: 0;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.events-wordmark strong {
-  color: rgb(var(--premium-orange));
-  font-weight: 700;
-}
-
-.events-topbar-rule {
-  width: 1px;
-  height: 1.8rem;
-  background: rgba(232, 224, 214, 0.16);
-}
-
-.events-dashboard-topbar p {
+.events-dashboard-contextbar p {
   margin: 0;
   color: rgba(232, 224, 214, 0.58);
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -555,7 +529,7 @@
     padding: 1rem;
   }
 
-  .events-dashboard-topbar,
+  .events-dashboard-contextbar,
   .events-panel,
   .events-globe-stage {
     position: relative;
@@ -567,7 +541,7 @@
     width: 100%;
   }
 
-  .events-dashboard-topbar {
+  .events-dashboard-contextbar {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0.8rem;
@@ -575,8 +549,7 @@
     margin-bottom: 1rem;
   }
 
-  .events-topbar-rule,
-  .events-dashboard-topbar p {
+  .events-dashboard-contextbar p {
     display: none;
   }
 

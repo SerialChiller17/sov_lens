@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Bell, ChevronDown, Maximize2, RefreshCw, Search, SlidersHorizontal, Star, X } from "lucide-react";
-import { GlobalBrandNav } from "../../app/GlobalBrandNav";
+import { ArrowUpRight, Bell, Maximize2, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import type { AppView } from "../../app/routes";
 import { DetailedSparkline } from "../../components/charts/DetailedSparkline";
 import {
   NIFTY_50_PERFORMANCE,
   PORTFOLIO_ALLOCATION_COLORS,
-  PORTFOLIO_AI_NEWS,
   PORTFOLIO_AI_TRUST,
   PORTFOLIO_COCKPIT,
   PORTFOLIO_DAY_RETURN_PERCENT,
@@ -57,14 +56,7 @@ import {
   type WorkspaceTone,
 } from "./portfolioWorkspaceData";
 
-interface FinanceNavigationProps {
-  onHome: () => void;
-  onMarkets: () => void;
-  onEarnings: (query?: string) => void;
-  onFunds: () => void;
-  onScreener: (query?: string) => void;
-  onWatchlist: () => void;
-  onPortfolio: () => void;
+interface FinanceNavigationProps extends GlobalBrandNavHandlers {
   onAnswer: (request: { id?: string; query: string; title?: string; summary?: string }) => void | Promise<void>;
 }
 
@@ -89,6 +81,13 @@ const WATCHLIST_TRACKED_STORAGE_KEY = "sov-finance-watchlist-tracked";
 const WATCHLIST_ALERTS_STORAGE_KEY = "sov-finance-watchlist-alerts";
 const DEFAULT_TRACKED_TICKERS = WATCHLIST_ITEMS.slice(0, 4).map((item) => item.ticker);
 const DEFAULT_ALERT_TICKERS = WATCHLIST_ITEMS.filter((item) => item.alert).map((item) => item.ticker);
+
+const FINANCE_VIEW_PLACEHOLDER: Partial<Record<AppView, string>> = {
+  markets: "Search stocks, sectors, funds...",
+  earnings: "Search companies, earnings, calls...",
+  screener: "Search ticker, sector, or filter...",
+  watchlist: "Search watchlist or alerts...",
+};
 
 function loadStoredTickerSet(storageKey: string, fallbackTickers: string[]) {
   if (typeof window === "undefined") return new Set(fallbackTickers);
@@ -121,11 +120,31 @@ const SCREENER_COLUMNS: Array<{ key: keyof ScreenerRow; label: string; className
   { key: "marketCapCr", label: "M Cap", className: "is-numeric" },
   { key: "price", label: "Price", className: "is-numeric" },
   { key: "pe", label: "P/E", className: "is-numeric" },
-  { key: "oneMonth", label: "1M", className: "is-numeric" },
   { key: "oneYear", label: "1Y", className: "is-numeric" },
-  { key: "profitGrowth", label: "Profit", className: "is-numeric" },
   { key: "roe", label: "ROE", className: "is-numeric" },
-  { key: "debtEquity", label: "D/E", className: "is-numeric" },
+];
+
+const SCREENER_SCREEN_LIBRARY: Array<{ title: string; detail: string; preset: ScreenerPreset }> = [
+  {
+    title: "Promoter-quality proxy",
+    detail: "High ROE, controlled leverage, durable profit screen.",
+    preset: "Quality compounders",
+  },
+  {
+    title: "Quarterly growers",
+    detail: "Revenue and profit acceleration candidates.",
+    preset: "Earnings momentum",
+  },
+  {
+    title: "Low debt leaders",
+    detail: "Balance-sheet resilience with lower D/E.",
+    preset: "Low debt",
+  },
+  {
+    title: "Momentum leaders",
+    detail: "Names with strong 1M and 1Y price follow-through.",
+    preset: "Momentum leaders",
+  },
 ];
 
 function formatPercent(value: number, maximumFractionDigits = 2) {
@@ -569,18 +588,22 @@ function WorkspaceLayout({
 }
 
 function MarketIndexTile({ item }: { item: MarketIndexCard }) {
+  const label = item.symbol === "SENSEX" ? "Broad benchmark" : item.name;
+  const moveTone = toneClass(item.changePercent);
+
   return (
     <article className="portfolio-index-card">
-      <div>
-        <span>{item.name}</span>
-        <h3>{item.symbol}</h3>
-      </div>
-      <div className="portfolio-index-card-values">
-        <strong>{item.value}</strong>
-        <em className={toneClass(item.changePercent)}>
-          {formatPercent(item.changePercent)} {item.changeValue}
-        </em>
-      </div>
+      <header className="markets-asset-card-header">
+        <div>
+          <h3>{item.symbol}</h3>
+          <span>{label}</span>
+        </div>
+        <div className={`markets-asset-move ${moveTone}`}>
+          <strong>{formatPercent(item.changePercent)}</strong>
+          <em>{item.changeValue}</em>
+        </div>
+      </header>
+      <strong className="markets-asset-value">{item.value}</strong>
       <DetailedSparkline
         className="portfolio-mini-sparkline"
         data={item.points}
@@ -598,9 +621,7 @@ function MoverList({ items }: { items: MarketMover[] }) {
         <article key={item.ticker} className="portfolio-mover-row">
           <div>
             <strong>{item.name}</strong>
-            <span>
-              {item.ticker} / {item.exchange} / {item.sector}
-            </span>
+            <span>{item.ticker} / {item.sector}</span>
           </div>
           <div>
             <strong>{formatPortfolioTapePrice(item.price)}</strong>
@@ -925,7 +946,7 @@ function MarketDevelopmentGrid({ onAnswer }: { onAnswer: FinanceNavigationProps[
               key={item.id}
               type="button"
               className={`portfolio-development-card ${isOpening ? "is-opening" : ""}`}
-              aria-label={`Open AI explanation for ${item.title}`}
+              aria-label={`Open synthesis for ${item.title}`}
               aria-busy={isOpening}
               disabled={openingDevelopmentId !== null}
               onClick={() => void handleOpenDevelopment(item)}
@@ -941,8 +962,9 @@ function MarketDevelopmentGrid({ onAnswer }: { onAnswer: FinanceNavigationProps[
               <strong>{item.title}</strong>
               <span className="portfolio-development-divider" aria-hidden="true" />
               <p>{item.summary}</p>
+              <span className="portfolio-development-evidence">{`Based on ${item.sources.length} sources`}</span>
               <span className="portfolio-development-opening" aria-hidden={!isOpening}>
-                {isOpening ? "Opening answer" : ""}
+                {isOpening ? "Opening synthesis" : ""}
               </span>
             </button>
           );
@@ -1092,9 +1114,7 @@ function MarketStandoutsPanel() {
           <article key={item.ticker} className="portfolio-standout-card">
             <div className="portfolio-standout-header">
               <div className="portfolio-standout-identity">
-                <span>
-                  {item.ticker} / {item.exchange}
-                </span>
+                <span>{item.ticker}</span>
                 <strong>{item.company}</strong>
               </div>
               <div className="portfolio-standout-price">
@@ -1112,34 +1132,34 @@ function MarketStandoutsPanel() {
   );
 }
 
-function MarketRail() {
+function MarketBreadthPanel() {
   return (
-    <>
-      <section className="portfolio-workspace-panel portfolio-market-pulse-panel">
-        <PanelHeading title="Market breadth" meta="Closed / IST" />
-        <div className="portfolio-breadth-grid">
-          <MetricTile label="Advances" value={MARKET_BREADTH.advances.toLocaleString("en-IN")} tone="positive" />
-          <MetricTile label="Declines" value={MARKET_BREADTH.declines.toLocaleString("en-IN")} tone="negative" />
-          <MetricTile label="52W highs" value={MARKET_BREADTH.highs52Week.toString()} tone="positive" />
-          <MetricTile label="52W lows" value={MARKET_BREADTH.lows52Week.toString()} tone="negative" />
-        </div>
-        <div className="portfolio-flow-strip">
-          <span>FII flow</span>
-          <strong>{formatPortfolioCurrency(MARKET_BREADTH.fiiFlowCr * 10000000)}</strong>
-          <span>DII flow</span>
-          <strong>{formatPortfolioCurrency(MARKET_BREADTH.diiFlowCr * 10000000)}</strong>
-        </div>
-      </section>
-      <FinanceDisclaimer />
-    </>
+    <section className="portfolio-workspace-panel portfolio-market-pulse-panel">
+      <PanelHeading title="Market breadth" meta="NSE sample" />
+      <div className="portfolio-breadth-grid">
+        <MetricTile label="Advances" value={MARKET_BREADTH.advances.toLocaleString("en-IN")} tone="positive" />
+        <MetricTile label="Declines" value={MARKET_BREADTH.declines.toLocaleString("en-IN")} tone="negative" />
+        <MetricTile label="52W highs" value={MARKET_BREADTH.highs52Week.toString()} tone="positive" />
+        <MetricTile label="52W lows" value={MARKET_BREADTH.lows52Week.toString()} tone="negative" />
+      </div>
+      <div className="portfolio-flow-strip">
+        <span>FII flow</span>
+        <strong>{formatPortfolioCurrency(MARKET_BREADTH.fiiFlowCr * 10000000)}</strong>
+        <span>DII flow</span>
+        <strong>{formatPortfolioCurrency(MARKET_BREADTH.diiFlowCr * 10000000)}</strong>
+      </div>
+    </section>
   );
 }
 
 function IndianMarketsTab({ onAnswer }: { onAnswer: FinanceNavigationProps["onAnswer"] }) {
   return (
-    <WorkspaceLayout label="Indian Markets" rail={<MarketRail />}>
-      <section className="portfolio-workspace-panel portfolio-market-overview-panel">
-        <PanelHeading eyebrow="Overview" title="Indian market overview" meta="NSE / BSE" />
+    <section className="markets-page-flow" aria-label="Indian Markets">
+      <section className="portfolio-market-overview-panel" aria-labelledby="markets-top-assets-heading">
+        <header className="markets-section-heading">
+          <h2 id="markets-top-assets-heading">Top Assets</h2>
+          <span>IN</span>
+        </header>
         <div className="portfolio-index-grid">
           {MARKET_INDEX_CARDS.slice(0, 4).map((item) => (
             <MarketIndexTile key={item.symbol} item={item} />
@@ -1149,16 +1169,20 @@ function IndianMarketsTab({ onAnswer }: { onAnswer: FinanceNavigationProps["onAn
 
       <MarketSummary items={MARKET_SUMMARY_ITEMS} sources={MARKET_SUMMARY_SOURCES} />
 
-      <MarketHeatmapPanel />
+      <section className="markets-heatmap-breadth-grid">
+        <MarketHeatmapPanel />
+        <MarketBreadthPanel />
+      </section>
 
-      <section className="portfolio-workspace-split">
+      <section className="portfolio-workspace-split markets-context-grid">
         <MarketMoversPanel />
         <SectorPerformancePanel />
       </section>
 
       <MarketDevelopmentGrid onAnswer={onAnswer} />
       <MarketStandoutsPanel />
-    </WorkspaceLayout>
+      <FinanceDisclaimer />
+    </section>
   );
 }
 
@@ -1230,7 +1254,7 @@ function EarningsCard({
             title={`Open ${event.company} in Screener`}
             onClick={() => onScreener(event.ticker)}
           >
-            Open screener
+            Inspect in screener
           </button>
           <button
             type="button"
@@ -1238,7 +1262,7 @@ function EarningsCard({
             title={`Open Watchlist for ${event.company} context`}
             onClick={onWatchlist}
           >
-            Open watchlist
+            Review watchlist
           </button>
         </div>
       </div>
@@ -1299,7 +1323,7 @@ function EarningsTab({
   return (
     <WorkspaceLayout label="Earnings" rail={<EarningsRail />}>
       <section className="portfolio-workspace-panel portfolio-earnings-command-panel">
-        <PanelHeading eyebrow="Calendar" title="Earnings calendar" meta="Indian companies" />
+        <PanelHeading eyebrow="Calendar" title="Earnings calendar" />
         <div className="portfolio-product-metric-strip">
           <MetricTile label="Today" value={`${todayEvents.length} events`} />
           <MetricTile label="Reported" value={`${reportedEvents.length} recent`} tone="positive" />
@@ -1364,6 +1388,8 @@ function EarningsTab({
 function ScreenerTab({
   query,
   onQueryChange,
+  onQuerySubmit,
+  isScreening,
   sector,
   onSectorChange,
   preset,
@@ -1380,6 +1406,8 @@ function ScreenerTab({
 }: {
   query: string;
   onQueryChange: (value: string) => void;
+  onQuerySubmit: () => void;
+  isScreening: boolean;
   sector: string;
   onSectorChange: (value: string) => void;
   preset: ScreenerPreset;
@@ -1409,9 +1437,62 @@ function ScreenerTab({
     return true;
   };
 
+  const queryMatchesRow = (row: ScreenerRow) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return true;
+    if (includesSearch(row.name, trimmedQuery) || includesSearch(row.ticker, trimmedQuery) || includesSearch(row.sector, trimmedQuery)) {
+      return true;
+    }
+
+    const normalizedQuery = trimmedQuery.toLowerCase();
+    const queryRules: Array<(candidate: ScreenerRow) => boolean> = [];
+
+    if (/\blow\s+(peg|p\/e|pe|valuation)\b|\bvalue\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) =>
+        normalizedQuery.includes("peg")
+          ? candidate.pe <= 25 && candidate.profitGrowth >= 10
+          : candidate.pe <= 20,
+      );
+    }
+
+    if (/\bhigh\s+roe\b|\broe\b|\bquality\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.roe >= 20);
+    }
+
+    if (/\blow\s+debt\b|\bdebt\b|\bleverage\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.debtEquity <= 0.4);
+    }
+
+    if (/\bgrowth\b|\bearnings\b|\bprofit\b|\bcompounder/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.profitGrowth >= 12 || candidate.revenueGrowth >= 10 || candidate.oneYear >= 20);
+    }
+
+    if (/\bmomentum\b|\bmovers?\b|\btrend\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.oneMonth >= 3 || candidate.oneYear >= 20);
+    }
+
+    if (/\bdividend\b|\byield\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.dividendYield >= 1);
+    }
+
+    if (/\blarge\s+cap\b|\blargecap\b|\bblue\s*chip\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.marketCapCr >= 500000);
+    }
+
+    if (/\bbank\b|\bfinancials?\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => candidate.sector === "Financial Services" || includesSearch(candidate.name, "bank"));
+    }
+
+    if (/\bsolar\b|\brenewable\b/.test(normalizedQuery)) {
+      queryRules.push((candidate) => includesSearch(candidate.name, "solar") || includesSearch(candidate.name, "renewable"));
+    }
+
+    return queryRules.length > 0 && queryRules.every((rule) => rule(row));
+  };
+
   const matchReasonForRow = (row: ScreenerRow) => {
     const context = SCREENER_ROW_CONTEXT[row.ticker];
-    if (query.trim()) return `Search match: ${row.ticker} / ${row.sector}`;
+    if (query.trim()) return `Query match: ${row.ticker} / ${row.sector}`;
     if (preset === "Quality compounders") return `ROE ${formatPercent(row.roe)} + D/E ${row.debtEquity.toFixed(2)}`;
     if (preset === "Value opportunities") return `P/E ${row.pe.toFixed(1)} with non-negative 1Y trend`;
     if (preset === "Momentum leaders") return `1M ${formatPercent(row.oneMonth)} + 1Y ${formatPercent(row.oneYear)}`;
@@ -1426,11 +1507,7 @@ function ScreenerTab({
   const filteredRows = useMemo(() => {
     const rows = SCREENER_ROWS.filter((row) => {
       const hasQuery = Boolean(query.trim());
-      const matchesQuery =
-        !query ||
-        includesSearch(row.name, query) ||
-        includesSearch(row.ticker, query) ||
-        includesSearch(row.sector, query);
+      const matchesQuery = queryMatchesRow(row);
       const matchesSector = sector === "All" || row.sector === sector;
       const matchesPreset = hasQuery || presetMatchesRow(row);
 
@@ -1457,20 +1534,33 @@ function ScreenerTab({
 
   const selectedRow = filteredRows.find((row) => row.ticker === selectedTicker) ?? filteredRows[0] ?? null;
   const selectedContext = selectedRow ? SCREENER_ROW_CONTEXT[selectedRow.ticker] : null;
+  const trimmedQuery = query.trim();
+  const queryStatusText = isScreening
+    ? "Screening local demo universe..."
+    : trimmedQuery
+      ? `${filteredRows.length} matches in the current demo universe.`
+      : "Try: low debt banks, high ROE consumer, dividend yield, earnings momentum.";
 
   return (
     <WorkspaceLayout
       label="Screener"
       rail={
         <>
-          <section className="portfolio-workspace-panel">
-            <PanelHeading eyebrow="Screener read" title="Current filter" />
+          <section className="portfolio-workspace-panel portfolio-screener-context-panel">
+            <PanelHeading eyebrow="Screener context" title="Current screen" meta="Demo universe" />
             <p className="portfolio-rail-copy">
-              Showing {filteredRows.length} Indian-market names. Saved watchlist actions are browser-local only.
+              {query.trim()
+                ? `Search is filtering Indian-market names for "${query.trim()}".`
+                : `Showing ${filteredRows.length} Indian-market names from the ${preset} screen.`}
+              {" "}Saved watchlist actions are browser-local only.
             </p>
             <div className="portfolio-rail-mini-table">
               <div>
-                <span>Sort</span>
+                <span>Results</span>
+                <strong>{filteredRows.length} names</strong>
+              </div>
+              <div>
+                <span>Sorted by</span>
                 <strong>
                   {String(sortKey)} / {sortDirection}
                 </strong>
@@ -1480,10 +1570,49 @@ function ScreenerTab({
                 <strong>{sector}</strong>
               </div>
             </div>
+            <div className="portfolio-screener-library" aria-label="Saved screen presets">
+              {SCREENER_SCREEN_LIBRARY.map((screen) => (
+                <button
+                  key={screen.title}
+                  type="button"
+                  className={preset === screen.preset ? "is-active" : ""}
+                  aria-pressed={preset === screen.preset}
+                  title={`Open ${screen.title} screen`}
+                  onClick={() => onPresetChange(screen.preset)}
+                >
+                  <strong>{screen.title}</strong>
+                  <span>{screen.detail}</span>
+                </button>
+              ))}
+            </div>
+            <div className="portfolio-screener-sector-cloud" aria-label="Browse sectors">
+              <button
+                type="button"
+                className={sector === "All" ? "is-active" : ""}
+                aria-pressed={sector === "All"}
+                onClick={() => onSectorChange("All")}
+              >
+                All sectors
+              </button>
+              {sectors
+                .filter((item) => item !== "All")
+                .slice(0, 8)
+                .map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className={sector === item ? "is-active" : ""}
+                    aria-pressed={sector === item}
+                    onClick={() => onSectorChange(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+            </div>
           </section>
           {selectedRow && selectedContext ? (
             <section className="portfolio-workspace-panel portfolio-quick-read-panel">
-              <PanelHeading eyebrow="Quick read" title={`${selectedRow.ticker} setup`} meta="Local preview" />
+              <PanelHeading eyebrow="Analyst note" title={`${selectedRow.ticker} setup`} meta="Local preview" />
               <p className="portfolio-rail-copy">{selectedContext.reason}</p>
               <div className="portfolio-quick-chip-row">
                 {selectedContext.themeTags.map((tag) => (
@@ -1524,7 +1653,7 @@ function ScreenerTab({
                   title={`Open related earnings for ${selectedRow.name}`}
                   onClick={() => onOpenEarnings(selectedRow.ticker)}
                 >
-                  Related earnings
+                  Open earnings
                 </button>
               </div>
             </section>
@@ -1532,14 +1661,66 @@ function ScreenerTab({
         </>
       }
     >
-      <section className="portfolio-workspace-panel">
-        <PanelHeading eyebrow="Screener" title="Indian equity screener" meta={`${filteredRows.length} results`} />
-        <div className="portfolio-filter-bar">
-          <label className="portfolio-search-control">
-            <Search aria-hidden="true" />
-            <span className="portfolio-screen-reader-only">Search screener</span>
-            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search stocks, sectors..." />
+      <section className="portfolio-screener-query-shell" aria-label="Screener query command">
+        <div className="portfolio-screener-query-heading">
+          <h2>Stock Screener</h2>
+          <span>Demo universe, browser-local watchlist actions</span>
+        </div>
+        <form
+          className={`portfolio-screener-query-composer${isScreening ? " is-screening" : ""}`}
+          role="search"
+          aria-label="Run screener query"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onQuerySubmit();
+          }}
+        >
+          <label className="portfolio-screen-reader-only" htmlFor="screener-query-command">
+            Screener query
           </label>
+          <textarea
+            id="screener-query-command"
+            value={query}
+            rows={2}
+            placeholder="Describe a screen: low debt banks, high ROE consumer, dividend yield..."
+            onChange={(event) => onQueryChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                onQuerySubmit();
+              }
+            }}
+          />
+          <button
+            type="submit"
+            aria-label={isScreening ? "Screening local demo universe" : "Run screener query"}
+            title={isScreening ? "Screening local demo universe" : "Run screener query"}
+            disabled={isScreening}
+          >
+            {isScreening ? <span className="portfolio-screener-query-spinner" aria-hidden="true" /> : <ArrowUpRight aria-hidden="true" />}
+          </button>
+        </form>
+        <div className={`portfolio-screener-query-preview${isScreening ? " is-screening" : ""}`} aria-live="polite">
+          <span>{queryStatusText}</span>
+          {!trimmedQuery && !isScreening ? (
+            <div className="portfolio-screener-query-examples" aria-label="Example screener queries">
+              <button type="button" onClick={() => onQueryChange("low debt banks")}>
+                low debt banks
+              </button>
+              <button type="button" onClick={() => onQueryChange("high ROE")}>
+                high ROE
+              </button>
+              <button type="button" onClick={() => onQueryChange("earnings momentum")}>
+                earnings momentum
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="portfolio-workspace-panel">
+        <PanelHeading eyebrow="Screener" title="Indian equity screens" meta={`${filteredRows.length} results, browser-local watchlist`} />
+        <div className="portfolio-filter-bar portfolio-screener-control-bar">
           <label className="portfolio-select-control">
             <SlidersHorizontal aria-hidden="true" />
             <span className="portfolio-screen-reader-only">Select sector</span>
@@ -1551,6 +1732,10 @@ function ScreenerTab({
               ))}
             </select>
           </label>
+          <div className="portfolio-screener-active-read">
+            <span>Active screen</span>
+            <strong>{query.trim() ? `Search: ${query.trim()}` : preset}</strong>
+          </div>
         </div>
         <div className="portfolio-preset-row">
           {SCREENER_PRESETS.map((item) => (
@@ -1601,7 +1786,6 @@ function ScreenerTab({
                   </th>
                 );
               })}
-              <th>Why matched</th>
               <th>Signal</th>
               <th>Action</th>
             </tr>
@@ -1614,9 +1798,8 @@ function ScreenerTab({
                 <tr key={row.ticker} className={selectedRow?.ticker === row.ticker ? "is-selected" : ""}>
                   <td>
                     <strong>{row.name}</strong>
-                    <span>
-                      {row.ticker} / {row.exchange}
-                    </span>
+                    <span>{row.ticker}</span>
+                    <small className="portfolio-screener-row-note">{matchReasonForRow(row)}</small>
                   </td>
                   <td>{row.sector}</td>
                   {SCREENER_COLUMNS.map((column) => (
@@ -1628,9 +1811,6 @@ function ScreenerTab({
                     </td>
                   ))}
                   <td>
-                    <span className="portfolio-table-reason">{matchReasonForRow(row)}</span>
-                  </td>
-                  <td>
                     <em className="portfolio-table-signal">{signalForRow(row)}</em>
                   </td>
                   <td>
@@ -1641,7 +1821,7 @@ function ScreenerTab({
                         title={`Open quick read for ${row.name}`}
                         onClick={() => onSelectedTickerChange(row.ticker)}
                       >
-                        Quick read
+                        Inspect
                       </button>
                       <button
                         type="button"
@@ -1663,7 +1843,7 @@ function ScreenerTab({
             })}
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={SCREENER_COLUMNS.length + 5} className="portfolio-empty-row">
+                <td colSpan={SCREENER_COLUMNS.length + 4} className="portfolio-empty-row">
                   No screener matches. Try another search, sector, or saved screen.
                 </td>
               </tr>
@@ -1720,16 +1900,15 @@ function WatchlistTab({
       return clusters;
     }, {});
   const riskCluster = Object.entries(biggestRiskCluster).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "No cluster yet";
-  const relevantNews = WATCHLIST_NEWS.find((news) => trackedTickers.has(news.ticker)) ?? WATCHLIST_NEWS[0];
 
   return (
     <WorkspaceLayout
       label="Watchlist"
       rail={
         <>
-          <section className="portfolio-workspace-panel">
+          <section className="portfolio-workspace-panel portfolio-watchlist-pulse-panel">
             <PanelHeading eyebrow="Pulse" title="Watchlist pulse" meta={`${trackedItems.length} tracked`} />
-            <div className="portfolio-rail-mini-table">
+            <div className="portfolio-watchlist-pulse-list">
               <div>
                 <span>Top mover</span>
                 <strong>
@@ -1752,12 +1931,15 @@ function WatchlistTab({
               </div>
             </div>
           </section>
-          <section className="portfolio-workspace-panel">
+          <section className="portfolio-workspace-panel portfolio-watchlist-alert-panel">
             <PanelHeading eyebrow="Alerts" title="Active alerts" />
-            <div className="portfolio-alert-list">
+            <div className="portfolio-watchlist-alert-list">
               {activeAlerts.map((item) => (
                 <article key={item.ticker}>
-                  <strong>{item.ticker}</strong>
+                  <div>
+                    <strong>{item.ticker}</strong>
+                    <span>Local alert</span>
+                  </div>
                   <p>{WATCHLIST_ITEM_CONTEXT[item.ticker]?.alertReason ?? item.note}</p>
                 </article>
               ))}
@@ -1777,14 +1959,9 @@ function WatchlistTab({
           <TickerMovePill ticker={laggard.ticker} move={laggard.oneDay} /> is the cleanest weak spot. The list is currently most sensitive to
           {` ${riskCluster.toLowerCase()}, crude, IT guidance, and high-momentum consumer internet names.`}
         </p>
-        <div className="portfolio-product-metric-strip">
-          <MetricTile label="Biggest mover" value={`${topMover.ticker} ${formatPercent(topMover.oneDay)}`} tone={topMover.oneDay >= 0 ? "positive" : "negative"} />
-          <MetricTile label="Highest alert" value={activeAlerts[0]?.ticker ?? "None"} tone={activeAlerts.length ? "negative" : "neutral"} />
-          <MetricTile label="Relevant news" value={relevantNews.ticker} />
-        </div>
         <div className="portfolio-source-row">
-          <span>49 sources</span>
-          <span>Updated 9 minutes ago</span>
+          <span>Browser-only watchlist</span>
+          <span>Demo market context</span>
         </div>
       </section>
 
@@ -1794,7 +1971,7 @@ function WatchlistTab({
           <label className="portfolio-search-control">
             <Search aria-hidden="true" />
             <span className="portfolio-screen-reader-only">Search watchlist</span>
-            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search and star an asset..." />
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search watchlist or alerts..." />
           </label>
           <div className="portfolio-segmented-control" aria-label="Watchlist filters">
             {WATCHLIST_FILTERS.map((filter) => (
@@ -1842,9 +2019,7 @@ function WatchlistTab({
                     <CompanyAvatar name={item.name} ticker={item.ticker} />
                     <div>
                       <strong>{item.name}</strong>
-                      <span>
-                        {item.ticker} / {item.exchange} / {item.sector}
-                      </span>
+                      <span>{item.ticker} / {item.sector}</span>
                     </div>
                     <div className="portfolio-table-actions">
                       <button
@@ -1870,11 +2045,11 @@ function WatchlistTab({
                       <button
                         type="button"
                         className="portfolio-icon-text-action"
-                        aria-label={`Open ${item.name} in Screener`}
-                        title={`Open ${item.name} in Screener`}
+                        aria-label={`Inspect ${item.name} in Screener`}
+                        title={`Inspect ${item.name} in Screener`}
                         onClick={() => onScreener(item.ticker)}
                       >
-                        Screen
+                        Inspect
                       </button>
                     </div>
                   </div>
@@ -1894,7 +2069,7 @@ function WatchlistTab({
                       title={`Open related earnings for ${item.name}`}
                       onClick={() => onEarnings(item.ticker)}
                     >
-                      Related earnings
+                      Open earnings
                     </button>
                   </div>
                 </td>
@@ -2030,14 +2205,9 @@ function getContributionRows() {
   })).sort((first, second) => second.contribution - first.contribution);
 }
 
-function getFirstSentence(text: string) {
-  const [firstSentence] = text.split(/(?<=\.)\s+/);
-  return firstSentence || text;
-}
-
 function buildTrustEvidence(freshness = PORTFOLIO_COCKPIT.status.lastUpdated): PortfolioEvidenceDrawerContent {
   return {
-    title: "AI evidence level",
+    title: "Source context",
     sourceCount: PORTFOLIO_COCKPIT.status.sourceCount,
     freshness,
     assumptions: PORTFOLIO_AI_TRUST.assumptions,
@@ -2110,238 +2280,21 @@ function PortfolioHeader({
   searchValue,
   onSearchValueChange,
   onSearchSubmit,
-  isPortfolioSyncing,
-  portfolioSyncStatus,
-  onRefresh,
-  onOpenEvidence,
 }: {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   onSearchSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  isPortfolioSyncing: boolean;
-  portfolioSyncStatus: string;
-  onRefresh: () => void;
-  onOpenEvidence: () => void;
 }) {
   return (
     <header className="portfolio-finance-header portfolio-cockpit-header">
       <div className="portfolio-finance-header-title">
-        <span className="portfolio-section-kicker">Sovereign Lens Finance</span>
         <h1>Portfolio</h1>
-        <p>Personal exposure, holdings, performance, and local AI read.</p>
       </div>
       <form className="portfolio-finance-search portfolio-cockpit-search" role="search" aria-label="Search portfolio workspace" onSubmit={onSearchSubmit}>
         <Search aria-hidden="true" />
-        <input value={searchValue} onChange={(event) => onSearchValueChange(event.target.value)} placeholder="Search Indian stocks, sectors, funds..." />
+        <input value={searchValue} onChange={(event) => onSearchValueChange(event.target.value)} placeholder="Search holdings, sectors, exposure..." />
       </form>
-      <div className="portfolio-cockpit-status-row">
-        <button type="button" className="portfolio-ai-status-pill" aria-label="Open AI evidence level" onClick={onOpenEvidence}>
-          <span>{PORTFOLIO_COCKPIT.status.view}</span>
-          <strong>{PORTFOLIO_COCKPIT.status.sourceCount} sources</strong>
-          <em>{portfolioSyncStatus}</em>
-          <b>{PORTFOLIO_COCKPIT.status.evidenceLevel}</b>
-        </button>
-        <button
-          type="button"
-          className={`portfolio-status-sync-button${isPortfolioSyncing ? " is-syncing" : ""}`}
-          aria-label="Refresh local portfolio view"
-          aria-busy={isPortfolioSyncing}
-          title="Refresh local portfolio view"
-          onClick={onRefresh}
-        >
-          <RefreshCw aria-hidden="true" />
-        </button>
-      </div>
     </header>
-  );
-}
-
-function PortfolioSummaryGrid({
-  totalValue,
-  oneDayReturn,
-  totalReturn,
-  totalReturnPercent,
-  portfolioSyncStatus,
-  onOpenEvidence,
-}: {
-  totalValue: number;
-  oneDayReturn: number;
-  totalReturn: number;
-  totalReturnPercent: number;
-  portfolioSyncStatus: string;
-  onOpenEvidence: () => void;
-}) {
-  const cards = [
-    {
-      label: "Current Portfolio Value",
-      value: formatPortfolioCurrency(totalValue),
-      note: portfolioSyncStatus,
-      tone: "neutral",
-    },
-    {
-      label: "Invested Value",
-      value: formatPortfolioCurrency(PORTFOLIO_INVESTED_VALUE),
-      note: "Local sample holdings",
-      tone: "neutral",
-    },
-    {
-      label: "Total Gain / Loss",
-      value: `${formatSignedPortfolioCurrency(totalReturn)} (${formatSignedPortfolioPercent(totalReturnPercent)})`,
-      note: "Since invested value",
-      tone: totalReturn >= 0 ? "positive" : "negative",
-    },
-    {
-      label: "Today's P&L",
-      value: `${formatSignedPortfolioCurrency(oneDayReturn)} (${formatSignedPortfolioPercent(PORTFOLIO_DAY_RETURN_PERCENT)})`,
-      note: "1D local mark",
-      tone: oneDayReturn >= 0 ? "positive" : "negative",
-    },
-  ];
-
-  return (
-    <section className="portfolio-summary-area" aria-label="Portfolio value summary">
-      <div className="portfolio-summary-grid">
-        {cards.map((card) => (
-          <article key={card.label} className={`portfolio-summary-card is-${card.tone}`}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <em>{card.note}</em>
-          </article>
-        ))}
-      </div>
-      <button type="button" className="portfolio-evidence-summary-bar" onClick={onOpenEvidence}>
-        <span>AI Evidence Level</span>
-        <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
-        <em>{PORTFOLIO_COCKPIT.status.sourceCount} sources</em>
-        <b>Assumptions available</b>
-      </button>
-    </section>
-  );
-}
-
-function AIActionQueue({
-  freshness,
-  onOpenEvidence,
-  onFunds,
-}: {
-  freshness: string;
-  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
-  onFunds: () => void;
-}) {
-  const [expandedActionId, setExpandedActionId] = useState(PORTFOLIO_COCKPIT.actions[0]?.id ?? "");
-
-  const handleActionClick = (action: (typeof PORTFOLIO_COCKPIT.actions)[number]) => {
-    if (action.ctaType === "funds") {
-      onFunds();
-      return;
-    }
-
-    onOpenEvidence(buildActionEvidence(action, freshness));
-  };
-
-  return (
-    <section className="portfolio-action-queue-panel" aria-label="Portfolio action queue">
-      <header>
-        <span>Recommended Plays</span>
-        <h2>What should I do today?</h2>
-      </header>
-      <div className="portfolio-action-queue-list">
-        {PORTFOLIO_COCKPIT.actions.map((action) => {
-          const isExpanded = expandedActionId === action.id;
-
-          return (
-            <article key={action.id} className={`portfolio-cockpit-action-card risk-${action.riskLevel.toLowerCase()}${isExpanded ? " is-expanded" : " is-collapsed"}`}>
-              <button
-                type="button"
-                className="portfolio-action-card-summary"
-                aria-expanded={isExpanded}
-                onClick={() => setExpandedActionId(isExpanded ? "" : action.id)}
-              >
-                <span className={`portfolio-risk-pill risk-${action.riskLevel.toLowerCase()}`}>{action.riskLevel}</span>
-                <strong>{action.title}</strong>
-                <em>{action.assetType}</em>
-                <ChevronDown aria-hidden="true" />
-              </button>
-              <p>{action.why}</p>
-              <div className="portfolio-reason-chip-row" aria-label={`${action.title} affected holdings`}>
-                {action.affectedHoldings.map((ticker) => (
-                  <span key={ticker}>{ticker}</span>
-                ))}
-              </div>
-              {isExpanded ? (
-                <>
-                  <dl>
-                    <div>
-                      <dt>Confidence</dt>
-                      <dd>{action.confidence}</dd>
-                    </div>
-                    <div>
-                      <dt>Main risk</dt>
-                      <dd>{action.mainRisk}</dd>
-                    </div>
-                  </dl>
-                  <button type="button" className="portfolio-action-card-cta" onClick={() => handleActionClick(action)}>
-                    {action.ctaLabel}
-                    {action.ctaType === "funds" ? <ArrowUpRight aria-hidden="true" /> : null}
-                  </button>
-                </>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
-      <p className="portfolio-action-queue-note">No broker execution. Local AI decision support only.</p>
-    </section>
-  );
-}
-
-function PortfolioReadCard() {
-  return (
-    <section className="portfolio-read-card" aria-labelledby="portfolio-read-heading">
-      <header>
-        <span>AI portfolio memo</span>
-        <h2 id="portfolio-read-heading">{PORTFOLIO_COCKPIT.read.title}</h2>
-      </header>
-      <p>{PORTFOLIO_COCKPIT.read.summary}</p>
-      <div className="portfolio-read-facts">
-        {PORTFOLIO_COCKPIT.read.facts.map((fact) => (
-          <article key={fact.label}>
-            <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
-            <p>{fact.detail}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function RiskConcentrationStrip({
-  freshness,
-  onOpenEvidence,
-}: {
-  freshness: string;
-  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
-}) {
-  return (
-    <section className="portfolio-risk-strip" aria-label="Risk and concentration strip">
-      {PORTFOLIO_COCKPIT.riskStrip.map((card) => (
-        <article key={card.id}>
-          <span>{card.label}</span>
-          <strong>{card.headline}</strong>
-          <em>{card.metric}</em>
-          <p>{card.whyItMatters}</p>
-          <div className="portfolio-reason-chip-row">
-            {card.affectedHoldings.map((ticker) => (
-              <span key={ticker}>{ticker}</span>
-            ))}
-          </div>
-          <button type="button" onClick={() => onOpenEvidence(buildRiskEvidence(card, freshness))}>
-            View details
-          </button>
-        </article>
-      ))}
-    </section>
   );
 }
 
@@ -2374,7 +2327,7 @@ function HoldingsExposureTable({
 
   return (
     <section className="portfolio-workspace-panel portfolio-holdings-exposure-panel" aria-label="Decision-oriented holdings exposure">
-      <PanelHeading eyebrow="Holdings & risk" title="Holdings decision table" meta="Row opens AI logic" />
+      <PanelHeading eyebrow="Holdings & risk" title="Holdings decision table" meta={`Based on ${PORTFOLIO_COCKPIT.status.sourceCount} sources`} />
       <div className="portfolio-holding-filter-row" aria-label="Holdings filters">
         {filters.map((filter) => (
           <button key={filter} type="button" className={holdingFilter === filter ? "is-active" : ""} aria-pressed={holdingFilter === filter} onClick={() => setHoldingFilter(filter)}>
@@ -2466,41 +2419,39 @@ function PortfolioChartsSection() {
   );
 }
 
-function MarketImpactStream({
+function PortfolioOverviewPerformanceBand({
   freshness,
   onOpenEvidence,
 }: {
   freshness: string;
   onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
 }) {
+  const primaryRisk = PORTFOLIO_COCKPIT.riskStrip[0];
+
   return (
-    <section className="portfolio-market-impact-section" aria-labelledby="portfolio-market-impact-heading">
-      <PanelHeading eyebrow="Market impact stream" title="Market drivers affecting your portfolio" />
-      <div className="portfolio-market-driver-grid">
-        {PORTFOLIO_COCKPIT.marketDrivers.map((driver) => (
-          <article key={driver.id} className={`portfolio-market-driver-card is-${driver.impactDirection.toLowerCase()}`}>
-            <div className="portfolio-market-driver-topline">
-              <span>{driver.theme}</span>
-              <em>{driver.impactDirection}</em>
-            </div>
-            <strong>{driver.headline}</strong>
-            <p>{getFirstSentence(driver.explanation)}</p>
-            <div className="portfolio-reason-chip-row">
-              {driver.affectedHoldings.map((ticker) => (
-                <span key={ticker}>{ticker}</span>
-              ))}
-            </div>
-            <div className="portfolio-market-driver-actions">
-              <button type="button" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
-                Expand
-              </button>
-              <button type="button" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
-                Sources
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+    <section className="portfolio-overview-performance-band" aria-label="Portfolio performance and analyst read">
+      <article className="portfolio-workspace-panel portfolio-chart-card portfolio-overview-chart-card">
+        <PanelHeading eyebrow="Performance" title="Portfolio vs NIFTY 50" meta="Functional range" />
+        <PortfolioPerformanceChart points={PORTFOLIO_PERFORMANCE} benchmarkPoints={NIFTY_50_PERFORMANCE} />
+      </article>
+      <aside className="portfolio-overview-chart-rail" aria-label="Performance interpretation">
+        <span>Analyst read</span>
+        <strong>{primaryRisk?.headline ?? "Portfolio breadth check"}</strong>
+        <p>{primaryRisk?.whyItMatters ?? "Track whether the portfolio advance broadens beyond the current leadership names."}</p>
+        <dl>
+          <div>
+            <dt>Evidence</dt>
+            <dd>{PORTFOLIO_COCKPIT.status.sourceCount} sources</dd>
+          </div>
+          <div>
+            <dt>State</dt>
+            <dd>{freshness}</dd>
+          </div>
+        </dl>
+        <button type="button" onClick={() => onOpenEvidence(buildTrustEvidence(freshness))}>
+          View evidence
+        </button>
+      </aside>
     </section>
   );
 }
@@ -2570,7 +2521,7 @@ function PortfolioStatusStrip({
       ))}
       <button type="button" className="portfolio-status-evidence" onClick={onOpenEvidence}>
         <span>Evidence</span>
-        <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
+        <strong>Source context</strong>
         <em>{PORTFOLIO_COCKPIT.status.sourceCount} sources</em>
       </button>
       <div>
@@ -2630,11 +2581,11 @@ function PrimaryActionModule({
   if (!primaryAction) return null;
 
   return (
-    <section className="portfolio-primary-action-module" aria-label="Today's primary portfolio action">
+    <section className="portfolio-primary-action-module" aria-label="What matters now">
       <div className="portfolio-primary-action-main">
         <header>
           <div>
-            <span>Today's primary portfolio action</span>
+            <span>What matters now</span>
             <h2>{primaryAction.title}</h2>
           </div>
           <span className={`portfolio-risk-pill risk-${primaryAction.riskLevel.toLowerCase()}`}>{primaryAction.riskLevel}</span>
@@ -2650,7 +2601,7 @@ function PrimaryActionModule({
             <strong>{primaryAction.mainRisk}</strong>
           </article>
           <article>
-            <span>Confidence</span>
+            <span>Evidence cue</span>
             <strong>{primaryAction.confidence}</strong>
           </article>
           <article>
@@ -2670,10 +2621,10 @@ function PrimaryActionModule({
 
         <div className="portfolio-primary-action-buttons">
           <button type="button" className="is-primary" onClick={() => onOpenEvidence(buildActionEvidence(primaryAction, freshness))}>
-            View reasoning
+            View evidence
           </button>
           <button type="button" onClick={onShowHoldings}>
-            Show affected holdings
+            Inspect holdings
           </button>
         </div>
       </div>
@@ -2798,7 +2749,7 @@ function MarketSignalRows({
               </div>
             </button>
             <button type="button" className="portfolio-market-signal-source" onClick={() => onOpenEvidence(buildMarketDriverEvidence(driver, freshness))}>
-              Sources
+              Evidence
             </button>
           </article>
         ))}
@@ -3017,7 +2968,7 @@ function RiskRadar({
                 ))}
               </div>
               <button type="button" aria-label={`View ${card.headline} details`} onClick={() => onOpenEvidence(buildRiskEvidence(card, freshness))}>
-                Details
+                View evidence
               </button>
             </article>
           );
@@ -3056,6 +3007,7 @@ function OverviewPortfolioView({
         freshness={freshness}
         onOpenEvidence={() => onOpenEvidence(buildTrustEvidence(freshness))}
       />
+      <PortfolioOverviewPerformanceBand freshness={freshness} onOpenEvidence={onOpenEvidence} />
       <div className="portfolio-overview-hero-grid">
         <PrimaryActionModule freshness={freshness} onOpenEvidence={onOpenEvidence} onShowHoldings={onShowHoldings} onFunds={onFunds} />
         <TodayMovedBy oneDayReturn={oneDayReturn} />
@@ -3066,72 +3018,6 @@ function OverviewPortfolioView({
         <MarketSignalRows freshness={freshness} onOpenEvidence={onOpenEvidence} />
       </div>
     </div>
-  );
-}
-
-function PortfolioEvidenceTab({
-  freshness,
-  onOpenEvidence,
-}: {
-  freshness: string;
-  onOpenEvidence: (content: PortfolioEvidenceDrawerContent) => void;
-}) {
-  return (
-    <section className="portfolio-evidence-tab" aria-labelledby="portfolio-evidence-tab-heading">
-      <header>
-        <div>
-          <span>Evidence</span>
-          <h2 id="portfolio-evidence-tab-heading">AI view support</h2>
-        </div>
-        <button type="button" onClick={() => onOpenEvidence(buildTrustEvidence(freshness))}>
-          Open drawer
-        </button>
-      </header>
-
-      <div className="portfolio-evidence-overview">
-        <article>
-          <span>Sources count</span>
-          <strong>{PORTFOLIO_COCKPIT.status.sourceCount}</strong>
-        </article>
-        <article>
-          <span>Freshness</span>
-          <strong>{freshness}</strong>
-        </article>
-        <article>
-          <span>Evidence level</span>
-          <strong>{PORTFOLIO_COCKPIT.status.evidenceLevel}</strong>
-        </article>
-      </div>
-
-      <div className="portfolio-evidence-grid">
-        <section>
-          <h3>Assumptions</h3>
-          <ul>
-            {PORTFOLIO_AI_TRUST.assumptions.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3>Signals used</h3>
-          <ul>
-            {PORTFOLIO_AI_TRUST.changedToday.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3>What would change the AI view</h3>
-          <ul>
-            {PORTFOLIO_AI_TRUST.needsConfirmation.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <FinanceDisclaimer />
-    </section>
   );
 }
 
@@ -3161,7 +3047,7 @@ function EvidenceDrawer({
       <aside className="portfolio-evidence-drawer" role="dialog" aria-modal="true" aria-labelledby="portfolio-evidence-drawer-title">
         <header>
           <div>
-            <span>AI evidence</span>
+            <span>Evidence</span>
             <h2 id="portfolio-evidence-drawer-title">{content.title}</h2>
           </div>
           <button type="button" aria-label="Close evidence drawer" onClick={onClose}>
@@ -3178,7 +3064,7 @@ function EvidenceDrawer({
             <strong>{content.freshness}</strong>
           </article>
           <article>
-            <span>Confidence</span>
+            <span>Evidence cue</span>
             <strong>{content.confidence}</strong>
           </article>
         </div>
@@ -3257,9 +3143,9 @@ function FinanceScreenShell({
   activeView,
   label,
   pageTitle,
-  pageSubtitle,
-  pageMeta,
+  hideSearch = false,
   searchLabel,
+  searchPlaceholder,
   searchValue,
   onSearchValueChange,
   onSearchSubmit,
@@ -3275,15 +3161,16 @@ function FinanceScreenShell({
   activeView: AppView;
   label: string;
   pageTitle: string;
-  pageSubtitle: string;
-  pageMeta?: string;
+  hideSearch?: boolean;
   searchLabel: string;
+  searchPlaceholder?: string;
   searchValue: string;
   onSearchValueChange: (value: string) => void;
   onSearchSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   children: React.ReactNode;
 }) {
   const financeAppRef = useRef<HTMLElement | null>(null);
+  const commandPlaceholder = searchPlaceholder ?? FINANCE_VIEW_PLACEHOLDER[activeView] ?? "Inspect ticker, sector, or event...";
 
   return (
     <main ref={financeAppRef} className={`app-shell portfolio-app portfolio-app-view-${activeView}`}>
@@ -3301,32 +3188,20 @@ function FinanceScreenShell({
       <section className="portfolio-screen portfolio-workspace-screen" aria-label={label}>
         <div className="portfolio-background-grid" aria-hidden="true" />
 
-        <header className="portfolio-finance-header">
+        <header className={`portfolio-finance-header${hideSearch ? " is-search-hidden" : ""}`}>
           <div className="portfolio-finance-header-title">
-            <span className="portfolio-section-kicker">Sovereign Lens Finance</span>
             <h1>{pageTitle}</h1>
-            <p>{pageSubtitle}</p>
-            {pageMeta ? <span className="portfolio-page-meta">{pageMeta}</span> : null}
           </div>
-          <form className="portfolio-finance-search" role="search" aria-label={searchLabel} onSubmit={onSearchSubmit}>
-            <Search aria-hidden="true" />
-            <input
-              value={searchValue}
-              onChange={(event) => onSearchValueChange(event.target.value)}
-              placeholder="Search Indian stocks, sectors, funds..."
-            />
-          </form>
-          <div className="portfolio-market-status" aria-label="Market status">
-            <div className="portfolio-sentiment-bars" aria-hidden="true">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <span key={index} />
-              ))}
-            </div>
-            <div>
-              <strong>Bullish Sentiment</strong>
-              <span>Markets Closed - 6 May 2026, IST</span>
-            </div>
-          </div>
+          {hideSearch ? null : (
+            <form className="portfolio-finance-search" role="search" aria-label={searchLabel} onSubmit={onSearchSubmit}>
+              <Search aria-hidden="true" />
+              <input
+                value={searchValue}
+                onChange={(event) => onSearchValueChange(event.target.value)}
+                placeholder={commandPlaceholder}
+              />
+            </form>
+          )}
         </header>
 
         {children}
@@ -3352,8 +3227,6 @@ export function IndianMarketsScreen(props: FinanceNavigationProps) {
       activeView="markets"
       label="Indian Markets screen"
       pageTitle="Indian Markets"
-      pageSubtitle="Benchmarks, breadth, movers, and sector context for NSE and BSE."
-      pageMeta="NSE / BSE context"
       searchLabel="Search Indian Markets workspace"
       searchValue={workspaceSearchQuery}
       onSearchValueChange={setWorkspaceSearchQuery}
@@ -3387,8 +3260,6 @@ export function EarningsScreen({ initialQuery = "", ...props }: EarningsScreenPr
       activeView="earnings"
       label="Earnings screen"
       pageTitle="Earnings"
-      pageSubtitle="Upcoming and recent results with date filters and company notes."
-      pageMeta="Indian companies"
       searchLabel="Search earnings workspace"
       searchValue={workspaceSearchQuery}
       onSearchValueChange={setWorkspaceSearchQuery}
@@ -3409,6 +3280,7 @@ export function EarningsScreen({ initialQuery = "", ...props }: EarningsScreenPr
 export function ScreenerScreen({ initialQuery = "", ...props }: ScreenerScreenProps) {
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState(initialQuery);
   const [screenerQuery, setScreenerQuery] = useState(initialQuery);
+  const [isScreenerScreening, setIsScreenerScreening] = useState(false);
   const [screenerSector, setScreenerSector] = useState("All");
   const [screenerPreset, setScreenerPreset] = useState<ScreenerPreset>("Quality compounders");
   const [screenerSort, setScreenerSort] = useState<{ key: keyof ScreenerRow; direction: SortDirection }>({
@@ -3418,6 +3290,7 @@ export function ScreenerScreen({ initialQuery = "", ...props }: ScreenerScreenPr
   const [selectedScreenerTicker, setSelectedScreenerTicker] = useState<string | null>(initialQuery.toUpperCase() || null);
   const [trackedTickers, setTrackedTickers] = useState(() => loadStoredTickerSet(WATCHLIST_TRACKED_STORAGE_KEY, DEFAULT_TRACKED_TICKERS));
   const [screenerFeedback, setScreenerFeedback] = useState("");
+  const screenerRunTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setWorkspaceSearchQuery(initialQuery);
@@ -3426,15 +3299,39 @@ export function ScreenerScreen({ initialQuery = "", ...props }: ScreenerScreenPr
   }, [initialQuery]);
 
   useEffect(() => {
+    return () => {
+      if (screenerRunTimer.current !== null) window.clearTimeout(screenerRunTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
     persistTickerSet(WATCHLIST_TRACKED_STORAGE_KEY, trackedTickers);
   }, [trackedTickers]);
 
-  const handleWorkspaceSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const runScreenerQuery = () => {
     const query = workspaceSearchQuery.trim();
 
+    setWorkspaceSearchQuery(query);
     setScreenerQuery(query);
     props.onScreener(query || undefined);
+    setIsScreenerScreening(true);
+
+    if (screenerRunTimer.current !== null) window.clearTimeout(screenerRunTimer.current);
+    screenerRunTimer.current = window.setTimeout(() => {
+      setIsScreenerScreening(false);
+      screenerRunTimer.current = null;
+    }, 720);
+  };
+
+  const handleWorkspaceSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    runScreenerQuery();
+  };
+
+  const handleWorkspaceSearchChange = (value: string) => {
+    setWorkspaceSearchQuery(value);
+    setScreenerQuery(value);
+    setIsScreenerScreening(false);
   };
 
   const handleScreenerSort = (key: keyof ScreenerRow) => {
@@ -3464,16 +3361,17 @@ export function ScreenerScreen({ initialQuery = "", ...props }: ScreenerScreenPr
       activeView="screener"
       label="Screener screen"
       pageTitle="Screener"
-      pageSubtitle="Stock discovery and screen building for Indian market names."
-      pageMeta={`${screenerPreset} screen`}
+      hideSearch
       searchLabel="Search screener workspace"
       searchValue={workspaceSearchQuery}
-      onSearchValueChange={setWorkspaceSearchQuery}
+      onSearchValueChange={handleWorkspaceSearchChange}
       onSearchSubmit={handleWorkspaceSearch}
     >
       <ScreenerTab
         query={screenerQuery}
-        onQueryChange={setScreenerQuery}
+        onQueryChange={handleWorkspaceSearchChange}
+        onQuerySubmit={runScreenerQuery}
+        isScreening={isScreenerScreening}
         sector={screenerSector}
         onSectorChange={setScreenerSector}
         preset={screenerPreset}
@@ -3550,8 +3448,6 @@ export function WatchlistScreen(props: FinanceNavigationProps) {
       activeView="watchlist"
       label="Watchlist screen"
       pageTitle="Watchlist"
-      pageSubtitle="Tracked assets, browser-saved alerts, and daily movement context."
-      pageMeta="Saved in this browser"
       searchLabel="Search watchlist workspace"
       searchValue={workspaceSearchQuery}
       onSearchValueChange={setWorkspaceSearchQuery}
@@ -3574,9 +3470,7 @@ export function WatchlistScreen(props: FinanceNavigationProps) {
 
 export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScreener, onWatchlist, onPortfolio }: PortfolioScreenProps) {
   const portfolioAppRef = useRef<HTMLElement | null>(null);
-  const syncTimerRef = useRef<number | null>(null);
-  const [portfolioSyncStatus, setPortfolioSyncStatus] = useState("Local view updated 2m ago");
-  const [isPortfolioSyncing, setIsPortfolioSyncing] = useState(false);
+  const portfolioSyncStatus = "Local browser view";
   const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState("");
   const [evidenceDrawer, setEvidenceDrawer] = useState<PortfolioEvidenceDrawerContent | null>(null);
 
@@ -3584,13 +3478,6 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
   const oneDayReturn = totalValue * (PORTFOLIO_DAY_RETURN_PERCENT / 100);
   const totalReturn = totalValue - PORTFOLIO_INVESTED_VALUE;
   const totalReturnPercent = (totalReturn / PORTFOLIO_INVESTED_VALUE) * 100;
-
-  useEffect(
-    () => () => {
-      if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
-    },
-    [],
-  );
 
   const scrollPortfolioDown = () => {
     const portfolioApp = portfolioAppRef.current;
@@ -3600,17 +3487,6 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
       top: Math.max(portfolioApp.clientHeight * 0.72, 360),
       behavior: "smooth",
     });
-  };
-
-  const handlePortfolioSync = () => {
-    if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
-
-    setIsPortfolioSyncing(true);
-    setPortfolioSyncStatus("Refreshing local view...");
-    syncTimerRef.current = window.setTimeout(() => {
-      setIsPortfolioSyncing(false);
-      setPortfolioSyncStatus("Local view updated just now");
-    }, 720);
   };
 
   const handleWorkspaceSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -3641,10 +3517,6 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
           searchValue={workspaceSearchQuery}
           onSearchValueChange={setWorkspaceSearchQuery}
           onSearchSubmit={handleWorkspaceSearch}
-          isPortfolioSyncing={isPortfolioSyncing}
-          portfolioSyncStatus={portfolioSyncStatus}
-          onRefresh={handlePortfolioSync}
-          onOpenEvidence={() => setEvidenceDrawer(buildTrustEvidence(portfolioSyncStatus))}
         />
 
         <YourPortfolioTab

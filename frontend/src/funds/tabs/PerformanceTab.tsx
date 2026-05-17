@@ -46,13 +46,13 @@ type CoordinatePoint = ChartPoint & {
 };
 
 const TIME_RANGES: TimeRange[] = ["1Y", "3Y", "5Y", "10Y", "MAX"];
-const FUND_COLORS = ["#74e59c", "#ecd76e", "#ff86a8", "#ffb35c"];
-const BENCHMARK_COLOR = "rgba(255, 253, 240, 0.34)";
+const FUND_COLORS = ["#B86A4B", "#D7D7CF", "#7E9A86", "#A1A8B3"];
+const BENCHMARK_COLOR = "rgba(215, 215, 207, 0.42)";
 const BENCHMARK_LABEL = "NIFTY 500 TRI";
 const OUTER_RADIUS = "8px";
 const CHIP_RADIUS = "999px";
-const FONT_SANS = 'Inter, Archivo, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-const FONT_MONO = '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace';
+const FONT_SANS = 'Satoshi, "IBM Plex Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const FONT_MONO = '"IBM Plex Mono", "Geist Mono", "SFMono-Regular", Consolas, monospace';
 const SVG_VIEW_BOX = { width: 220, height: 74 };
 const VIEW_BOX = { left: 27, right: 214, top: 7, bottom: 63 };
 const CHART_MIN_HEIGHT = "16.9rem";
@@ -949,7 +949,7 @@ function PerformanceChart({
                     opacity: isDimmed ? 0.28 : 1,
                     filter: isDimmed
                       ? "none"
-                      : `drop-shadow(0 0 0.18rem ${item.color}42) drop-shadow(0 0 ${isHighlighted ? "0.72rem" : "0.5rem"} rgba(236, 215, 110, 0.12))`,
+                      : `drop-shadow(0 0 0.16rem ${item.color}30)`,
                   }}
                 />
               </g>

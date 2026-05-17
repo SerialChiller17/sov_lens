@@ -1,4 +1,6 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
+import { Search } from "lucide-react";
+import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../app/GlobalBrandNav";
 import { FundSelector } from "./FundSelector";
 import { MOCK_FUNDS } from "./mockFunds";
 import { PerformanceTab } from "./tabs/PerformanceTab";
@@ -13,7 +15,7 @@ const BENCHMARK_TAPE = [
   { label: "NIFTY 500 TRI", value: "34,510.84", move: "+0.37%", direction: "up" },
   { label: "NIFTY MIDCAP 150 TRI", value: "22,904.12", move: "+0.58%", direction: "up" },
   { label: "NIFTY SMALLCAP 250 TRI", value: "18,226.45", move: "-0.18%", direction: "down" },
-  { label: "S&P 500 (INR)", value: "4,37,820", move: "+0.22%", direction: "up" },
+  { label: "CRISIL HYBRID 50+50", value: "1,934.70", move: "+0.11%", direction: "up" },
   { label: "NIFTY DEBT INDEX", value: "2,918.64", move: "+0.04%", direction: "up" },
   { label: "GOLD INR", value: "\u20b972,840", move: "+0.31%", direction: "up" },
 ] as const;
@@ -240,6 +242,7 @@ function FundsMarketTape() {
       <div className="market-tape-status">
         <span aria-hidden="true" />
         <strong>Benchmarks</strong>
+        <em>Static sample</em>
       </div>
       <div className="market-tape-viewport" aria-label="Fund comparison benchmark tape">
         <div className="market-tape-track">
@@ -342,7 +345,7 @@ function ComparisonBody({
   );
 }
 
-export function FundsScreen({ navigation }: { navigation: ReactNode }) {
+export function FundsScreen(navHandlers: GlobalBrandNavHandlers) {
   const [fundSlots, setFundSlots] = useState<FundSlot[]>(initialFundSlots);
   const [isFundPickerOpen, setIsFundPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ComparisonTab>("Performance");
@@ -364,8 +367,8 @@ export function FundsScreen({ navigation }: { navigation: ReactNode }) {
   };
 
   return (
-    <main className="app-shell portfolio-app" style={shellStyle}>
-      {navigation}
+    <main className="app-shell portfolio-app portfolio-app-view-funds" style={shellStyle}>
+      <GlobalBrandNav activeView="funds" {...navHandlers} />
       <FundsMarketTape />
 
       <section className="portfolio-screen" aria-label="Funds comparison screen" style={contentStyle}>
@@ -374,19 +377,13 @@ export function FundsScreen({ navigation }: { navigation: ReactNode }) {
         <section className="portfolio-dashboard" aria-label="Funds compare workspace">
           <header className="portfolio-section-header">
             <div>
-              <h1 style={{ fontSize: "clamp(1.9rem, 2.35vw, 2.3rem)", lineHeight: 0.96 }}>Mutual Funds</h1>
-              <p
-                style={{
-                  maxWidth: "34rem",
-                  margin: "0.34rem 0 0",
-                  color: "rgba(238, 231, 214, 0.68)",
-                  fontSize: "0.82rem",
-                  lineHeight: 1.34,
-                }}
-              >
-                Compare up to 4 funds across performance, allocation, risk, and overlap.
-              </p>
+              <h1>Funds</h1>
+              <p>Static sample fund comparison. NAV history is illustrative.</p>
             </div>
+            <button type="button" className="portfolio-funds-command" onClick={() => setIsFundPickerOpen(true)}>
+              <Search aria-hidden="true" />
+              <span>Search funds or compare category...</span>
+            </button>
           </header>
 
           <FundSelector

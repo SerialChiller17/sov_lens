@@ -1,23 +1,27 @@
 ﻿.global-brand-nav {
   position: absolute;
-  top: 0.46rem;
+  top: 6.624px;
   left: 50%;
   z-index: 20;
-  width: min(calc(100vw - 1.4rem), 88rem);
+  width: min(calc(100vw - 20.16px), 1267.2px);
   transform: translateX(-50%);
+  transform-origin: top center;
+  font-family: Manrope, Inter, Archivo, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14.4px;
+  font-variant-numeric: normal;
 }
 
 .global-brand-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(11rem, 1fr) auto minmax(11rem, 1fr);
+  grid-template-columns: minmax(158.4px, 1fr) auto minmax(158.4px, 1fr);
   align-items: center;
-  gap: 0.66rem;
-  min-height: 2.46rem;
+  gap: 9.504px;
+  min-height: 35.424px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 22px;
   overflow: hidden;
-  padding: 0.2rem 0.32rem;
+  padding: 2.88px 4.608px;
   background:
     linear-gradient(115deg, transparent 0 18%, rgba(255, 255, 255, 0.075) 34%, transparent 48% 100%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, rgba(0, 0, 0, 0.012) 1px 3px, transparent 3px 11px),
@@ -26,9 +30,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.34),
     inset 0 0 0 1px rgba(255, 255, 255, 0.045),
     inset 0 -1px 0 rgba(0, 0, 0, 0.95),
-    inset 0 -0.75rem 1.4rem rgba(0, 0, 0, 0.38),
-    0 0.08rem 0.16rem rgba(255, 255, 255, 0.05),
-    0 0.95rem 2.4rem rgba(0, 0, 0, 0.62);
+    inset 0 -10.8px 20.16px rgba(0, 0, 0, 0.38),
+    0 1.152px 2.304px rgba(255, 255, 255, 0.05),
+    0 13.68px 34.56px rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(28px) saturate(1.02) contrast(1.04);
 }
 
@@ -64,11 +68,11 @@
   justify-self: start;
   display: inline-flex;
   align-items: center;
-  gap: 0.48rem;
+  gap: 6.912px;
   border: 0;
   border-radius: 999px;
-  min-height: 1.86rem;
-  padding: 0 0.6rem 0 0.22rem;
+  min-height: 26.784px;
+  padding: 0 8.64px 0 3.168px;
   color: rgba(255, 255, 255, 0.9);
   background: transparent;
   cursor: pointer;
@@ -86,8 +90,8 @@
 .global-brand-mark {
   display: grid;
   place-items: center;
-  width: 1.42rem;
-  height: 1.42rem;
+  width: 20.448px;
+  height: 20.448px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
   color: rgba(255, 255, 255, 0.9);
@@ -96,32 +100,32 @@
     conic-gradient(from 210deg, rgba(255, 255, 255, 0.08), rgba(102, 102, 98, 0.34), rgba(255, 255, 255, 0.16), rgba(13, 13, 13, 0.42), rgba(255, 255, 255, 0.08)),
     linear-gradient(180deg, rgba(54, 54, 52, 0.96), rgba(8, 8, 8, 0.96));
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 0.38rem;
+  font-size: 5.472px;
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
     inset 0 -1px 0 rgba(0, 0, 0, 0.82),
-    0 0.22rem 0.5rem rgba(0, 0, 0, 0.34);
+    0 3.168px 7.2px rgba(0, 0, 0, 0.34);
 }
 
 .global-brand-wordmark {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.28rem;
+  gap: 4.032px;
   min-width: 0;
 }
 
 .global-brand-wordmark span {
   color: rgba(231, 231, 226, 0.68);
-  font-size: 0.64rem;
+  font-size: 9.216px;
   font-weight: 600;
 }
 
 .global-brand-wordmark strong {
   color: rgba(250, 250, 244, 0.96);
-  font-size: 0.84rem;
+  font-size: 12.096px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -132,10 +136,10 @@
   justify-self: center;
   display: inline-flex;
   align-items: center;
-  gap: 0.14rem;
+  gap: 2.016px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  padding: 0.11rem;
+  padding: 1.584px;
   background:
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.01) 0 1px, transparent 1px 9px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.008)),
@@ -143,7 +147,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
     inset 0 -1px 0 rgba(0, 0, 0, 0.82),
-    0 0.42rem 1.1rem rgba(0, 0, 0, 0.32);
+    0 6.048px 15.84px rgba(0, 0, 0, 0.32);
 }
 
 .global-nav-link {
@@ -151,11 +155,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.66rem;
+  min-height: 23.904px;
   border: 1px solid transparent;
   border-radius: 999px;
   overflow: hidden;
-  padding: 0 0.68rem;
+  padding: 0 9.792px;
   color: rgba(255, 255, 255, 0.64);
   background: transparent;
   cursor: pointer;
@@ -169,7 +173,7 @@
 .global-nav-link span {
   position: relative;
   z-index: 2;
-  font-size: 0.64rem;
+  font-size: 9.216px;
   font-weight: 600;
   letter-spacing: 0;
   white-space: nowrap;
@@ -198,8 +202,8 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 248, 220, 0.24),
     inset 0 -1px 0 rgba(0, 0, 0, 0.72),
-    0 0.28rem 0.92rem rgba(0, 0, 0, 0.28),
-    0 0 1rem rgba(218, 195, 130, 0.1);
+    0 4.032px 13.248px rgba(0, 0, 0, 0.28),
+    0 0 14.4px rgba(218, 195, 130, 0.1);
 }
 
 .global-nav-link-lens.is-active,
@@ -220,9 +224,9 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 248, 221, 0.36),
     inset 0 0 0 1px rgba(255, 245, 212, 0.08),
-    inset 0 -0.08rem 0.22rem rgba(0, 0, 0, 0.68),
-    0 0.36rem 1rem rgba(0, 0, 0, 0.38),
-    0 0 0.95rem rgba(216, 193, 130, 0.16);
+    inset 0 -1.152px 3.168px rgba(0, 0, 0, 0.68),
+    0 5.184px 14.4px rgba(0, 0, 0, 0.38),
+    0 0 13.68px rgba(216, 193, 130, 0.16);
 }
 
 .global-nav-link-lens.is-active::before,
@@ -284,7 +288,7 @@
   color: rgba(255, 255, 255, 0.97);
   text-shadow:
     0 1px 0 rgba(0, 0, 0, 0.54),
-    0 0 0.54rem rgba(222, 204, 148, 0.14);
+    0 0 7.776px rgba(222, 204, 148, 0.14);
 }
 
 .global-nav-actions {
@@ -299,10 +303,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.66rem;
+  min-height: 23.904px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 999px;
-  padding: 0 0.72rem;
+  padding: 0 10.368px;
   color: rgba(255, 255, 255, 0.74);
   background:
     linear-gradient(115deg, transparent 0 22%, rgba(255, 255, 255, 0.08) 42%, transparent 58% 100%),
@@ -310,7 +314,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.016)),
     rgba(0, 0, 0, 0.34);
   cursor: pointer;
-  font-size: 0.64rem;
+  font-size: 9.216px;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1;
@@ -334,7 +338,7 @@
     rgba(255, 255, 255, 0.035);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0.28rem 0.9rem rgba(0, 0, 0, 0.22);
+    0 4.032px 12.96px rgba(0, 0, 0, 0.22);
 }
 
 .global-nav-login:disabled {

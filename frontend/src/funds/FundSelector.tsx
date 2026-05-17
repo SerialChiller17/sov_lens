@@ -18,7 +18,7 @@ const FILTERS: Array<FundCategory | "All"> = [
   "Hybrid",
 ];
 
-const SLOT_COLORS = ["#74e59c", "#ecd76e", "#ff86a8", "#ffb35c"];
+const SLOT_COLORS = ["#B86A4B", "#D7D7CF", "#7E9A86", "#A1A8B3"];
 
 export function FundSelector({
   slots,

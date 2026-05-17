@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import { MARKET_DEVELOPMENTS } from "../portfolio/portfolioWorkspaceData";
 import type { MarketDevelopment } from "../portfolio/portfolioWorkspaceData";
 
-interface AiAnswerViewProps {
-  onBackToMarkets: () => void;
-}
+type AiAnswerViewProps = GlobalBrandNavHandlers;
 
 function sourceInitials(name: string) {
   const parts = name.split(/[^a-zA-Z0-9]+/).filter(Boolean);
@@ -79,27 +78,35 @@ function developmentFromLocation() {
   return MARKET_DEVELOPMENTS.find((item) => item.id === eventId) ?? fallbackDevelopment(query, title, summary);
 }
 
-export function AiAnswerView({ onBackToMarkets }: AiAnswerViewProps) {
+export function AiAnswerView(navHandlers: AiAnswerViewProps) {
   const development = developmentFromLocation();
+  const sourceCue = development.sources.length ? `Based on ${development.sources.length} sources` : "Source unavailable";
 
   return (
-    <main className="ai-answer-shell" aria-label="AI answer thread">
-      <header className="ai-answer-topbar">
-        <button type="button" onClick={onBackToMarkets} aria-label="Back to Indian Markets">
+    <main className="ai-answer-shell" aria-label="AI synthesis">
+      <GlobalBrandNav activeView="answer" {...navHandlers} />
+
+      <header className="ai-answer-contextbar">
+        <button type="button" onClick={navHandlers.onMarkets} aria-label="Back to Indian Markets">
           <ArrowLeft size={18} aria-hidden="true" />
-          <span>Indian Markets</span>
+          <span>Markets</span>
         </button>
         <div className="ai-answer-tabs" aria-label="AI answer mode">
-          <strong>Answer</strong>
+          <strong>Synthesis</strong>
         </div>
       </header>
 
-      <article className="ai-answer-thread">
+      <article className={`ai-answer-thread ${development.sources.length > 0 ? "has-sources" : "is-source-limited"}`}>
         <section className="ai-answer-prompt" aria-label="Submitted query">
-          <p>{development.aiQuery}</p>
+          <span>Command</span>
+          <p>{development.aiQuery || "No command supplied. Showing local synthesis fallback."}</p>
         </section>
 
         <section className="ai-answer-summary" aria-label="Short answer">
+          <div className="ai-answer-summary-meta">
+            <span>What matters now</span>
+            <em>{sourceCue}</em>
+          </div>
           <p>{development.answer.shortAnswer}</p>
         </section>
 
@@ -129,6 +136,15 @@ export function AiAnswerView({ onBackToMarkets }: AiAnswerViewProps) {
             </section>
           ))}
         </div>
+
+        <section className="ai-answer-inspect-next" aria-label="Inspect next">
+          <strong>Inspect next</strong>
+          <div>
+            <button type="button" onClick={navHandlers.onMarkets}>Review market context</button>
+            <span>{sourceCue}</span>
+            <span>Portfolio data local if used</span>
+          </div>
+        </section>
 
         {development.sources.length > 0 ? (
           <aside className="ai-answer-sources" aria-label="Sources">

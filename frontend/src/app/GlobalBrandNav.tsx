@@ -2,16 +2,87 @@ import { useEffect, useRef } from "react";
 
 import type { AppView } from "./routes";
 
-interface GlobalBrandNavProps {
-  activeView: AppView;
+export interface GlobalBrandNavHandlers {
   onHome: () => void;
   onMarkets: () => void;
   onEarnings: (query?: string) => void;
   onFunds: () => void;
-  onScreener: () => void;
+  onScreener: (query?: string) => void;
   onWatchlist: () => void;
   onPortfolio: () => void;
 }
+
+interface GlobalBrandNavProps extends GlobalBrandNavHandlers {
+  activeView: AppView;
+}
+
+type GlobalNavItem = {
+  id: "lens" | "markets" | "earnings" | "screener" | "funds" | "watchlist" | "portfolio";
+  label: string;
+  className: string;
+  ariaLabel: string;
+  activeViews: AppView[];
+  onSelect: (handlers: GlobalBrandNavHandlers) => void;
+};
+
+const GLOBAL_NAV_ITEMS: GlobalNavItem[] = [
+  {
+    id: "lens",
+    label: "Lens",
+    className: "global-nav-link-lens",
+    ariaLabel: "Open global intelligence lens",
+    activeViews: ["lens", "news", "article", "answer"],
+    onSelect: ({ onHome }) => onHome(),
+  },
+  {
+    id: "markets",
+    label: "Indian Markets",
+    className: "global-nav-link-markets",
+    ariaLabel: "Open Indian Markets",
+    activeViews: ["markets"],
+    onSelect: ({ onMarkets }) => onMarkets(),
+  },
+  {
+    id: "earnings",
+    label: "Earnings",
+    className: "global-nav-link-earnings",
+    ariaLabel: "Open earnings",
+    activeViews: ["earnings"],
+    onSelect: ({ onEarnings }) => onEarnings(),
+  },
+  {
+    id: "screener",
+    label: "Screener",
+    className: "global-nav-link-screener",
+    ariaLabel: "Open screener",
+    activeViews: ["screener"],
+    onSelect: ({ onScreener }) => onScreener(),
+  },
+  {
+    id: "funds",
+    label: "Funds",
+    className: "global-nav-link-funds",
+    ariaLabel: "Open funds",
+    activeViews: ["funds"],
+    onSelect: ({ onFunds }) => onFunds(),
+  },
+  {
+    id: "watchlist",
+    label: "Watchlist",
+    className: "global-nav-link-watchlist",
+    ariaLabel: "Open watchlist",
+    activeViews: ["watchlist"],
+    onSelect: ({ onWatchlist }) => onWatchlist(),
+  },
+  {
+    id: "portfolio",
+    label: "Portfolio",
+    className: "global-nav-link-portfolio",
+    ariaLabel: "Open your portfolio",
+    activeViews: ["portfolio"],
+    onSelect: ({ onPortfolio }) => onPortfolio(),
+  },
+];
 
 export function GlobalBrandNav({
   activeView,
@@ -23,9 +94,17 @@ export function GlobalBrandNav({
   onWatchlist,
   onPortfolio,
 }: GlobalBrandNavProps) {
-  const isLensActive = !["markets", "earnings", "screener", "funds", "watchlist", "portfolio"].includes(activeView);
   const navLinksRef = useRef<HTMLDivElement | null>(null);
   const activeNavLinkRef = useRef<HTMLButtonElement | null>(null);
+  const navHandlers: GlobalBrandNavHandlers = {
+    onHome,
+    onMarkets,
+    onEarnings,
+    onFunds,
+    onScreener,
+    onWatchlist,
+    onPortfolio,
+  };
 
   useEffect(() => {
     const scrollActiveLinkIntoView = () => {
@@ -71,76 +150,23 @@ export function GlobalBrandNav({
         </button>
 
         <div className="global-nav-links" aria-label="Workspace sections" ref={navLinksRef}>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-lens${isLensActive ? " is-active" : ""}`}
-            ref={isLensActive ? activeNavLinkRef : undefined}
-            aria-label="Open global intelligence lens"
-            aria-current={isLensActive ? "page" : undefined}
-            onClick={onHome}
-          >
-            <span>Lens</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-markets${activeView === "markets" ? " is-active" : ""}`}
-            ref={activeView === "markets" ? activeNavLinkRef : undefined}
-            aria-label="Open Indian Markets"
-            aria-current={activeView === "markets" ? "page" : undefined}
-            onClick={onMarkets}
-          >
-            <span>Indian Markets</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-earnings${activeView === "earnings" ? " is-active" : ""}`}
-            ref={activeView === "earnings" ? activeNavLinkRef : undefined}
-            aria-label="Open earnings"
-            aria-current={activeView === "earnings" ? "page" : undefined}
-            onClick={() => onEarnings()}
-          >
-            <span>Earnings</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-screener${activeView === "screener" ? " is-active" : ""}`}
-            ref={activeView === "screener" ? activeNavLinkRef : undefined}
-            aria-label="Open screener"
-            aria-current={activeView === "screener" ? "page" : undefined}
-            onClick={() => onScreener()}
-          >
-            <span>Screener</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-funds${activeView === "funds" ? " is-active" : ""}`}
-            ref={activeView === "funds" ? activeNavLinkRef : undefined}
-            aria-label="Open funds"
-            aria-current={activeView === "funds" ? "page" : undefined}
-            onClick={onFunds}
-          >
-            <span>Funds</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-watchlist${activeView === "watchlist" ? " is-active" : ""}`}
-            ref={activeView === "watchlist" ? activeNavLinkRef : undefined}
-            aria-label="Open watchlist"
-            aria-current={activeView === "watchlist" ? "page" : undefined}
-            onClick={onWatchlist}
-          >
-            <span>Watchlist</span>
-          </button>
-          <button
-            type="button"
-            className={`global-nav-link global-nav-link-portfolio${activeView === "portfolio" ? " is-active" : ""}`}
-            ref={activeView === "portfolio" ? activeNavLinkRef : undefined}
-            aria-label="Open your portfolio"
-            aria-current={activeView === "portfolio" ? "page" : undefined}
-            onClick={onPortfolio}
-          >
-            <span>Portfolio</span>
-          </button>
+          {GLOBAL_NAV_ITEMS.map((item) => {
+            const isActive = item.activeViews.includes(activeView);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`global-nav-link ${item.className}${isActive ? " is-active" : ""}`}
+                ref={isActive ? activeNavLinkRef : undefined}
+                aria-label={item.ariaLabel}
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => item.onSelect(navHandlers)}
+              >
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="global-nav-actions" aria-label="Account actions">

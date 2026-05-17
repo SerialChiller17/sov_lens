@@ -152,21 +152,21 @@
   }
 
   .global-brand-nav {
-    top: 0.36rem;
-    width: min(calc(100vw - 1rem), 78rem);
+    top: 5.184px;
+    width: min(calc(100vw - 14.4px), 1123.2px);
   }
 
   .global-brand-shell {
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 0.4rem;
-    min-height: 2.44rem;
+    gap: 5.76px;
+    min-height: 35.136px;
     border-radius: 19px;
-    padding: 0.22rem;
+    padding: 3.168px;
   }
 
   .global-brand-button {
-    min-height: 1.88rem;
-    padding: 0 0.46rem 0 0.2rem;
+    min-height: 27.072px;
+    padding: 0 6.624px 0 2.88px;
   }
 
   .global-brand-wordmark span {
@@ -187,8 +187,8 @@
   .global-nav-link {
     flex: 0 0 auto;
     min-width: 0;
-    min-height: 1.7rem;
-    padding-inline: 0.46rem;
+    min-height: 24.48px;
+    padding-inline: 6.624px;
   }
 
   .global-nav-actions {

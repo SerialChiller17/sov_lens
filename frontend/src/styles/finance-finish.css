@@ -1,0 +1,3596 @@
+/*
+  Sovereign Lens non-globe finance finish.
+  Scope: portfolio-app finance routes, events/news/article routes, and AI answer route only.
+  Do not target `.global-monitor-app`, globe monitor files, or global app shell selectors here.
+*/
+
+.portfolio-app,
+.events-dashboard-shell,
+.news-article-shell,
+.ai-answer-shell {
+  --font-ui: "Satoshi", "IBM Plex Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", "Geist Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
+
+  --finance-bg: #050607;
+  --finance-bg-2: #07080a;
+  --finance-surface: #101113;
+  --finance-surface-2: #0b0c0e;
+  --finance-surface-3: #15171a;
+  --finance-border: rgba(255, 255, 255, 0.105);
+  --finance-border-strong: rgba(216, 216, 207, 0.2);
+  --finance-text: #f0efe7;
+  --finance-text-soft: #d7d7cf;
+  --finance-muted: #a1a8b3;
+  --finance-faint: #7e858f;
+  --finance-accent: #b86a4b;
+  --finance-accent-strong: #c24132;
+  --finance-accent-soft: rgba(184, 106, 75, 0.13);
+  --finance-positive: #72bf87;
+  --finance-negative: #e05f5b;
+  --finance-warning: #c87854;
+
+  --pf-bg: var(--finance-bg);
+  --pf-surface: var(--finance-surface);
+  --pf-surface-2: var(--finance-surface-2);
+  --pf-panel: var(--finance-surface);
+  --pf-line: var(--finance-border);
+  --pf-line-soft: rgba(255, 255, 255, 0.075);
+  --pf-text: var(--finance-text);
+  --pf-muted: var(--finance-muted);
+  --pf-faint: var(--finance-faint);
+  --pf-green: var(--finance-positive);
+  --pf-red: var(--finance-negative);
+  --pf-gold: var(--finance-accent);
+  --pf-blue: var(--finance-muted);
+
+  color: var(--finance-text);
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  text-rendering: geometricPrecision;
+}
+
+.portfolio-app {
+  background:
+    linear-gradient(rgba(215, 215, 207, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 215, 207, 0.014) 1px, transparent 1px),
+    radial-gradient(circle at 50% -12%, rgba(184, 106, 75, 0.045), transparent 30rem),
+    linear-gradient(180deg, var(--finance-bg-2), var(--finance-bg) 58%, #030405);
+  background-size:
+    5.5rem 5.5rem,
+    5.5rem 5.5rem,
+    auto,
+    auto;
+}
+
+.portfolio-app .portfolio-background-grid {
+  opacity: 0.24;
+  background:
+    linear-gradient(rgba(215, 215, 207, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 215, 207, 0.018) 1px, transparent 1px);
+  background-size: 4.5rem 4.5rem;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 78%);
+}
+
+.portfolio-app .portfolio-workspace-screen {
+  width: min(calc(100vw - 2rem), 82rem);
+  max-width: 82rem;
+  padding-top: 4.7rem;
+  padding-bottom: 4rem;
+}
+
+.portfolio-app-view-portfolio .portfolio-workspace-screen {
+  width: min(calc(100vw - 2rem), 84rem);
+  max-width: 84rem;
+}
+
+.portfolio-app-view-funds .portfolio-screen {
+  width: min(calc(100vw - 2rem), 84rem);
+  max-width: 84rem;
+  margin: 0 auto;
+  padding-top: 5.3rem !important;
+  padding-inline: 0 !important;
+}
+
+.portfolio-app .portfolio-finance-header,
+.portfolio-app .portfolio-cockpit-header {
+  display: grid;
+  grid-template-columns: max-content minmax(18rem, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 0;
+  margin: 0 0 1.05rem;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.portfolio-app .portfolio-cockpit-header {
+  grid-template-columns: max-content minmax(18rem, 1fr);
+}
+
+.portfolio-app .portfolio-finance-header-title {
+  min-width: 0;
+}
+
+.portfolio-app .portfolio-section-kicker,
+.portfolio-app .portfolio-panel-heading span,
+.portfolio-app .portfolio-workspace-panel-heading span,
+.portfolio-app .portfolio-page-meta,
+.portfolio-app .portfolio-source-row,
+.portfolio-app .portfolio-workspace-table th,
+.portfolio-app .portfolio-holdings-table th {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  letter-spacing: 0.04em;
+}
+
+.portfolio-app .portfolio-finance-header-title h1,
+.portfolio-app .portfolio-section-header h1,
+.portfolio-app .portfolio-workspace-hero h1 {
+  margin: 0;
+  color: var(--finance-text);
+  font-family: var(--font-ui);
+  font-size: clamp(1rem, 1.25vw, 1.24rem);
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.portfolio-app .portfolio-section-header h1[style],
+.portfolio-app-view-funds .portfolio-section-header h1 {
+  color: var(--finance-text) !important;
+  font-family: var(--font-ui) !important;
+  font-size: clamp(1.45rem, 2.2vw, 2rem) !important;
+  line-height: 1.02 !important;
+  text-shadow: none !important;
+}
+
+.portfolio-app .portfolio-finance-header-title p,
+.portfolio-app .portfolio-section-header p,
+.portfolio-app .portfolio-workspace-hero p,
+.portfolio-app .portfolio-panel-heading p,
+.portfolio-app .portfolio-read-panel p,
+.portfolio-app .portfolio-ai-panel p,
+.portfolio-app .portfolio-rail-copy,
+.portfolio-app .portfolio-table-reason,
+.portfolio-app .portfolio-table-note-cell span,
+.portfolio-app .fund-selected-chip-main span,
+.portfolio-app .fund-picker-option-main span {
+  color: var(--finance-muted);
+}
+
+.portfolio-app .portfolio-section-header p[style],
+.portfolio-app-view-funds .portfolio-section-header p {
+  color: var(--finance-muted) !important;
+  font-family: var(--font-ui) !important;
+  text-shadow: none !important;
+}
+
+.portfolio-app .portfolio-page-meta,
+.portfolio-app .portfolio-ai-status-pill,
+.portfolio-app .portfolio-market-status,
+.portfolio-app .portfolio-status-sync-button,
+.portfolio-app .portfolio-table-chip,
+.portfolio-app .portfolio-table-signal,
+.portfolio-app .portfolio-risk-pill,
+.portfolio-app .portfolio-chart-summary-badge,
+.portfolio-app .portfolio-source-row span,
+.portfolio-app .market-summary-sources-pill,
+.portfolio-app .portfolio-development-evidence,
+.portfolio-app .ai-evidence-pill {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-app .portfolio-ai-status-pill strong,
+.portfolio-app .portfolio-market-status strong {
+  color: var(--finance-text-soft);
+}
+
+.portfolio-app .portfolio-ai-status-pill b,
+.portfolio-app .portfolio-market-status span {
+  color: var(--finance-faint);
+}
+
+.portfolio-app .portfolio-finance-search,
+.portfolio-app .portfolio-cockpit-search,
+.portfolio-app .portfolio-search-control,
+.portfolio-app .portfolio-select-control,
+.portfolio-app .fund-picker-search,
+.portfolio-app .events-search input {
+  border-color: var(--finance-border);
+  border-radius: 8px;
+  color: var(--finance-text);
+  background: #08090b;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.045);
+}
+
+.portfolio-app .portfolio-finance-search,
+.portfolio-app .portfolio-cockpit-search {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--finance-border);
+  padding: 0 0.62rem;
+}
+
+.portfolio-app .portfolio-finance-search input,
+.portfolio-app .portfolio-cockpit-search input {
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.portfolio-app .portfolio-finance-search input,
+.portfolio-app .portfolio-search-control input,
+.portfolio-app .portfolio-select-control select,
+.portfolio-app .fund-picker-search input {
+  color: var(--finance-text);
+  font-family: var(--font-ui);
+}
+
+.portfolio-app .portfolio-finance-search input::placeholder,
+.portfolio-app .portfolio-search-control input::placeholder,
+.portfolio-app .fund-picker-search input::placeholder {
+  color: rgba(161, 168, 179, 0.72);
+}
+
+.portfolio-app .portfolio-finance-search:focus-within,
+.portfolio-app .portfolio-search-control:focus-within,
+.portfolio-app .portfolio-select-control:focus-within,
+.portfolio-app .fund-picker-search:focus-within {
+  border-color: rgba(184, 106, 75, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 0 0 2px rgba(184, 106, 75, 0.13);
+}
+
+.portfolio-app .portfolio-finance-grid,
+.portfolio-app .portfolio-workspace-command-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 21rem);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.portfolio-app .portfolio-finance-main,
+.portfolio-app .portfolio-finance-rail {
+  min-width: 0;
+}
+
+.portfolio-app .portfolio-workspace-split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.portfolio-app .portfolio-value-panel,
+.portfolio-app .portfolio-glass-panel,
+.portfolio-app .portfolio-workspace-panel,
+.portfolio-app .portfolio-ai-panel,
+.portfolio-app .portfolio-read-panel,
+.portfolio-app .portfolio-primary-action-module,
+.portfolio-app .portfolio-today-moved-module,
+.portfolio-app .portfolio-diagnosis-module,
+.portfolio-app .portfolio-risk-radar,
+.portfolio-app .portfolio-market-signal-list,
+.portfolio-app .portfolio-sector-exposure,
+.portfolio-app .portfolio-status-strip,
+.portfolio-app .portfolio-analysis-summary-strip,
+.portfolio-app .portfolio-workspace-metric,
+.portfolio-app .portfolio-index-card,
+.portfolio-app .portfolio-action-card,
+.portfolio-app .portfolio-alert-list article,
+.portfolio-app .portfolio-market-summary-panel,
+.portfolio-app .market-summary-card,
+.portfolio-app .portfolio-development-card,
+.portfolio-app .portfolio-table-note-cell,
+.portfolio-app .portfolio-rail-mini-table div,
+.portfolio-app .portfolio-diagnosis-grid article,
+.portfolio-app .portfolio-primary-action-facts article,
+.portfolio-app .portfolio-funds-panel,
+.portfolio-app .fund-compare-tray,
+.portfolio-app .fund-selected-chip,
+.portfolio-app .fund-picker-menu,
+.portfolio-app .fund-picker-option,
+.portfolio-app .fund-picker-selection-row,
+.portfolio-app .fund-performance-stat-card,
+.portfolio-app .fund-comparison-matrix,
+.portfolio-app .fund-comparison-matrix-row,
+.portfolio-app .fund-performance-shell,
+.portfolio-app .portfolio-ai-block article {
+  border-color: var(--finance-border) !important;
+  border-radius: 8px;
+  color: var(--finance-text);
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.94), rgba(11, 12, 14, 0.96)),
+    var(--finance-surface) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.048),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: none !important;
+}
+
+.portfolio-app .portfolio-value-panel,
+.portfolio-app .portfolio-primary-action-module {
+  border-color: rgba(184, 106, 75, 0.28) !important;
+  background:
+    linear-gradient(90deg, rgba(184, 106, 75, 0.12), transparent 46%),
+    linear-gradient(180deg, rgba(22, 24, 27, 0.96), rgba(10, 11, 13, 0.98)),
+    var(--finance-surface) !important;
+}
+
+.portfolio-app .portfolio-primary-action-module {
+  box-shadow:
+    inset 3px 0 0 rgba(184, 106, 75, 0.9),
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 1rem 2.2rem rgba(0, 0, 0, 0.32) !important;
+}
+
+.portfolio-app .portfolio-section-header,
+.portfolio-app .portfolio-panel-heading,
+.portfolio-app .portfolio-workspace-panel-heading {
+  align-items: start;
+}
+
+.portfolio-app .portfolio-panel-heading h2,
+.portfolio-app .portfolio-panel-heading strong,
+.portfolio-app .portfolio-workspace-panel-heading h2,
+.portfolio-app .portfolio-workspace-panel-heading strong,
+.portfolio-app .portfolio-ai-panel h2,
+.portfolio-app .portfolio-read-panel h2,
+.portfolio-app .portfolio-primary-action-main h2,
+.portfolio-app .portfolio-diagnosis-module h2,
+.portfolio-app .portfolio-risk-radar h2,
+.portfolio-app .portfolio-market-signal-list h2,
+.portfolio-app .portfolio-value-total,
+.portfolio-app .portfolio-index-card h3,
+.portfolio-app .portfolio-workspace-metric strong,
+.portfolio-app .portfolio-table-value,
+.portfolio-app .portfolio-holdings-table strong,
+.portfolio-app .portfolio-workspace-table strong,
+.portfolio-app .fund-selected-chip-main strong,
+.portfolio-app .fund-picker-option-main strong,
+.portfolio-app .fund-comparison-matrix-name strong {
+  color: var(--finance-text) !important;
+  text-shadow: none !important;
+}
+
+.portfolio-app .portfolio-product-metric-strip,
+.portfolio-app .portfolio-primary-action-facts,
+.portfolio-app .portfolio-diagnosis-grid,
+.portfolio-app .portfolio-analysis-summary-strip {
+  gap: 0;
+}
+
+.portfolio-app .portfolio-product-metric-strip > *,
+.portfolio-app .portfolio-primary-action-facts article,
+.portfolio-app .portfolio-diagnosis-grid article,
+.portfolio-app .portfolio-workspace-metric {
+  border-left: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: inset 1px 0 0 var(--finance-border) !important;
+}
+
+.portfolio-app .portfolio-product-metric-strip > *:first-child,
+.portfolio-app .portfolio-primary-action-facts article:first-child,
+.portfolio-app .portfolio-diagnosis-grid article:first-child {
+  box-shadow: none !important;
+}
+
+.portfolio-app .portfolio-sync-button,
+.portfolio-app .portfolio-primary-action-buttons button,
+.portfolio-app .portfolio-action-card-buttons button,
+.portfolio-app .portfolio-table-button-group button,
+.portfolio-app .portfolio-icon-text-action,
+.portfolio-app .portfolio-icon-action,
+.portfolio-app .portfolio-stage-tabs,
+.portfolio-app .portfolio-stage-tabs button,
+.portfolio-app .portfolio-segmented-control,
+.portfolio-app .portfolio-segmented-control button,
+.portfolio-app .portfolio-preset-row button,
+.portfolio-app .portfolio-holding-filter-row button,
+.portfolio-app .fund-picker-filters button,
+.portfolio-app .fund-selected-chip button,
+.portfolio-app .fund-picker-selection-row button,
+.portfolio-app .monitor-cta-button {
+  border-color: var(--finance-border) !important;
+  color: var(--finance-muted) !important;
+  background: #0b0c0e !important;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.04) !important;
+  text-shadow: none !important;
+}
+
+.portfolio-app .portfolio-primary-action-buttons button:hover,
+.portfolio-app .portfolio-action-card-buttons button:hover,
+.portfolio-app .portfolio-table-button-group button:hover,
+.portfolio-app .portfolio-icon-text-action:hover,
+.portfolio-app .portfolio-icon-action:hover,
+.portfolio-app .portfolio-preset-row button:hover,
+.portfolio-app .portfolio-holding-filter-row button:hover,
+.portfolio-app .fund-picker-filters button:hover,
+.portfolio-app .portfolio-primary-action-buttons button:focus-visible,
+.portfolio-app .portfolio-action-card-buttons button:focus-visible,
+.portfolio-app .portfolio-table-button-group button:focus-visible,
+.portfolio-app .portfolio-icon-text-action:focus-visible,
+.portfolio-app .portfolio-icon-action:focus-visible,
+.portfolio-app .portfolio-preset-row button:focus-visible,
+.portfolio-app .portfolio-holding-filter-row button:focus-visible,
+.portfolio-app .fund-picker-filters button:focus-visible,
+.portfolio-app .portfolio-stage-tabs button.is-active,
+.portfolio-app .portfolio-segmented-control button.is-active,
+.portfolio-app .portfolio-preset-row button.is-active,
+.portfolio-app .portfolio-holding-filter-row button.is-active,
+.portfolio-app .fund-picker-filters button.is-active {
+  border-color: rgba(184, 106, 75, 0.46) !important;
+  color: var(--finance-text) !important;
+  background: var(--finance-accent-soft) !important;
+}
+
+.portfolio-app .portfolio-primary-action-buttons button.is-primary,
+.portfolio-app .portfolio-action-card-cta,
+.portfolio-app .monitor-cta-button {
+  border-color: rgba(184, 106, 75, 0.52) !important;
+  color: var(--finance-text) !important;
+  background:
+    linear-gradient(180deg, rgba(184, 106, 75, 0.34), rgba(159, 74, 56, 0.2)),
+    #13100f !important;
+}
+
+.portfolio-app .portfolio-icon-action svg,
+.portfolio-app .portfolio-status-sync-button svg,
+.portfolio-app .portfolio-finance-search svg,
+.portfolio-app .portfolio-search-control svg,
+.portfolio-app .portfolio-select-control svg {
+  color: var(--finance-faint);
+  stroke-width: 1.7;
+}
+
+.portfolio-app .portfolio-icon-action.is-active svg {
+  color: var(--finance-accent);
+}
+
+.portfolio-app .portfolio-workspace-table,
+.portfolio-app .portfolio-holdings-table {
+  width: 100%;
+  min-width: 52rem;
+  border-color: var(--finance-border) !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--finance-text-soft);
+  background: var(--finance-surface-2) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-app .portfolio-table-panel,
+.portfolio-app .portfolio-holdings-table-shell {
+  overflow-x: auto;
+}
+
+.portfolio-app .portfolio-workspace-table th,
+.portfolio-app .portfolio-workspace-table td,
+.portfolio-app .portfolio-holdings-table th,
+.portfolio-app .portfolio-holdings-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.075) !important;
+  padding: 0.54rem 0.62rem;
+}
+
+.portfolio-app .portfolio-workspace-table th,
+.portfolio-app .portfolio-holdings-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  color: var(--finance-faint) !important;
+  background: #101113 !important;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.portfolio-app .portfolio-workspace-table td,
+.portfolio-app .portfolio-holdings-table td {
+  color: var(--finance-muted) !important;
+  font-size: 0.74rem;
+}
+
+.portfolio-app .portfolio-workspace-table td strong,
+.portfolio-app .portfolio-holdings-table td strong {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+}
+
+/* Component fit pass: route-scoped finance screens only. Keeps dense tables and
+   metadata controls compact without touching the locked globe route. */
+.portfolio-app .portfolio-page-meta,
+.portfolio-app .portfolio-source-row span,
+.portfolio-app .market-summary-sources-pill,
+.portfolio-app .portfolio-development-evidence,
+.portfolio-app .ai-evidence-pill,
+.news-article-evidence-row span,
+.ai-answer-summary-meta em,
+.ai-answer-inline-citations em,
+.ai-answer-section-citations em,
+.ai-answer-inspect-next button,
+.ai-answer-inspect-next span {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  min-height: 1.16rem;
+  padding: 0.11rem 0.42rem !important;
+  font-family: var(--font-data);
+  font-size: 0.55rem !important;
+  font-weight: 600;
+  line-height: 1 !important;
+  letter-spacing: 0.018em;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.portfolio-app .portfolio-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 0.34rem;
+  width: auto;
+}
+
+.portfolio-app .portfolio-risk-pill,
+.portfolio-app .portfolio-table-chip,
+.portfolio-app .portfolio-table-signal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  min-width: 0 !important;
+  min-height: 1.18rem;
+  padding: 0.12rem 0.42rem !important;
+  font-size: 0.58rem !important;
+  line-height: 1 !important;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.portfolio-app .portfolio-workspace-table .is-numeric,
+.portfolio-app .portfolio-holdings-table td:nth-child(n + 2):not(:last-child),
+.portfolio-app .portfolio-holdings-table th:nth-child(n + 2):not(:last-child),
+.portfolio-app .portfolio-chart-readout strong,
+.portfolio-app .portfolio-value-total,
+.portfolio-app .portfolio-index-card strong,
+.portfolio-app .portfolio-workspace-metric strong,
+.portfolio-app .portfolio-market-status,
+.portfolio-app .portfolio-source-row,
+.portfolio-app .fund-comparison-matrix-row,
+.portfolio-app .fund-performance-stat-card {
+  font-family: var(--font-data) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-app .portfolio-workspace-table tbody tr,
+.portfolio-app .portfolio-holdings-table tbody tr {
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.portfolio-app .portfolio-workspace-table tbody tr:hover,
+.portfolio-app .portfolio-workspace-table tbody tr.is-selected,
+.portfolio-app .portfolio-holdings-table tbody tr:hover {
+  background: rgba(184, 106, 75, 0.07) !important;
+  box-shadow: inset 2px 0 0 rgba(184, 106, 75, 0.62) !important;
+}
+
+.portfolio-app .portfolio-table-chip {
+  padding: 0.15rem 0.4rem;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.portfolio-app .portfolio-table-chip.risk-high,
+.portfolio-app .portfolio-risk-pill.risk-high {
+  color: var(--finance-warning) !important;
+}
+
+.portfolio-app .portfolio-table-chip.risk-medium,
+.portfolio-app .portfolio-risk-pill.risk-medium {
+  color: var(--finance-muted) !important;
+}
+
+.portfolio-app .portfolio-table-chip.risk-low,
+.portfolio-app .portfolio-risk-pill.risk-low {
+  color: var(--finance-positive) !important;
+}
+
+.portfolio-app .portfolio-workspace-table .portfolio-table-note-cell {
+  border: 0 !important;
+  border-radius: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app .portfolio-workspace-table .portfolio-table-reason,
+.portfolio-app .portfolio-workspace-table .portfolio-table-note-cell span {
+  max-width: none;
+  margin: 0;
+  color: var(--finance-muted) !important;
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  line-height: 1.34;
+  text-transform: none;
+}
+
+.portfolio-app .portfolio-workspace-table .portfolio-table-note-cell button,
+.portfolio-app .portfolio-workspace-table .portfolio-icon-text-action,
+.portfolio-app .portfolio-workspace-table .portfolio-table-button-group button {
+  min-height: 1.45rem;
+  padding: 0.14rem 0.45rem;
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.portfolio-app .portfolio-workspace-table .portfolio-icon-action {
+  width: 1.45rem;
+  height: 1.45rem;
+  min-width: 1.45rem;
+}
+
+.portfolio-app .portfolio-workspace-table .portfolio-icon-action svg {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.portfolio-app .portfolio-sort-indicator {
+  display: inline-grid;
+  place-items: center;
+  width: 0.58rem;
+  margin-left: 0.14rem;
+  overflow: hidden;
+  color: var(--finance-accent);
+  font-size: 0;
+}
+
+.portfolio-app .portfolio-sort-indicator::after {
+  content: "↓";
+  font-size: 0.56rem;
+  line-height: 1;
+}
+
+.portfolio-app .portfolio-workspace-table th button[aria-label*="ascending"] .portfolio-sort-indicator::after {
+  content: "↑";
+}
+
+.portfolio-app-view-watchlist .portfolio-table-panel,
+.portfolio-app-view-screener .portfolio-table-panel {
+  padding: 0.62rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table,
+.portfolio-app-view-screener .portfolio-screener-table {
+  min-width: 0 !important;
+  table-layout: fixed;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th,
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td,
+.portfolio-app-view-screener .portfolio-screener-table th,
+.portfolio-app-view-screener .portfolio-screener-table td {
+  padding: 0.46rem 0.5rem;
+  vertical-align: middle;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th,
+.portfolio-app-view-screener .portfolio-screener-table th {
+  font-size: 0.56rem;
+  line-height: 1.15;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td,
+.portfolio-app-view-screener .portfolio-screener-table td {
+  font-size: 0.66rem;
+  line-height: 1.26;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td strong,
+.portfolio-app-view-screener .portfolio-screener-table td strong {
+  font-size: 0.72rem;
+  line-height: 1.18;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(1),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(1) {
+  width: 34%;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(2),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(2) {
+  width: 12%;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(3),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(3),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(4),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(4) {
+  width: 8%;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(5),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(5) {
+  width: 18%;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(6),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(6) {
+  width: 20%;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell {
+  grid-template-columns: 1.45rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.42rem 0.5rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell .portfolio-company-avatar {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: 0.5rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell > div:not(.portfolio-table-actions) span {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.14rem;
+  overflow: hidden;
+  color: var(--finance-faint) !important;
+  font-size: 0.56rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-actions {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.24rem;
+  margin-top: 0.24rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-reason,
+.portfolio-app-view-watchlist .portfolio-table-note-cell span,
+.portfolio-app-view-screener .portfolio-table-reason {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-reason,
+.portfolio-app-view-watchlist .portfolio-table-note-cell span {
+  -webkit-line-clamp: 3;
+}
+
+.portfolio-app-view-screener .portfolio-table-reason {
+  -webkit-line-clamp: 2;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-note-cell {
+  gap: 0.32rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-note-cell button {
+  width: max-content;
+}
+
+.portfolio-app-view-screener .portfolio-workspace-screen {
+  width: min(calc(100vw - 2rem), 86rem);
+  max-width: 86rem;
+}
+
+.portfolio-app-view-screener .portfolio-finance-header {
+  grid-template-columns: max-content minmax(24rem, 1fr);
+  gap: 0.72rem;
+  margin-bottom: 0.82rem;
+}
+
+.portfolio-app-view-screener .portfolio-finance-header.is-search-hidden {
+  grid-template-columns: max-content;
+  margin-bottom: 0.46rem;
+}
+
+.portfolio-app-view-screener .portfolio-finance-search {
+  min-height: 2.32rem;
+  max-width: 100%;
+}
+
+.portfolio-app-view-screener .portfolio-finance-search input {
+  font-size: 0.78rem;
+}
+
+.portfolio-app-view-screener .portfolio-finance-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 20rem);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-shell {
+  margin: 0 0 0.72rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.38rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-heading h2 {
+  margin: 0;
+  color: var(--finance-text-soft);
+  font-size: 0.96rem;
+  font-weight: 640;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-heading span {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  min-height: 5.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  padding: 0.9rem 1rem 0.9rem 1.18rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012)),
+    #171717;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.05),
+    0 0.8rem 1.8rem rgba(0, 0, 0, 0.24);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer:focus-within {
+  border-color: rgba(216, 216, 207, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.07),
+    0 0 0 1px rgba(184, 106, 75, 0.16),
+    0 0.8rem 1.8rem rgba(0, 0, 0, 0.26);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer textarea {
+  width: 100%;
+  min-height: 3.4rem;
+  border: 0;
+  padding: 0;
+  resize: none;
+  color: var(--finance-text-soft);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: clamp(0.98rem, 1.35vw, 1.28rem);
+  font-weight: 450;
+  line-height: 1.35;
+  outline: none;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer textarea::placeholder {
+  color: rgba(161, 168, 179, 0.68);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer button {
+  display: inline-grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #111;
+  background: var(--finance-text-soft);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer button:hover,
+.portfolio-app-view-screener .portfolio-screener-query-composer button:focus-visible {
+  outline: none;
+  border-color: rgba(184, 106, 75, 0.5);
+  background: #f0efe7;
+  transform: translateY(-1px);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer button:disabled {
+  cursor: wait;
+  color: rgba(15, 15, 15, 0.72);
+  background: rgba(215, 215, 207, 0.74);
+  transform: none;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer svg {
+  width: 1.02rem;
+  height: 1.02rem;
+  stroke-width: 2;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-spinner {
+  width: 1.08rem;
+  height: 1.08rem;
+  border: 2px solid rgba(10, 10, 10, 0.24);
+  border-top-color: rgba(10, 10, 10, 0.78);
+  border-radius: 50%;
+  animation: portfolio-screener-query-spin 760ms linear infinite;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-preview {
+  display: flex;
+  min-height: 5.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  overflow: hidden;
+  margin-top: 0.58rem;
+  border: 1px solid var(--finance-border);
+  border-radius: 14px;
+  padding: 0.82rem 1rem;
+  color: var(--finance-muted);
+  background:
+    radial-gradient(circle, rgba(215, 215, 207, 0.14) 1px, transparent 1.8px),
+    linear-gradient(180deg, rgba(19, 20, 22, 0.82), rgba(12, 13, 15, 0.92));
+  background-size:
+    2.05rem 2.05rem,
+    auto;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-preview.is-screening {
+  color: var(--finance-text-soft);
+  border-color: rgba(216, 216, 207, 0.22);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-preview > span {
+  color: inherit;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.38rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-examples button {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.48rem;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  font-size: 0.62rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-examples button:hover,
+.portfolio-app-view-screener .portfolio-screener-query-examples button:focus-visible {
+  outline: none;
+  border-color: rgba(184, 106, 75, 0.48);
+  color: var(--finance-text);
+  background: rgba(184, 106, 75, 0.1);
+}
+
+.portfolio-app-view-screener .portfolio-screener-control-bar {
+  grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.portfolio-app-view-screener .portfolio-screener-active-read {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.34rem 0.62rem;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.025);
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-screener .portfolio-screener-active-read span {
+  color: var(--finance-faint);
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-screener .portfolio-screener-active-read strong {
+  overflow: hidden;
+  color: var(--finance-text-soft) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library,
+.portfolio-app-view-screener .portfolio-screener-sector-cloud {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0.62rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button,
+.portfolio-app-view-screener .portfolio-screener-sector-cloud button {
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button {
+  padding: 0.5rem 0.56rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button strong,
+.portfolio-app-view-screener .portfolio-screener-library button span {
+  display: block;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button strong {
+  color: var(--finance-text-soft) !important;
+  font-size: 0.68rem;
+  line-height: 1.16;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button span {
+  margin-top: 0.14rem;
+  color: var(--finance-faint);
+  font-size: 0.6rem;
+  line-height: 1.25;
+}
+
+.portfolio-app-view-screener .portfolio-screener-sector-cloud {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portfolio-app-view-screener .portfolio-screener-sector-cloud button {
+  overflow: hidden;
+  padding: 0.24rem 0.42rem;
+  font-size: 0.58rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-screener .portfolio-screener-library button:hover,
+.portfolio-app-view-screener .portfolio-screener-library button:focus-visible,
+.portfolio-app-view-screener .portfolio-screener-library button.is-active,
+.portfolio-app-view-screener .portfolio-screener-sector-cloud button:hover,
+.portfolio-app-view-screener .portfolio-screener-sector-cloud button:focus-visible,
+.portfolio-app-view-screener .portfolio-screener-sector-cloud button.is-active {
+  outline: none;
+  border-color: rgba(184, 106, 75, 0.46);
+  color: var(--finance-text);
+  background: rgba(184, 106, 75, 0.1);
+}
+
+.portfolio-app-view-screener .portfolio-screener-table {
+  min-width: 58rem !important;
+  table-layout: fixed;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th,
+.portfolio-app-view-screener .portfolio-screener-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(1),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) {
+  width: 28%;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(2),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(2) {
+  width: 14%;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(3),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(3),
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(4),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(4),
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(5),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(5),
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(6),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(6),
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(7),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(7) {
+  width: 8%;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(8),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(8) {
+  width: 8.5%;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table th:nth-child(9),
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(9) {
+  width: 9.5%;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) strong,
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) span,
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) span {
+  margin-top: 0.12rem;
+  color: var(--finance-faint) !important;
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-screener .portfolio-screener-row-note {
+  display: -webkit-box !important;
+  margin-top: 0.24rem;
+  color: var(--finance-muted);
+  font-size: 0.62rem;
+  font-style: normal;
+  line-height: 1.28;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.portfolio-app-view-screener .portfolio-screener-table td:nth-child(2) {
+  white-space: normal;
+}
+
+.portfolio-app-view-screener .portfolio-table-button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.24rem;
+}
+
+.portfolio-app-view-screener .portfolio-table-button-group button {
+  padding-inline: 0.42rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-panel,
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-panel {
+  padding-top: 0.05rem !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list,
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list {
+  overflow: hidden;
+  border: 1px solid var(--finance-border);
+  border-radius: 10px;
+  margin-top: 0.58rem;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.84), rgba(7, 8, 10, 0.92)),
+    var(--finance-surface-2);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.04),
+    0 0.65rem 1.35rem rgba(0, 0, 0, 0.2);
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  min-height: 2.18rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.072);
+  padding: 0.52rem 0.68rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list > div:last-child {
+  border-bottom: 0;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list span,
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list strong {
+  overflow: hidden;
+  font-family: var(--font-data);
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list span {
+  color: var(--finance-faint);
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-pulse-list strong {
+  max-width: 58%;
+  color: var(--finance-text-soft) !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: right;
+  letter-spacing: 0.015em;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list article {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0.72rem 0.78rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list article + article {
+  border-top: 1px solid rgba(255, 255, 255, 0.072) !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list article > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list strong {
+  color: var(--finance-text-soft) !important;
+  font-family: var(--font-data);
+  font-size: 0.74rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list article span {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  color: var(--finance-faint);
+  background: rgba(255, 255, 255, 0.028);
+  font-family: var(--font-data);
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list p {
+  margin: 0.42rem 0 0;
+  color: var(--finance-muted);
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-alert-list .portfolio-rail-copy {
+  padding: 0.72rem 0.78rem;
+}
+
+@media (max-width: 1080px) {
+  .portfolio-app-view-screener .portfolio-table-panel {
+    overflow-x: auto;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table {
+    min-width: 58rem !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .portfolio-app-view-screener .portfolio-screener-query-heading,
+  .portfolio-app-view-screener .portfolio-screener-query-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-query-composer {
+    min-height: 5.15rem;
+    border-radius: 14px;
+    padding: 0.78rem 0.82rem;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-query-examples {
+    justify-content: flex-start;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table {
+    min-width: 0 !important;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th,
+  .portfolio-app-view-screener .portfolio-screener-table td {
+    padding-inline: 0.42rem;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(3),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(3),
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(5),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(5) {
+    display: none;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(1),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(1) {
+    width: 31%;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(2),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(2) {
+    width: 16%;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(4),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(4) {
+    width: 12%;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(6),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(6),
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(7),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(7),
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(8),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(8) {
+    width: 10%;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-table th:nth-child(9),
+  .portfolio-app-view-screener .portfolio-screener-table td:nth-child(9) {
+    width: 11%;
+  }
+
+  .portfolio-app-view-screener .portfolio-screener-row-note {
+    font-size: 0.58rem;
+  }
+}
+
+/* Section deboxing pass: non-globe finance routes only. These selectors turn
+   outer section wrappers into layout containers so headers sit on the page
+   plane; actual data surfaces below retain the graphite panel treatment. */
+.portfolio-app .portfolio-workspace-panel:has(> .portfolio-workspace-panel-heading:first-child):not(.portfolio-read-panel):not(.portfolio-ai-panel):not(.portfolio-value-panel):not(.portfolio-primary-action-module),
+.portfolio-app .portfolio-market-summary-panel {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading {
+  align-items: end !important;
+  margin: 0 0 0.58rem;
+  padding: 0;
+}
+
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child h2,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading h2 {
+  font-size: clamp(1rem, 1.05vw, 1.12rem);
+  line-height: 1.04;
+}
+
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child span,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading span {
+  line-height: 1;
+}
+
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child strong,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading strong {
+  min-height: 0;
+  align-self: end;
+  padding: 0.14rem 0.45rem;
+  color: var(--finance-muted) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+  font-size: 0.62rem;
+  line-height: 1.05;
+}
+
+.portfolio-app .portfolio-market-overview-panel .portfolio-index-grid,
+.portfolio-app .portfolio-earnings-command-panel .portfolio-product-metric-strip,
+.portfolio-app .portfolio-holdings-exposure-panel .portfolio-holdings-table-shell,
+.portfolio-app .portfolio-chart-card .portfolio-chart-stage,
+.portfolio-app .portfolio-market-summary-panel .market-summary-card {
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.92), rgba(8, 9, 11, 0.96)),
+    var(--finance-surface-2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.04),
+    0 0.7rem 1.45rem rgba(0, 0, 0, 0.24) !important;
+}
+
+.portfolio-app .portfolio-market-overview-panel .portfolio-index-grid,
+.portfolio-app .portfolio-earnings-command-panel .portfolio-product-metric-strip,
+.portfolio-app .portfolio-holdings-exposure-panel .portfolio-holdings-table-shell {
+  border: 1px solid var(--finance-border);
+}
+
+.portfolio-app .portfolio-market-overview-panel .portfolio-index-grid {
+  padding: 0.7rem;
+}
+
+.portfolio-app .portfolio-earnings-command-panel .portfolio-product-metric-strip {
+  overflow: hidden;
+}
+
+.portfolio-app .portfolio-earnings-command-panel .portfolio-earnings-day-strip {
+  margin-top: 0.62rem;
+}
+
+.portfolio-app .portfolio-earnings-command-panel .portfolio-filter-bar,
+.portfolio-app .portfolio-watchlist-command-panel .portfolio-filter-bar {
+  margin-top: 0.62rem;
+}
+
+.portfolio-app .portfolio-market-pulse-panel .portfolio-breadth-grid {
+  gap: 0.46rem;
+}
+
+.portfolio-app .portfolio-market-pulse-panel .portfolio-breadth-grid .portfolio-workspace-metric,
+.portfolio-app .portfolio-market-pulse-panel .portfolio-flow-strip {
+  border: 1px solid var(--finance-border) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.9), rgba(8, 9, 11, 0.94)),
+    var(--finance-surface-2) !important;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.04) !important;
+}
+
+.portfolio-app .portfolio-market-pulse-panel .portfolio-breadth-grid .portfolio-workspace-metric {
+  padding: 0.58rem;
+}
+
+.portfolio-app .portfolio-market-pulse-panel .portfolio-flow-strip {
+  margin-top: 0.48rem;
+}
+
+.portfolio-app .portfolio-market-summary-panel {
+  display: grid;
+  gap: 0;
+}
+
+.portfolio-app .market-summary-trigger {
+  min-height: 2.84rem;
+  padding: 0.62rem 0.85rem;
+}
+
+.portfolio-app .market-summary-trigger span {
+  font-size: clamp(0.86rem, 0.96vw, 1rem);
+  line-height: 1.2;
+}
+
+.portfolio-app .market-summary-answer-inner {
+  padding: 0 0.85rem 0.72rem;
+}
+
+.portfolio-app .market-summary-answer p {
+  font-size: 0.86rem;
+  line-height: 1.42;
+}
+
+.portfolio-app .market-summary-card-footer {
+  padding: 0.52rem 0.85rem 0.64rem;
+}
+
+/* Redundancy cleanup: non-globe finance routes only. Keeps section headers on
+   the page plane, removes badge-like header chrome, and tightens repeated
+   context panels now that route command/search carries the page state. */
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child strong,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading strong,
+.portfolio-app .portfolio-panel-heading strong {
+  border: 0 !important;
+  padding: 0 !important;
+  color: var(--finance-faint) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-data);
+  font-size: 0.58rem !important;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel {
+  border: 1px solid var(--finance-border) !important;
+  border-radius: 8px !important;
+  padding: 0.72rem 0.84rem !important;
+  background:
+    linear-gradient(90deg, rgba(184, 106, 75, 0.07), transparent 40%),
+    linear-gradient(180deg, rgba(17, 19, 22, 0.88), rgba(7, 8, 10, 0.92)),
+    var(--finance-surface-2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.035),
+    0 0.55rem 1.1rem rgba(0, 0, 0, 0.18) !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel .portfolio-workspace-panel-heading {
+  margin-bottom: 0.36rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel .portfolio-workspace-panel-heading h2 {
+  max-width: 48rem;
+  font-size: clamp(0.9rem, 1.1vw, 1.04rem);
+  line-height: 1.15;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel p {
+  max-width: 58rem;
+  margin: 0;
+  color: var(--finance-text-soft) !important;
+  font-size: 0.76rem;
+  line-height: 1.42;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel .portfolio-source-row {
+  margin-top: 0.52rem;
+}
+
+.portfolio-app .portfolio-compact-action-row {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.38rem;
+  width: auto;
+  margin-top: 0.64rem;
+}
+
+.portfolio-app .portfolio-compact-action-row button {
+  width: auto !important;
+  min-height: 1.62rem !important;
+  padding: 0.22rem 0.62rem !important;
+}
+
+.portfolio-app .is-positive,
+.portfolio-app .is-positive strong,
+.portfolio-app .is-positive em,
+.portfolio-app .market-tape-item.up .market-tape-move {
+  color: var(--finance-positive) !important;
+}
+
+.portfolio-app .is-negative,
+.portfolio-app .is-negative strong,
+.portfolio-app .is-negative em,
+.portfolio-app .market-tape-item.down .market-tape-move {
+  color: var(--finance-negative) !important;
+}
+
+.portfolio-app .portfolio-chart-card,
+.portfolio-app .portfolio-performance-card {
+  min-width: 0;
+}
+
+.portfolio-app .portfolio-chart-stage {
+  min-height: 320px;
+  height: clamp(320px, 31vw, 390px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: #0a0b0d;
+}
+
+.portfolio-app-view-portfolio .portfolio-analysis-view .portfolio-chart-stage {
+  height: clamp(340px, 34vw, 430px);
+  min-height: 340px;
+}
+
+.portfolio-app .portfolio-chart-plot-bg {
+  fill: transparent;
+}
+
+.portfolio-app .portfolio-chart-grid {
+  stroke: rgba(215, 215, 207, 0.09) !important;
+  stroke-dasharray: 2 5;
+}
+
+.portfolio-app .portfolio-chart-baseline,
+.portfolio-app .portfolio-chart-active-guide {
+  stroke: rgba(215, 215, 207, 0.18) !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-line-glass {
+  stroke: rgba(114, 191, 135, 0.16) !important;
+  filter: none !important;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-line {
+  stroke: var(--finance-positive) !important;
+  stroke-width: 2.7 !important;
+  filter: none !important;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-benchmark-line {
+  stroke: rgba(161, 168, 179, 0.72) !important;
+  stroke-width: 1.5 !important;
+  stroke-dasharray: 7 8;
+}
+
+.portfolio-app .portfolio-chart-area {
+  opacity: 0.2;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-active-dot {
+  fill: var(--finance-positive) !important;
+  stroke: #050607 !important;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-benchmark-dot {
+  fill: var(--finance-muted) !important;
+  stroke: #050607 !important;
+}
+
+.portfolio-app .portfolio-chart-axis-label,
+.portfolio-app .portfolio-chart-direct-label {
+  fill: rgba(215, 215, 207, 0.66) !important;
+  font-family: var(--font-data) !important;
+  font-size: 10px;
+}
+
+.portfolio-app .portfolio-chart-direct-label.is-benchmark {
+  fill: rgba(161, 168, 179, 0.86) !important;
+}
+
+.portfolio-app .portfolio-chart-toolbar,
+.portfolio-app .portfolio-chart-readout,
+.portfolio-app .portfolio-chart-legend {
+  color: var(--finance-muted);
+}
+
+.portfolio-app .portfolio-chart-readout {
+  border-top: 1px solid var(--finance-border);
+}
+
+.portfolio-app .portfolio-chart-readout div {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-legend span::before {
+  background: var(--finance-positive) !important;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-legend .is-benchmark::before {
+  background: var(--finance-muted) !important;
+}
+
+.portfolio-app .portfolio-donut-track {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.portfolio-app .portfolio-donut-segment {
+  filter: none !important;
+}
+
+.portfolio-app .portfolio-donut-segment-sheen {
+  display: none;
+}
+
+.portfolio-app .portfolio-empty-state,
+.portfolio-app .portfolio-empty-row {
+  color: var(--finance-muted) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.portfolio-app .portfolio-finance-disclaimer {
+  color: var(--finance-faint);
+  font-family: var(--font-ui);
+  line-height: 1.45;
+}
+
+.portfolio-app .portfolio-source-row {
+  color: var(--finance-faint);
+}
+
+.portfolio-app .portfolio-source-row span,
+.portfolio-app .portfolio-movement-timeline span,
+.portfolio-app .market-summary-source-item,
+.portfolio-app .ai-answer-inline-citations em,
+.portfolio-app .ai-answer-section-citations em {
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-app .market-summary-trigger,
+.portfolio-app .portfolio-development-card {
+  color: var(--finance-text);
+  background: transparent;
+}
+
+.portfolio-app .market-summary-trigger:hover,
+.portfolio-app .market-summary-trigger:focus-visible,
+.portfolio-app .portfolio-development-card:hover,
+.portfolio-app .portfolio-development-card:focus-visible {
+  border-color: rgba(184, 106, 75, 0.42);
+  background: rgba(184, 106, 75, 0.06);
+}
+
+.portfolio-app .market-summary-answer p,
+.portfolio-app .portfolio-development-card p {
+  color: var(--finance-muted);
+}
+
+.portfolio-app .market-summary-sources-pill,
+.portfolio-app .portfolio-development-evidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.16rem 0.5rem;
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+}
+
+.portfolio-app .market-summary-source-icon,
+.portfolio-app .portfolio-development-source-stack span {
+  color: var(--finance-text);
+  background: #15171a;
+}
+
+.portfolio-app .market-tape.funds-market-tape {
+  border-color: var(--finance-border);
+  background:
+    linear-gradient(180deg, rgba(16, 17, 19, 0.95), rgba(7, 8, 10, 0.95)),
+    var(--finance-surface-2);
+}
+
+.portfolio-app .funds-market-tape .market-tape-status em {
+  margin-left: 0.4rem;
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.52rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.portfolio-app .market-tape-label,
+.portfolio-app .market-tape-status,
+.portfolio-app .market-tape-item strong {
+  color: var(--finance-muted);
+  font-family: var(--font-data);
+}
+
+.portfolio-app-view-funds .fund-picker-trigger.liquid-metal-button {
+  min-height: 1.82rem !important;
+  border: 1px solid var(--finance-border) !important;
+  border-radius: 999px !important;
+  padding: 0.2rem 0.55rem !important;
+  color: var(--finance-muted) !important;
+  background: #0b0c0e !important;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.045) !important;
+}
+
+.portfolio-app-view-funds .fund-picker-trigger.liquid-metal-button:hover,
+.portfolio-app-view-funds .fund-picker-trigger.liquid-metal-button:focus-visible {
+  border-color: rgba(184, 106, 75, 0.46) !important;
+  color: var(--finance-text) !important;
+  background: rgba(184, 106, 75, 0.08) !important;
+}
+
+.portfolio-app-view-funds .fund-picker-trigger .liquid-metal-button-shader,
+.portfolio-app-view-funds .fund-picker-trigger .liquid-metal-button-sheen,
+.portfolio-app-view-funds .fund-picker-trigger .liquid-metal-button-ripple {
+  display: none !important;
+}
+
+.portfolio-app-view-funds .fund-picker-trigger .liquid-metal-button-base {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-funds .fund-picker-trigger .liquid-metal-button-content {
+  position: relative;
+  z-index: 1;
+  gap: 0.3rem;
+  color: inherit;
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  letter-spacing: 0.02em;
+}
+
+.portfolio-app-view-funds .fund-picker-trigger svg {
+  width: 0.78rem;
+  height: 0.78rem;
+  color: var(--finance-faint);
+}
+
+.portfolio-app-view-funds .portfolio-section-header {
+  display: grid;
+  grid-template-columns: max-content minmax(18rem, 30rem);
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.75rem;
+}
+
+.portfolio-app-view-funds .portfolio-funds-command {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 2rem;
+  width: 100%;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0 0.62rem;
+  color: var(--finance-muted);
+  background: #08090b;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.045);
+  cursor: pointer;
+}
+
+.portfolio-app-view-funds .portfolio-funds-command:hover,
+.portfolio-app-view-funds .portfolio-funds-command:focus-visible {
+  border-color: rgba(184, 106, 75, 0.55);
+  color: var(--finance-text);
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 0 0 2px rgba(184, 106, 75, 0.13);
+}
+
+.portfolio-app-view-funds .portfolio-funds-command svg {
+  width: 0.86rem;
+  height: 0.86rem;
+  color: var(--finance-faint);
+  stroke-width: 1.7;
+}
+
+.portfolio-app-view-funds section.portfolio-glass-panel[aria-label="Fund comparison body"] {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-funds .portfolio-glass-panel[style],
+.portfolio-app-view-funds section[style*="preview"],
+.portfolio-app-view-funds .portfolio-dashboard {
+  border-color: var(--finance-border) !important;
+  color: var(--finance-text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.portfolio-app-view-funds button[style],
+.portfolio-app-view-funds [aria-label="Fund comparison tabs"] {
+  border-color: var(--finance-border) !important;
+  color: var(--finance-muted) !important;
+  background: #0b0c0e !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-funds button[aria-pressed="true"][style] {
+  border-color: rgba(184, 106, 75, 0.44) !important;
+  color: var(--finance-text) !important;
+  background: var(--finance-accent-soft) !important;
+}
+
+.portfolio-app-view-funds h2[style],
+.portfolio-app-view-funds p[style],
+.portfolio-app-view-funds span[style],
+.portfolio-app-view-funds strong[style],
+.portfolio-app-view-funds em[style] {
+  text-shadow: none !important;
+}
+
+.portfolio-app-view-funds h2[style],
+.portfolio-app-view-funds strong[style] {
+  color: var(--finance-text) !important;
+  font-family: var(--font-ui) !important;
+}
+
+.portfolio-app-view-funds p[style],
+.portfolio-app-view-funds em[style] {
+  color: var(--finance-muted) !important;
+}
+
+.portfolio-app-view-funds .fund-performance-chart svg {
+  background: #0a0b0d;
+}
+
+.events-dashboard-shell,
+.news-article-shell,
+.ai-answer-shell {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(215, 215, 207, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 215, 207, 0.014) 1px, transparent 1px),
+    radial-gradient(circle at 50% -14%, rgba(184, 106, 75, 0.05), transparent 32rem),
+    linear-gradient(180deg, #07080a, #050607 62%, #030405);
+  background-size:
+    5.5rem 5.5rem,
+    5.5rem 5.5rem,
+    auto,
+    auto;
+}
+
+.events-dashboard-shell::before,
+.events-dashboard-shell::after,
+.news-article-shell::before {
+  opacity: 0.08 !important;
+  background-image:
+    linear-gradient(rgba(215, 215, 207, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 215, 207, 0.018) 1px, transparent 1px) !important;
+  background-size: 5.5rem 5.5rem !important;
+  mask-image: linear-gradient(180deg, black, transparent 86%);
+}
+
+.events-dashboard-shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100vw;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  grid-template-areas:
+    "command command"
+    "stage rail"
+    "archive archive";
+  gap: 1rem;
+  padding: 4.7rem clamp(1rem, 3vw, 3rem) 3rem;
+}
+
+.events-dashboard-contextbar,
+.news-article-contextbar,
+.ai-answer-contextbar {
+  border-color: var(--finance-border) !important;
+  color: var(--finance-muted);
+  background:
+    linear-gradient(180deg, rgba(18, 20, 22, 0.96), rgba(7, 8, 10, 0.96)),
+    var(--finance-surface-2) !important;
+  backdrop-filter: none !important;
+}
+
+.events-dashboard-contextbar {
+  box-sizing: border-box;
+  grid-area: command;
+  width: auto;
+  min-height: 2.8rem;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+
+.events-back-button,
+.news-article-contextbar button {
+  color: var(--finance-text);
+  font-family: var(--font-data);
+}
+
+.events-back-button {
+  border-color: rgba(184, 106, 75, 0.32) !important;
+  color: var(--finance-text-soft) !important;
+  background: rgba(184, 106, 75, 0.1) !important;
+}
+
+.events-search input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding-right: 2.2rem;
+  border-color: var(--finance-border);
+  color: var(--finance-text);
+  background: #08090b;
+}
+
+.events-search input::placeholder {
+  color: rgba(161, 168, 179, 0.72);
+}
+
+.events-search-icon,
+.events-search-icon::after {
+  border-color: var(--finance-faint);
+}
+
+.events-search-icon {
+  background: transparent;
+}
+
+.events-search-icon::after {
+  background: var(--finance-faint);
+}
+
+.events-panel,
+.events-map-callout,
+.news-article-card,
+.ai-answer-prompt,
+.ai-answer-summary,
+.ai-answer-section,
+.ai-answer-sources,
+.ai-answer-inspect-next {
+  border: 1px solid var(--finance-border) !important;
+  border-radius: 8px !important;
+  color: var(--finance-text);
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.94), rgba(10, 11, 13, 0.97)),
+    var(--finance-surface) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.05),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: none !important;
+}
+
+.events-history-panel {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  grid-area: rail;
+  width: auto;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.events-globe-stage {
+  position: relative;
+  inset: auto;
+  z-index: 2;
+  grid-area: stage;
+  min-height: 26rem;
+  overflow: hidden;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(184, 106, 75, 0.08), transparent 36%),
+    #090a0c;
+  pointer-events: auto;
+}
+
+.events-globe {
+  position: absolute;
+  top: 50%;
+  left: 56%;
+  width: min(30rem, 54vw);
+  opacity: 0.42;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+}
+
+.events-globe::after {
+  opacity: 0.42;
+}
+
+.events-map-node {
+  width: 0.48rem;
+  height: 0.48rem;
+  background: var(--finance-accent);
+  box-shadow: 0 0 0 0.22rem rgba(184, 106, 75, 0.16);
+}
+
+.events-map-node::after {
+  display: none;
+}
+
+.events-map-callout {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: auto;
+  top: auto;
+  width: min(28rem, calc(100% - 2rem));
+  padding: 1rem;
+  transform: none;
+}
+
+.events-map-callout time,
+.news-article-kicker,
+.news-article-location,
+.ai-answer-summary-meta,
+.ai-answer-prompt span {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.events-map-callout h1,
+.events-panel h2,
+.news-article-card h1,
+.news-article-section h2,
+.news-article-body h2,
+.news-article-sectors h2,
+.ai-answer-tabs strong,
+.ai-answer-section h2,
+.ai-answer-sources h2,
+.ai-answer-summary p,
+.ai-answer-inspect-next strong {
+  color: var(--finance-text) !important;
+  font-family: var(--font-ui);
+  text-shadow: none;
+}
+
+.events-panel p,
+.events-table-wrap td,
+.upcoming-event-card small,
+.news-article-body p,
+.news-article-location,
+.news-article-facts dd,
+.news-article-sectors span,
+.ai-answer-prompt p,
+.ai-answer-section p,
+.ai-answer-lead {
+  color: var(--finance-muted) !important;
+}
+
+.events-archive-panel {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  grid-area: archive;
+  width: auto;
+  min-height: 0;
+  padding: 1rem;
+}
+
+.events-archive-panel header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.events-dashboard-shell .events-history-panel,
+.events-dashboard-shell .events-archive-panel {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.events-dashboard-shell .events-history-panel > div:first-child,
+.events-dashboard-shell .events-archive-panel > header {
+  margin: 0 0 0.58rem;
+  padding: 0;
+}
+
+.events-dashboard-shell .events-history-panel h2,
+.events-dashboard-shell .events-archive-panel h2 {
+  line-height: 1.05;
+}
+
+.events-dashboard-shell .upcoming-events-list,
+.events-dashboard-shell .events-table-wrap {
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.92), rgba(8, 9, 11, 0.96)),
+    var(--finance-surface-2);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.04),
+    0 0.7rem 1.45rem rgba(0, 0, 0, 0.24);
+}
+
+.events-dashboard-shell .upcoming-events-list {
+  padding: 0.55rem;
+}
+
+.archive-sort-controls button {
+  border-color: var(--finance-border) !important;
+  color: var(--finance-muted) !important;
+  background: #0b0c0e !important;
+}
+
+.events-table-wrap {
+  overflow-x: auto;
+}
+
+.events-table-wrap table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+.events-table-wrap th,
+.events-table-wrap td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+  padding: 0.52rem 0.56rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.events-table-wrap th {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+}
+
+.events-table-wrap td {
+  font-size: 0.68rem;
+  line-height: 1.34;
+}
+
+.events-table-wrap th:nth-child(1),
+.events-table-wrap td:nth-child(1) {
+  width: 17%;
+}
+
+.events-table-wrap th:nth-child(2),
+.events-table-wrap td:nth-child(2),
+.events-table-wrap th:nth-child(3),
+.events-table-wrap td:nth-child(3) {
+  width: 16%;
+}
+
+.events-table-wrap th:nth-child(4),
+.events-table-wrap td:nth-child(4) {
+  width: 17%;
+}
+
+.events-table-wrap th:nth-child(5),
+.events-table-wrap td:nth-child(5) {
+  width: 23%;
+}
+
+.events-table-wrap th:nth-child(6),
+.events-table-wrap td:nth-child(6) {
+  width: 11%;
+}
+
+.events-table-wrap tr.is-live td:first-child {
+  box-shadow: inset 2px 0 0 rgba(184, 106, 75, 0.72);
+}
+
+.news-article-contextbar {
+  position: relative;
+  z-index: 20;
+  min-height: 3rem;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  margin: 4.7rem auto 0;
+  padding: 0.55rem 0.7rem 0.55rem;
+}
+
+.news-article-card {
+  width: min(70rem, calc(100vw - 2rem));
+  margin: clamp(1rem, 4vh, 2.5rem) auto 4rem;
+  padding: clamp(1rem, 2.3vw, 1.65rem);
+}
+
+.news-article-card h1 {
+  max-width: 56rem;
+  font-size: clamp(1.65rem, 3vw, 2.7rem);
+  line-height: 1.06;
+}
+
+.news-article-kicker strong {
+  border-color: rgba(184, 106, 75, 0.42);
+  color: var(--finance-text-soft);
+  background: rgba(184, 106, 75, 0.11);
+}
+
+.news-article-body {
+  max-width: 54rem;
+  gap: 0.9rem;
+}
+
+.news-article-body section {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.news-article-body h2 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.news-article-body p {
+  font-size: 0.96rem;
+  line-height: 1.58;
+}
+
+.news-article-facts div,
+.news-article-sectors button {
+  border-color: var(--finance-border);
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.news-article-sectors button:hover,
+.news-article-sectors button:focus-visible,
+.news-article-sectors button.is-active {
+  border-color: rgba(184, 106, 75, 0.5);
+  background: rgba(184, 106, 75, 0.09);
+}
+
+.news-article-evidence-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  margin-top: 1.25rem;
+}
+
+.news-article-evidence-row span {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+}
+
+.ai-answer-contextbar {
+  min-height: 3.2rem;
+  padding: 0 clamp(1rem, 3vw, 3rem);
+}
+
+.ai-answer-contextbar button {
+  border-color: var(--finance-border);
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.ai-answer-contextbar button:hover,
+.ai-answer-contextbar button:focus-visible {
+  border-color: rgba(184, 106, 75, 0.48);
+  color: var(--finance-text);
+}
+
+.ai-answer-tabs strong {
+  border-bottom-color: var(--finance-accent);
+  font-size: 0.9rem;
+}
+
+.ai-answer-thread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+  grid-template-areas:
+    "prompt sources"
+    "summary sources"
+    "body sources"
+    "inspect sources";
+  gap: 0.9rem;
+  width: min(78rem, calc(100vw - 2rem));
+  padding: clamp(1rem, 3vw, 2.2rem) 0 4rem;
+}
+
+.ai-answer-thread.is-source-limited {
+  grid-template-columns: minmax(0, 62rem);
+  grid-template-areas:
+    "prompt"
+    "summary"
+    "body"
+    "inspect";
+  justify-content: center;
+}
+
+.ai-answer-prompt {
+  grid-area: prompt;
+  width: auto;
+  margin: 0;
+  padding: 0.82rem;
+}
+
+.ai-answer-summary {
+  grid-area: summary;
+  width: auto;
+  margin: 0;
+  padding: 1rem;
+  box-shadow:
+    inset 3px 0 0 rgba(184, 106, 75, 0.86),
+    inset 0 1px 0 rgba(240, 239, 231, 0.05),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.28) !important;
+}
+
+.ai-answer-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.62rem;
+}
+
+.ai-answer-summary-meta em {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  padding: 0.16rem 0.44rem;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-style: normal;
+}
+
+.ai-answer-summary p,
+.ai-answer-prompt p {
+  font-size: 0.98rem;
+  line-height: 1.42;
+}
+
+.ai-answer-body {
+  grid-area: body;
+  width: auto;
+  margin: 0;
+  gap: 0.8rem;
+}
+
+.ai-answer-lead {
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: rgba(255, 255, 255, 0.026);
+  font-size: 0.95rem;
+}
+
+.ai-answer-section {
+  gap: 0.45rem;
+  padding: 0.9rem;
+}
+
+.ai-answer-section h2,
+.ai-answer-sources h2 {
+  font-size: 1rem;
+}
+
+.ai-answer-section p {
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ai-answer-inline-citations em,
+.ai-answer-section-citations em {
+  border: 1px solid var(--finance-border);
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-family: var(--font-data);
+}
+
+.ai-answer-inspect-next {
+  grid-area: inspect;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.9rem;
+}
+
+.ai-answer-inspect-next div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.42rem;
+}
+
+.ai-answer-inspect-next button,
+.ai-answer-inspect-next span {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  padding: 0.24rem 0.58rem;
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+}
+
+.ai-answer-inspect-next button {
+  border-color: rgba(184, 106, 75, 0.44);
+  color: var(--finance-text);
+  cursor: pointer;
+}
+
+.ai-answer-sources {
+  grid-area: sources;
+  align-self: start;
+  width: auto;
+  margin: 0;
+  padding: 0.9rem;
+}
+
+.ai-answer-source-chip {
+  border-color: var(--finance-border);
+  color: var(--finance-muted);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.ai-answer-source-chip:hover {
+  border-color: rgba(184, 106, 75, 0.42);
+  color: var(--finance-text);
+}
+
+.ai-answer-source-chip span {
+  color: var(--finance-text);
+  background: #15171a;
+}
+
+@media (max-width: 1180px) {
+  .portfolio-app .portfolio-workspace-screen,
+  .portfolio-app-view-portfolio .portfolio-workspace-screen,
+  .portfolio-app-view-funds .portfolio-screen {
+    width: min(calc(100vw - 1.4rem), 70rem);
+  }
+
+  .portfolio-app .portfolio-finance-header,
+  .portfolio-app .portfolio-cockpit-header {
+    grid-template-columns: max-content minmax(16rem, 1fr);
+  }
+
+  .portfolio-app .portfolio-cockpit-status-row {
+    grid-column: 1 / -1;
+  }
+
+  .portfolio-app .portfolio-finance-grid,
+  .portfolio-app .portfolio-workspace-command-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app .portfolio-finance-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
+  .events-dashboard-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "command"
+      "stage"
+      "rail"
+      "archive";
+  }
+}
+
+@media (max-width: 980px) {
+  .portfolio-app .portfolio-workspace-screen,
+  .portfolio-app-view-portfolio .portfolio-workspace-screen,
+  .portfolio-app-view-funds .portfolio-screen {
+    width: min(calc(100vw - 1.25rem), 58rem);
+    padding-top: 4.4rem;
+  }
+
+  .portfolio-app .portfolio-finance-header,
+  .portfolio-app .portfolio-cockpit-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-funds .portfolio-section-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app .portfolio-workspace-split,
+  .portfolio-app .portfolio-finance-rail,
+  .portfolio-app .portfolio-primary-action-module,
+  .portfolio-app-view-portfolio .portfolio-overview-hero-grid,
+  .portfolio-app-view-portfolio .portfolio-analysis-view .portfolio-performance-view,
+  .portfolio-app-view-portfolio .portfolio-analysis-view .portfolio-performance-side {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .portfolio-app .portfolio-product-metric-strip,
+  .portfolio-app .portfolio-primary-action-facts,
+  .portfolio-app .portfolio-diagnosis-grid,
+  .portfolio-app .portfolio-analysis-summary-strip {
+    gap: 0.5rem;
+  }
+
+  .portfolio-app .portfolio-product-metric-strip > *,
+  .portfolio-app .portfolio-primary-action-facts article,
+  .portfolio-app .portfolio-diagnosis-grid article,
+  .portfolio-app .portfolio-workspace-metric {
+    border-left: 0;
+    border-top: 1px solid var(--finance-border);
+  }
+
+  .portfolio-app .portfolio-product-metric-strip > *:first-child,
+  .portfolio-app .portfolio-primary-action-facts article:first-child,
+  .portfolio-app .portfolio-diagnosis-grid article:first-child {
+    border-top: 0;
+  }
+
+  .events-dashboard-contextbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .events-dashboard-contextbar p {
+    display: none;
+  }
+
+  .events-search {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .events-globe-stage {
+    min-height: 21rem;
+  }
+
+  .events-globe {
+    width: min(24rem, 82vw);
+  }
+
+  .news-article-card {
+    width: min(calc(100vw - 1.25rem), 56rem);
+  }
+
+  .news-article-facts,
+  .news-article-sectors > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ai-answer-thread {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "prompt"
+      "summary"
+      "body"
+      "inspect"
+      "sources";
+  }
+}
+
+@keyframes portfolio-screener-query-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-app *,
+  .events-dashboard-shell *,
+  .news-article-shell *,
+  .ai-answer-shell * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+  Premium cockpit precision pass.
+  Scope remains non-globe routes only. This pass favors chart/table hierarchy,
+  functional controls, cooler graphite surfaces, and compact evidence cues.
+*/
+.portfolio-app .portfolio-primary-action-module {
+  border-color: rgba(184, 106, 75, 0.32) !important;
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.96), rgba(9, 10, 12, 0.98)),
+    var(--finance-surface) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 1rem 2.15rem rgba(0, 0, 0, 0.34) !important;
+}
+
+.portfolio-app .portfolio-workspace-table tbody tr:hover,
+.portfolio-app .portfolio-workspace-table tbody tr.is-selected,
+.portfolio-app .portfolio-holdings-table tbody tr:hover,
+.events-table-wrap tr.is-live td:first-child {
+  box-shadow: inset 0 0 0 1px rgba(184, 106, 75, 0.22) !important;
+}
+
+.portfolio-overview-performance-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.76fr) minmax(17rem, 0.58fr);
+  gap: 0.9rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.portfolio-overview-chart-card {
+  min-width: 0;
+  padding: 0.9rem !important;
+}
+
+.portfolio-overview-chart-card .portfolio-chart-stage {
+  height: clamp(300px, 28vw, 370px);
+  min-height: 300px;
+}
+
+.portfolio-overview-chart-rail {
+  display: grid;
+  align-content: start;
+  gap: 0.72rem;
+  min-width: 0;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  color: var(--finance-text);
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.94), rgba(10, 11, 13, 0.97)),
+    var(--finance-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.05),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.26);
+}
+
+.portfolio-overview-chart-rail > span,
+.portfolio-overview-chart-rail dt,
+.portfolio-chart-interpretation {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.portfolio-overview-chart-rail strong {
+  color: var(--finance-text);
+  font-size: clamp(1rem, 1.1vw, 1.18rem);
+  line-height: 1.12;
+}
+
+.portfolio-overview-chart-rail p {
+  margin: 0;
+  color: var(--finance-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.portfolio-overview-chart-rail dl {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--finance-border);
+  border-bottom: 1px solid var(--finance-border);
+}
+
+.portfolio-overview-chart-rail dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.52rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.portfolio-overview-chart-rail dl div:first-child {
+  border-top: 0;
+}
+
+.portfolio-overview-chart-rail dd {
+  margin: 0;
+  color: var(--finance-text-soft);
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.portfolio-overview-chart-rail button {
+  justify-self: start;
+  min-height: 1.8rem;
+  border: 1px solid rgba(184, 106, 75, 0.46);
+  border-radius: 999px;
+  padding: 0.18rem 0.68rem;
+  color: var(--finance-text);
+  background: rgba(184, 106, 75, 0.11);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.portfolio-chart-interpretation {
+  margin: 0.1rem 0 0;
+  color: rgba(161, 168, 179, 0.8);
+  font-size: 0.6rem;
+  line-height: 1.35;
+  letter-spacing: 0.015em;
+  text-transform: none;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart {
+  gap: 0.56rem;
+}
+
+.portfolio-app .portfolio-cockpit-performance-chart .portfolio-chart-stage {
+  border-color: rgba(255, 255, 255, 0.075);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004)),
+    #08090b;
+}
+
+.portfolio-app .portfolio-chart-readout {
+  gap: 0;
+  border-top-color: rgba(255, 255, 255, 0.085);
+}
+
+.portfolio-app .portfolio-chart-readout div {
+  padding: 0.46rem 0.62rem;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-panel {
+  margin-top: 0.1rem;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stage {
+  min-height: clamp(24rem, 40vw, 33rem);
+  background: #08090b;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-surface {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.92), rgba(8, 9, 11, 0.98)),
+    var(--finance-surface-2);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-tooltip {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.98), rgba(8, 9, 11, 0.98)),
+    var(--finance-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.07),
+    0 1rem 2rem rgba(0, 0, 0, 0.38);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer {
+  min-height: 4.05rem;
+  border-radius: 8px;
+  padding: 0.72rem 0.82rem;
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.94), rgba(10, 11, 13, 0.97)),
+    var(--finance-surface);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer textarea {
+  min-height: 2.25rem;
+  color: var(--finance-text);
+  font-size: clamp(0.92rem, 1vw, 1.05rem);
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer textarea::placeholder {
+  color: rgba(161, 168, 179, 0.82);
+}
+
+.portfolio-app-view-earnings .portfolio-earnings-command-panel .portfolio-product-metric-strip,
+.portfolio-app-view-watchlist .portfolio-watchlist-read-panel,
+.portfolio-app-view-screener .portfolio-screener-control-bar {
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.9), rgba(8, 9, 11, 0.96)),
+    var(--finance-surface-2) !important;
+}
+
+.portfolio-app-view-funds .portfolio-section-header {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 30rem);
+}
+
+.portfolio-app-view-funds .portfolio-section-header p {
+  margin: 0.28rem 0 0;
+  color: var(--finance-faint) !important;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.portfolio-app-view-funds .funds-performance-panel {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.95), rgba(8, 9, 11, 0.98)),
+    var(--finance-surface-2) !important;
+}
+
+.portfolio-app-view-funds .funds-chart-toolbar {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.92), rgba(10, 11, 13, 0.96)),
+    var(--finance-surface);
+}
+
+.portfolio-app-view-funds .funds-performance-stats {
+  border-left-color: rgba(255, 255, 255, 0.085) !important;
+}
+
+.events-dashboard-shell {
+  grid-template-areas:
+    "command command"
+    "archive rail"
+    "stage rail";
+}
+
+.events-globe-stage {
+  min-height: 18.5rem;
+}
+
+.events-globe {
+  left: 50%;
+  width: min(22rem, 38vw);
+  opacity: 0.24;
+}
+
+.events-map-callout {
+  width: min(23rem, calc(100% - 2rem));
+}
+
+.events-dashboard-shell .events-table-wrap {
+  max-height: min(29rem, calc(100vh - 13rem));
+}
+
+.events-table-wrap tr.is-live {
+  background: rgba(184, 106, 75, 0.045);
+}
+
+.news-article-card {
+  width: min(78rem, calc(100vw - 2rem));
+}
+
+.news-article-card h1 {
+  max-width: 62rem;
+  font-size: clamp(1.65rem, 2.65vw, 2.45rem);
+}
+
+.news-article-brief-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1.3rem;
+}
+
+.news-article-impact-panel {
+  display: grid;
+  gap: 0.68rem;
+  min-width: 0;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.86rem;
+  background:
+    linear-gradient(180deg, rgba(21, 23, 26, 0.94), rgba(10, 11, 13, 0.97)),
+    var(--finance-surface);
+}
+
+.news-article-impact-panel > span,
+.news-article-facts dt {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.news-article-impact-panel strong {
+  color: var(--finance-text);
+  font-size: 1rem;
+}
+
+.news-article-impact-panel p {
+  margin: 0;
+  color: var(--finance-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.news-article-impact-panel .news-article-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0;
+}
+
+.news-article-impact-panel .news-article-facts div {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0;
+  padding: 0.52rem 0;
+  background: transparent;
+}
+
+.news-article-impact-panel .news-article-facts div:first-child {
+  border-top: 0;
+}
+
+.ai-answer-thread.is-source-limited {
+  width: min(72rem, calc(100vw - 2rem));
+}
+
+.ai-answer-summary {
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.05),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.28) !important;
+}
+
+.ai-answer-summary p {
+  font-size: clamp(0.98rem, 1vw, 1.08rem);
+}
+
+@media (max-width: 1180px) {
+  .portfolio-overview-performance-band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-overview-chart-rail {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .portfolio-overview-chart-rail dl,
+  .portfolio-overview-chart-rail button {
+    grid-column: 1 / -1;
+  }
+
+  .events-dashboard-shell {
+    grid-template-areas:
+      "command"
+      "archive"
+      "rail"
+      "stage";
+  }
+
+  .events-dashboard-shell .events-table-wrap {
+    max-height: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .portfolio-overview-chart-card .portfolio-chart-stage,
+  .portfolio-app-view-markets .portfolio-heatmap-stage {
+    min-height: 300px;
+    height: 300px;
+  }
+
+  .news-article-brief-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-funds .portfolio-section-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+  Indian Markets Perplexity-style polish.
+  Scope is route-local: no globe selectors and no shared shell assumptions.
+*/
+.portfolio-app-view-markets {
+  --markets-bg: #0d0d0f;
+  --markets-surface: #181819;
+  --markets-surface-soft: #141416;
+  --markets-border: rgba(232, 233, 229, 0.105);
+  --markets-border-strong: rgba(232, 233, 229, 0.16);
+  --markets-text: #e8e8e2;
+  --markets-muted: #a1a3a8;
+  --markets-faint: #777b82;
+  --markets-green: #58b66d;
+  --markets-red: #e76d7b;
+  background: var(--markets-bg);
+}
+
+.portfolio-app-view-markets .portfolio-background-grid {
+  opacity: 0.11;
+  background-size: 148px 148px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent 74%);
+}
+
+.portfolio-app-view-markets .portfolio-workspace-screen {
+  width: min(100%, 1436px);
+  padding: 74px clamp(28px, 3.2vw, 58px) 56px;
+}
+
+.portfolio-app-view-markets .portfolio-finance-header {
+  display: grid;
+  grid-template-columns: max-content minmax(24rem, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: 0 0 38px;
+}
+
+.portfolio-app-view-markets .portfolio-finance-header-title h1 {
+  margin: 0;
+  color: var(--markets-text) !important;
+  font-family: var(--font-ui);
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+.portfolio-app-view-markets .portfolio-finance-search {
+  height: 48px;
+  max-width: none;
+  border-color: var(--markets-border);
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.82);
+  box-shadow: none;
+}
+
+.portfolio-app-view-markets .portfolio-finance-search:focus-within {
+  border-color: rgba(232, 233, 229, 0.22);
+  box-shadow: 0 0 0 3px rgba(232, 233, 229, 0.04);
+}
+
+.portfolio-app-view-markets .portfolio-finance-search input {
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+
+.portfolio-app-view-markets .portfolio-finance-search input::placeholder {
+  color: rgba(161, 163, 168, 0.72);
+}
+
+.markets-page-flow {
+  display: grid;
+  gap: 28px;
+}
+
+.portfolio-app-view-markets .portfolio-market-overview-panel {
+  display: grid;
+  gap: 16px;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.markets-section-heading,
+.portfolio-app-view-markets .portfolio-recent-developments-heading,
+.portfolio-app-view-markets .portfolio-workspace-panel-heading,
+.portfolio-app-view-markets .market-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.markets-section-heading h2,
+.portfolio-app-view-markets .portfolio-workspace-panel-heading h2,
+.portfolio-app-view-markets .market-summary-heading h2,
+.portfolio-app-view-markets .portfolio-recent-developments-heading h2 {
+  margin: 0;
+  color: var(--markets-text) !important;
+  font-family: var(--font-ui);
+  font-size: 23px !important;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-transform: none;
+}
+
+.markets-section-heading span,
+.portfolio-app-view-markets .portfolio-workspace-panel-heading strong,
+.portfolio-app-view-markets .market-summary-heading strong,
+.portfolio-app-view-markets .portfolio-recent-developments-heading strong {
+  color: var(--markets-muted) !important;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 520;
+  letter-spacing: 0;
+  text-transform: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-index-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-index-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(64px, 1fr);
+  gap: 8px;
+  min-height: 164px;
+  border: 1px solid var(--markets-border);
+  border-radius: 17px;
+  padding: 18px 20px 14px;
+  color: var(--markets-text);
+  background:
+    linear-gradient(180deg, rgba(31, 31, 33, 0.92), rgba(24, 24, 25, 0.96)),
+    var(--markets-surface) !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-index-card:hover {
+  border-color: rgba(232, 233, 229, 0.18);
+  transform: none;
+}
+
+.markets-asset-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.portfolio-app-view-markets .portfolio-index-card h3 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--markets-text) !important;
+  font-family: var(--font-ui);
+  font-size: 22px !important;
+  font-weight: 610;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .portfolio-index-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--markets-muted) !important;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 450;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.markets-asset-move {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  min-width: 72px;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.markets-asset-move strong {
+  color: var(--markets-muted);
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.markets-asset-move em {
+  color: var(--markets-muted) !important;
+  font-size: 15px !important;
+  font-style: normal;
+  font-weight: 560;
+  letter-spacing: 0;
+}
+
+.markets-asset-move.is-positive strong,
+.markets-asset-move.is-positive em {
+  color: var(--markets-green) !important;
+}
+
+.markets-asset-move.is-negative strong,
+.markets-asset-move.is-negative em {
+  color: var(--markets-red) !important;
+}
+
+.markets-asset-value {
+  color: var(--markets-muted) !important;
+  font-family: var(--font-data);
+  font-size: 21px;
+  font-weight: 520;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline {
+  align-self: end;
+  width: 100%;
+  height: 70px !important;
+  margin-top: 2px;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-grid {
+  display: none;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-baseline {
+  stroke: rgba(232, 233, 229, 0.22);
+  stroke-dasharray: 2.4 4;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-line-shadow,
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-segment {
+  filter: none;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-line-shadow {
+  opacity: 0;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-segment {
+  stroke-width: 2.05;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-segment.is-positive {
+  stroke: var(--markets-green);
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-segment.is-negative {
+  stroke: var(--markets-red);
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-area-stop-strong {
+  stop-opacity: 0.16;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-area-stop-soft {
+  stop-opacity: 0.035;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-endpoint-halo {
+  opacity: 0.14;
+}
+
+.portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-endpoint {
+  fill: var(--markets-surface);
+  stroke-width: 1.35;
+}
+
+.portfolio-app-view-markets .portfolio-market-summary-panel {
+  display: grid;
+  gap: 12px;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .market-summary-card {
+  overflow: hidden;
+  border: 1px solid var(--markets-border);
+  border-radius: 17px;
+  background:
+    linear-gradient(180deg, rgba(27, 27, 29, 0.92), rgba(18, 18, 20, 0.98)),
+    var(--markets-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .market-summary-row {
+  border-color: rgba(232, 233, 229, 0.075);
+}
+
+.portfolio-app-view-markets .market-summary-trigger {
+  min-height: 48px;
+  padding: 0 18px;
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+}
+
+.portfolio-app-view-markets .market-summary-trigger span {
+  color: var(--markets-text) !important;
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-markets .market-summary-answer-inner {
+  padding: 0 18px 13px;
+}
+
+.portfolio-app-view-markets .market-summary-answer p {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.48;
+}
+
+.portfolio-app-view-markets .market-summary-card-footer {
+  padding: 10px 18px 14px;
+}
+
+.portfolio-app-view-markets .market-summary-sources-pill {
+  min-height: 28px;
+  border-color: rgba(232, 233, 229, 0.12);
+  border-radius: 999px;
+  color: var(--markets-muted) !important;
+  background: rgba(232, 233, 229, 0.045);
+  box-shadow: none;
+}
+
+.markets-heatmap-breadth-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 330px);
+  gap: 16px;
+  align-items: start;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-panel,
+.portfolio-app-view-markets .portfolio-market-pulse-panel,
+.portfolio-app-view-markets .portfolio-workspace-split > .portfolio-workspace-panel,
+.portfolio-app-view-markets .portfolio-standouts-panel {
+  border: 1px solid var(--markets-border) !important;
+  border-radius: 17px;
+  background:
+    linear-gradient(180deg, rgba(27, 27, 29, 0.9), rgba(17, 17, 19, 0.96)),
+    var(--markets-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-panel {
+  padding: 16px !important;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-surface {
+  min-height: 0;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-header {
+  margin-bottom: 10px;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-title-block h2 {
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: 21px;
+  font-weight: 610;
+  letter-spacing: -0.01em;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-title-block p {
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-action {
+  border-color: var(--markets-border);
+  border-radius: 10px;
+  color: var(--markets-muted);
+  background: rgba(232, 233, 229, 0.045);
+  box-shadow: none;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stage {
+  height: 360px;
+  min-height: 360px;
+  border-color: rgba(232, 233, 229, 0.09);
+  border-radius: 14px;
+  background: #111113;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-tile {
+  background: color-mix(in srgb, var(--heatmap-bg), #111113 24%);
+  border-color: color-mix(in srgb, var(--heatmap-border), rgba(232, 233, 229, 0.12) 35%);
+  box-shadow: none;
+  filter: saturate(0.74) brightness(0.94);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-tile:hover,
+.portfolio-app-view-markets .portfolio-heatmap-tile:focus-visible {
+  filter: saturate(0.86) brightness(1.03);
+  box-shadow: inset 0 0 0 1px rgba(232, 233, 229, 0.16);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-footer {
+  color: var(--markets-faint);
+}
+
+.portfolio-app-view-markets .portfolio-market-pulse-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px !important;
+}
+
+.portfolio-app-view-markets .portfolio-market-pulse-panel .portfolio-breadth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.portfolio-app-view-markets .portfolio-market-pulse-panel .portfolio-workspace-metric {
+  min-height: 66px;
+  border: 1px solid rgba(232, 233, 229, 0.075);
+  border-radius: 12px;
+  padding: 11px;
+  background: rgba(232, 233, 229, 0.026) !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-market-pulse-panel .portfolio-workspace-metric span {
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 480;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.portfolio-app-view-markets .portfolio-market-pulse-panel .portfolio-workspace-metric strong {
+  margin-top: 6px;
+  font-family: var(--font-data);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-app-view-markets .portfolio-flow-strip {
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: 9px;
+  border-top: 1px solid rgba(232, 233, 229, 0.075);
+  padding-top: 12px;
+}
+
+.portfolio-app-view-markets .portfolio-flow-strip span {
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.portfolio-app-view-markets .portfolio-flow-strip strong {
+  color: var(--markets-text);
+  font-family: var(--font-data);
+  font-size: 13px;
+}
+
+.portfolio-app-view-markets .portfolio-finance-disclaimer {
+  margin: -4px 0 0;
+  color: rgba(161, 163, 168, 0.7);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.portfolio-app-view-markets .markets-context-grid {
+  gap: 16px;
+}
+
+@media (max-width: 1180px) {
+  .portfolio-app-view-markets .portfolio-index-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .markets-heatmap-breadth-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .portfolio-app-view-markets .portfolio-workspace-screen {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .portfolio-app-view-markets .portfolio-finance-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+
+  .portfolio-app-view-markets .portfolio-finance-search {
+    width: 100%;
+  }
+
+  .portfolio-app-view-markets .portfolio-index-card {
+    min-height: 154px;
+  }
+
+  .portfolio-app-view-markets .portfolio-heatmap-stage {
+    height: 320px;
+    min-height: 320px;
+  }
+}

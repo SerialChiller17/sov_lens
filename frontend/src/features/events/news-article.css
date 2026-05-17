@@ -23,17 +23,20 @@
   mask-image: linear-gradient(180deg, black, transparent 88%);
 }
 
-.news-article-topbar {
+.news-article-contextbar {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
+  width: min(70rem, calc(100vw - 2rem));
   min-height: 3.1rem;
-  padding: 0 clamp(1rem, 3.8vw, 4.8rem);
+  margin: 0 auto;
+  padding-top: 4.65rem;
 }
 
-.news-article-topbar p {
+.news-article-contextbar p {
   margin: 0;
   color: rgba(232, 224, 214, 0.58);
   font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -214,16 +217,11 @@
     overflow-y: auto;
   }
 
-  .news-article-topbar {
+  .news-article-contextbar {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0.8rem;
-    padding: 1rem;
-  }
-
-  .news-article-topbar .events-topbar-rule,
-  .news-article-topbar p {
-    display: none;
+    padding-top: 4.4rem;
   }
 
   .news-article-card {

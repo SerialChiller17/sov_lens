@@ -175,13 +175,13 @@ export const PORTFOLIO_INVESTED_VALUE = 900000;
 export const PORTFOLIO_DAY_RETURN_PERCENT = 0.86;
 
 export const PORTFOLIO_ALLOCATION_COLORS: Record<string, string> = {
-  ICICIBANK: "#c7ad68",
-  TATAMOTORS: "#9dad88",
-  TCS: "#6f8998",
-  HDFCBANK: "#8faf96",
-  LT: "#aa9479",
-  RELIANCE: "#c9827a",
-  INFY: "#7f9ba7",
+  ICICIBANK: "#B86A4B",
+  TATAMOTORS: "#7E9A86",
+  TCS: "#A1A8B3",
+  HDFCBANK: "#D7D7CF",
+  LT: "#8B929C",
+  RELIANCE: "#C24132",
+  INFY: "#9F4A38",
 };
 
 export const PORTFOLIO_DONUT_SEGMENT_GAP = 0.38;

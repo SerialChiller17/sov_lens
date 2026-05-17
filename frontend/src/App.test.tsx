@@ -312,8 +312,8 @@ describe("Sovereign Lens app", () => {
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Synced portfolio screen/i })).toBeInTheDocument());
     expect(screen.getByRole("tablist", { name: /Portfolio workspace sections/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/Today's primary portfolio action/i);
-    expect(screen.getByRole("region", { name: /Today's primary portfolio action/i })).toHaveTextContent(/Reduce private-bank concentration/i);
+    expect(screen.getByRole("region", { name: /Portfolio dashboard/i })).toHaveTextContent(/What matters now/i);
+    expect(screen.getByRole("region", { name: /What matters now/i })).toHaveTextContent(/Reduce private-bank concentration/i);
     expect(screen.getByRole("heading", { name: /Today's P&L/i })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Market drivers affecting your portfolio/i })).not.toBeInTheDocument();
     expect(window.location.pathname).toBe("/portfolio");
@@ -326,7 +326,7 @@ describe("Sovereign Lens app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Open screener/i }));
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Screener screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Indian equity screener/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Indian equity screens/i })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/screener");
   });
 
@@ -337,7 +337,8 @@ describe("Sovereign Lens app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Open Indian Markets/i }));
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Indian market overview/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Top Assets/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Market Summary/i })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/markets");
   });
 
@@ -377,7 +378,8 @@ describe("Sovereign Lens app", () => {
     window.history.pushState({}, "", "/markets");
     const { unmount } = render(<App />);
     await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Indian market overview/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Top Assets/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Market Summary/i })).toBeInTheDocument();
     unmount();
 
     window.history.pushState({}, "", "/earnings");
@@ -412,7 +414,7 @@ describe("Sovereign Lens app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Open your portfolio/i }));
     await screen.findByRole("region", { name: /Synced portfolio screen/i });
 
-    const searchInput = screen.getByPlaceholderText("Search Indian stocks, sectors, funds...");
+    const searchInput = screen.getByPlaceholderText("Search holdings, sectors, exposure...");
     fireEvent.change(searchInput, { target: { value: "RELIANCE" } });
     fireEvent.submit(searchInput.closest("form")!);
 
@@ -432,7 +434,7 @@ describe("Sovereign Lens app", () => {
     expect(screen.getByText("G20 Summit: Climate Deal Reached")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/news-pulse");
 
-    fireEvent.click(screen.getByRole("button", { name: "Lens" }));
+    fireEvent.click(screen.getByRole("button", { name: /Open global intelligence lens/i }));
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Global Intelligence Monitor/i })).toBeInTheDocument());
     expect(window.location.pathname).toBe("/");
@@ -443,7 +445,7 @@ describe("Sovereign Lens app", () => {
     render(<App />);
 
     await waitFor(() => expect(screen.getByRole("heading", { name: /Red Sea security posture keeps freight insurance bid/i })).toBeInTheDocument());
-    expect(screen.getByText("Full news article")).toBeInTheDocument();
+    expect(screen.getByText("Intelligence brief")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/news-pulse/red-sea-freight");
   });
 
