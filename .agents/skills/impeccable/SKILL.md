@@ -57,6 +57,18 @@ Load the matching reference: [reference/brand.md](reference/brand.md) or [refere
 
 Apply to every design, both registers. Match implementation complexity to the aesthetic vision: maximalism needs elaborate code, minimalism needs precision. Interpret creatively. Vary across projects; never converge on the same choices. {{model}} is capable of extraordinary work. Don't hold back.
 
+### Interface Craft
+
+- Affordances first: active items need an unmistakable selected state, disabled items need reduced emphasis and disabled semantics, and clickable surfaces need visible hover/focus/cursor cues.
+- Hierarchy is made with size, position, contrast, and grouping. Put the main object first, mute metadata, isolate critical values, and remove redundant labels when icons or layout explain the relationship.
+- Use whitespace as meaning. Keep related title/subtitle groups tight, then open larger gaps between different sections. Prefer 4px-based spacing steps.
+- Product UI headers are compact; dashboards usually should not exceed 24px headings. Heroes can be larger only when the surface is brand/editorial.
+- Dark mode depth comes from lightness. Make closer surfaces slightly lighter, borders barely brighter than the fill, and bright semantic colors less saturated.
+- Shadows should be felt, not seen. In dark UI, prefer tonal layering and subtle borders over drop shadows.
+- Icons and buttons must be optically balanced. Match icon boxes to text line-height where possible; horizontal button padding should usually exceed vertical padding.
+- Every interaction needs feedback: hover, focus, pressed, disabled, loading, and success/error states where relevant.
+- Text over images needs a gradient or scrim, not wishful contrast.
+
 ### Color
 
 - Use OKLCH. Reduce chroma as lightness approaches 0 or 100; high chroma at extremes looks garish.

@@ -33,7 +33,7 @@
   width: min(70rem, calc(100vw - 2rem));
   min-height: 3.1rem;
   margin: 0 auto;
-  padding-top: 4.65rem;
+  padding-top: 6rem;
 }
 
 .news-article-contextbar p {
@@ -221,7 +221,7 @@
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0.8rem;
-    padding-top: 4.4rem;
+    padding-top: 5.8rem;
   }
 
   .news-article-card {

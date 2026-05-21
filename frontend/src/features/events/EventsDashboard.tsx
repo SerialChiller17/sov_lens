@@ -1,6 +1,8 @@
 import { useMemo, type CSSProperties } from "react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import globeTextureUrl from "../../assets/globe-premium-dark.svg";
+import { MarketTape } from "../market-tape/MarketTape";
+import { EVENT_RISK_TAPE } from "../market-tape/marketTapeData";
 import type { BootstrapData, PulseAlert } from "../../types";
 import { EVENT_ARCHIVE_ROWS, HORIZON_EVENTS, PREMIUM_ORANGE_THEME } from "./eventsData";
 import type { EventArchiveRow } from "./eventsTypes";
@@ -52,6 +54,7 @@ export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) 
       }
     >
       <GlobalBrandNav activeView="news" {...navHandlers} />
+      <MarketTape basket={EVENT_RISK_TAPE} includeGlobalItems={false} statusLabel="Event Tape" />
 
       <header className="events-dashboard-contextbar">
         <p>Worldwide event analysis</p>

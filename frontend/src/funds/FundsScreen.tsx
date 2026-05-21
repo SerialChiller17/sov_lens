@@ -1,6 +1,8 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { Search } from "lucide-react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../app/GlobalBrandNav";
+import { MarketTape } from "../features/market-tape/MarketTape";
+import { FUNDS_MARKET_TAPE } from "../features/market-tape/marketTapeData";
 import { FundSelector } from "./FundSelector";
 import { MOCK_FUNDS } from "./mockFunds";
 import { PerformanceTab } from "./tabs/PerformanceTab";
@@ -9,16 +11,6 @@ import type { Fund, FundSlot } from "./types";
 type ComparisonTab = "Performance" | "Allocation" | "Risk" | "Overlap";
 
 const COMPARISON_TABS: ComparisonTab[] = ["Performance", "Allocation", "Risk", "Overlap"];
-
-const BENCHMARK_TAPE = [
-  { label: "NIFTY 50 TRI", value: "37,842.20", move: "+0.42%", direction: "up" },
-  { label: "NIFTY 500 TRI", value: "34,510.84", move: "+0.37%", direction: "up" },
-  { label: "NIFTY MIDCAP 150 TRI", value: "22,904.12", move: "+0.58%", direction: "up" },
-  { label: "NIFTY SMALLCAP 250 TRI", value: "18,226.45", move: "-0.18%", direction: "down" },
-  { label: "CRISIL HYBRID 50+50", value: "1,934.70", move: "+0.11%", direction: "up" },
-  { label: "NIFTY DEBT INDEX", value: "2,918.64", move: "+0.04%", direction: "up" },
-  { label: "GOLD INR", value: "\u20b972,840", move: "+0.31%", direction: "up" },
-] as const;
 
 const shellStyle: CSSProperties = {
   minWidth: 0,
@@ -234,35 +226,6 @@ function FundPreviewTab({ tab }: { tab: ComparisonTab }) {
   );
 }
 
-function FundsMarketTape() {
-  const tapeItems = [...BENCHMARK_TAPE, ...BENCHMARK_TAPE];
-
-  return (
-    <section className="market-tape funds-market-tape" aria-label="Fund benchmark tape">
-      <div className="market-tape-status">
-        <span aria-hidden="true" />
-        <strong>Benchmarks</strong>
-        <em>Static sample</em>
-      </div>
-      <div className="market-tape-viewport" aria-label="Fund comparison benchmark tape">
-        <div className="market-tape-track">
-          {tapeItems.map((item, index) => (
-            <div
-              key={`${item.label}-${index}`}
-              className={`market-tape-item ${item.direction}`}
-              aria-hidden={index >= BENCHMARK_TAPE.length}
-            >
-              <span className="market-tape-label">{item.label}</span>
-              <strong>{item.value}</strong>
-              <span className="market-tape-move">{item.move}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ComparisonBody({
   filledCount,
   activeTab,
@@ -369,7 +332,7 @@ export function FundsScreen(navHandlers: GlobalBrandNavHandlers) {
   return (
     <main className="app-shell portfolio-app portfolio-app-view-funds" style={shellStyle}>
       <GlobalBrandNav activeView="funds" {...navHandlers} />
-      <FundsMarketTape />
+      <MarketTape basket={FUNDS_MARKET_TAPE} includeGlobalItems={false} statusLabel="Benchmarks" />
 
       <section className="portfolio-screen" aria-label="Funds comparison screen" style={contentStyle}>
         <div className="portfolio-background-grid" aria-hidden="true" />

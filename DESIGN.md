@@ -14,6 +14,21 @@ Avoid gold or champagne luxury styling, cyan AI dashboard styling, neon/cyberpun
 
 The globe page can remain atmospheric and cinematic, but its language should not be smeared across the rest of the product.
 
+## Applied UI Craft Rules
+
+Use these practical checks when shaping or polishing any non-globe interface:
+
+- Affordances must be visible. Selected tabs need a clear container, disabled actions need lower contrast plus disabled semantics, and clickable cards need hover, focus, cursor, or icon cues.
+- Visual hierarchy should be explicit. Make the main object largest or strongest, keep metadata quieter, isolate critical values through position and contrast, and replace repeated labels with icons or structure when it improves scan speed.
+- Spacing should follow a 4px rhythm. Keep related title/subtitle groups tight, usually 8-20px, and separate major sections with stronger gaps, usually 24-40px. Use whitespace to group meaning, not just grid columns.
+- Dense workstation headers should usually stay at or below 24px. Use line-height around 1.1-1.25 for headings, normal tracking for product UI, and tabular numerics for market data.
+- Color should be semantic. Product accent is for selection and inspect actions; green/red are only movement semantics; blue/info, green/success, red/error, and neutral/disabled must not be used as decoration.
+- Dark mode depth comes from lightness, not heavy shadows. Higher surfaces are slightly lighter graphite, borders are barely brighter than the surface, and saturated colors are dimmed before use.
+- Shadows should be felt, not seen. Prefer broad, low-opacity elevation; avoid tight dark outlines masquerading as polish.
+- Icons and buttons need optical alignment. Icon boxes should match text line-height where possible, icon-only buttons need labels, and button horizontal padding should normally exceed vertical padding.
+- Every interaction needs feedback. Hover, focus, pressed, disabled, loading, and success states should be visibly distinct without shifting layout.
+- Text over imagery requires a real contrast system. Use a directional gradient or scrim behind copy rather than placing type directly over busy or light areas.
+
 ## App Shell And Density
 
 Use a compact top-nav terminal shell for non-globe finance pages, not a left-sidebar SaaS shell.

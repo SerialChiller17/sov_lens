@@ -1,7 +1,7 @@
 .ai-answer-shell {
   min-height: 100vh;
   overflow-x: hidden;
-  padding-top: 4.65rem;
+  padding-top: 6rem;
   color: rgba(255, 250, 235, 0.9);
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 250, 235, 0.035), transparent 28rem),

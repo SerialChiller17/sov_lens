@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
+import { MarketTape } from "../market-tape/MarketTape";
+import { EVENT_RISK_TAPE } from "../market-tape/marketTapeData";
 import { MARKET_DEVELOPMENTS } from "../portfolio/portfolioWorkspaceData";
 import type { MarketDevelopment } from "../portfolio/portfolioWorkspaceData";
 
@@ -85,6 +87,7 @@ export function AiAnswerView(navHandlers: AiAnswerViewProps) {
   return (
     <main className="ai-answer-shell" aria-label="AI synthesis">
       <GlobalBrandNav activeView="answer" {...navHandlers} />
+      <MarketTape basket={EVENT_RISK_TAPE} includeGlobalItems={false} statusLabel="Synthesis Tape" />
 
       <header className="ai-answer-contextbar">
         <button type="button" onClick={navHandlers.onMarkets} aria-label="Back to Indian Markets">

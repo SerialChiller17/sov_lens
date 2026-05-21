@@ -1,7 +1,9 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, X } from "lucide-react";
 import type { MarketSummaryItem, MarketSummarySource } from "./portfolioWorkspaceData";
+
+const DEFAULT_VISIBLE_SUMMARY_ITEMS = 5;
 
 interface MarketSummaryProps {
   items: MarketSummaryItem[];
@@ -122,8 +124,15 @@ function SourcesDrawer({ sources, isOpen, onClose }: { sources: MarketSummarySou
 
 export function MarketSummary({ items, sources, updatedLabel = "Updated 1 minute ago" }: MarketSummaryProps) {
   const accordionId = useId();
-  const [openItemId, setOpenItemId] = useState<string | null>(items[0]?.id ?? null);
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
+  const hasHiddenItems = items.length > DEFAULT_VISIBLE_SUMMARY_ITEMS;
+  const visibleItems = useMemo(
+    () => (showAllItems || !hasHiddenItems ? items : items.slice(0, DEFAULT_VISIBLE_SUMMARY_ITEMS)),
+    [hasHiddenItems, items, showAllItems],
+  );
+  const hiddenItemCount = Math.max(items.length - DEFAULT_VISIBLE_SUMMARY_ITEMS, 0);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -136,6 +145,12 @@ export function MarketSummary({ items, sources, updatedLabel = "Updated 1 minute
     }
   }, [items, openItemId]);
 
+  useEffect(() => {
+    if (!showAllItems && openItemId && !visibleItems.some((item) => item.id === openItemId)) {
+      setOpenItemId(null);
+    }
+  }, [openItemId, showAllItems, visibleItems]);
+
   return (
     <section className="portfolio-market-summary-panel" aria-labelledby="market-summary-heading">
       <header className="portfolio-workspace-panel-heading market-summary-heading">
@@ -146,8 +161,8 @@ export function MarketSummary({ items, sources, updatedLabel = "Updated 1 minute
       </header>
 
       <div className="market-summary-card">
-        <div className="market-summary-accordion">
-          {items.map((item) => {
+        <div className="market-summary-accordion" id={`${accordionId}-list`}>
+          {visibleItems.map((item) => {
             const isOpen = openItemId === item.id;
             const panelId = `${accordionId}-${item.id}-panel`;
             const triggerId = `${accordionId}-${item.id}-trigger`;
@@ -177,6 +192,18 @@ export function MarketSummary({ items, sources, updatedLabel = "Updated 1 minute
 
         <div className="market-summary-card-footer">
           <SourcesPill sources={sources} onOpen={() => setIsSourcesOpen(true)} />
+          {hasHiddenItems ? (
+            <button
+              type="button"
+              className="market-summary-show-more-button"
+              aria-expanded={showAllItems}
+              aria-controls={`${accordionId}-list`}
+              onClick={() => setShowAllItems((current) => !current)}
+            >
+              {showAllItems ? "Show fewer" : `Show ${hiddenItemCount} more`}
+              <ChevronDown size={15} strokeWidth={2} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
       </div>
 

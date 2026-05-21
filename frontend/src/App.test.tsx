@@ -1,12 +1,23 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import type { BootstrapData } from "./types";
+
+const financeFinishCss = readFileSync("src/styles/finance-finish.css", "utf8");
 
 vi.mock("cobe", () => ({
   default: vi.fn(() => ({
     update: vi.fn(),
     destroy: vi.fn(),
+  })),
+}));
+
+vi.mock("@paper-design/shaders", () => ({
+  liquidMetalFragmentShader: "void main() {}",
+  ShaderMount: vi.fn(() => ({
+    dispose: vi.fn(),
+    setSpeed: vi.fn(),
   })),
 }));
 
@@ -337,9 +348,280 @@ describe("Sovereign Lens app", () => {
     fireEvent.click(screen.getByRole("button", { name: /Open Indian Markets/i }));
 
     await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Top Assets/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Top Metrics/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Market Summary/i })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/markets");
+  });
+
+  it("places market summary in the main column and top metrics in the right rail", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const workspace = await screen.findByRole("region", { name: /Indian market workspace/i });
+    const mainColumn = within(workspace).getByRole("region", { name: /Market summary workspace/i });
+    const marketSummary = within(mainColumn).getByRole("region", { name: /Market Summary/i });
+    const topMetricsRail = within(workspace).getByRole("complementary", { name: /Top metrics/i });
+
+    expect(within(mainColumn).getByRole("heading", { name: /Market Summary/i })).toBeInTheDocument();
+    expect(within(marketSummary).getByText(/Updated 1 minute ago/i)).toBeInTheDocument();
+    expect(financeFinishCss).toMatch(
+      /\.portfolio-app-view-markets \.portfolio-market-summary-panel \.market-summary-heading strong\s*\{[^}]*color:\s*var\(--markets-muted\) !important;[^}]*font-family:\s*var\(--font-ui\) !important;[^}]*font-size:\s*13px !important;[^}]*font-weight:\s*500 !important;/s,
+    );
+    expect(within(marketSummary).getAllByRole("article")).toHaveLength(5);
+    expect(within(marketSummary).queryByText(/Air India Slashes/i)).not.toBeInTheDocument();
+    expect(within(marketSummary).getByRole("button", { name: /Indian Markets Open Higher/i })).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(within(marketSummary).getByRole("button", { name: /Show 1 more/i }));
+
+    await waitFor(() => expect(within(marketSummary).getAllByRole("article")).toHaveLength(6));
+    expect(within(marketSummary).getByText(/Air India Slashes/i)).toBeInTheDocument();
+    expect(within(marketSummary).getByRole("button", { name: /Show fewer/i })).toBeInTheDocument();
+
+    expect(within(topMetricsRail).getByRole("heading", { name: /Top Metrics/i })).toBeInTheDocument();
+    const topMetricsGrid = topMetricsRail.querySelector(".portfolio-index-grid") as HTMLElement;
+    expect(within(topMetricsGrid).getAllByRole("article")).toHaveLength(4);
+    expect(within(topMetricsGrid).getByText("INDIA VIX")).toBeInTheDocument();
+    expect(within(topMetricsGrid).getByText("USD/INR")).toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText("BANK NIFTY")).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText("MIDCAP 150")).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText(/Large-cap benchmark/i)).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText(/Broad benchmark/i)).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText(/Volatility gauge/i)).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText(/Rupee reference/i)).not.toBeInTheDocument();
+    const niftyMetricCard = within(topMetricsGrid).getByRole("article", {
+      name: /NIFTY 50 24,330\.95, \+1\.24%, \+298\.15/i,
+    });
+    expect(niftyMetricCard.querySelector(".markets-asset-identity .markets-asset-value")).toHaveTextContent("24,330.95");
+    expect(niftyMetricCard.querySelector(".markets-asset-percent svg")).toBeInTheDocument();
+    expect(niftyMetricCard.querySelector(".markets-asset-percent span")).toHaveTextContent("+1.24%");
+    expect(niftyMetricCard.querySelector(".markets-asset-change")).toHaveTextContent("+298.15");
+    expect(financeFinishCss).toMatch(
+      /\.portfolio-app-view-markets \.markets-top-assets-rail \.markets-asset-percent\s*\{[^}]*font-size:\s*18px;[^}]*font-weight:\s*640;/s,
+    );
+    expect(financeFinishCss).toMatch(
+      /\.portfolio-app-view-markets \.markets-top-assets-rail \.markets-asset-change\s*\{[^}]*font-size:\s*12px !important;[^}]*opacity:\s*0\.74;/s,
+    );
+
+    const indicatorPicker = within(topMetricsRail).getByRole("button", { name: /Choose top metrics/i });
+    expect(indicatorPicker).toHaveTextContent("4/4");
+    fireEvent.click(indicatorPicker);
+
+    const pickerMenu = within(topMetricsRail).getByRole("group", { name: /Choose visible top metrics/i });
+    expect(within(pickerMenu).getByText(/Remove one to add another/i)).toBeInTheDocument();
+    const removeNifty = within(pickerMenu).getByRole("checkbox", { name: /Remove NIFTY 50 from top metrics/i });
+    const blockedBankNifty = within(pickerMenu).getByRole("checkbox", { name: /Remove one indicator before adding BANK NIFTY/i });
+    expect(removeNifty).toHaveAttribute("aria-checked", "true");
+    expect(removeNifty.querySelector(".markets-indicator-option-action svg")).toBeInTheDocument();
+    expect(blockedBankNifty).toHaveAttribute("aria-checked", "false");
+    expect(blockedBankNifty).toHaveAttribute("aria-disabled", "true");
+    expect(blockedBankNifty).not.toBeDisabled();
+
+    fireEvent.click(removeNifty);
+
+    await waitFor(() => expect(within(topMetricsGrid).getAllByRole("article")).toHaveLength(3));
+    expect(within(topMetricsGrid).queryByText("NIFTY 50")).not.toBeInTheDocument();
+    const addBankNifty = within(pickerMenu).getByRole("checkbox", { name: /Add BANK NIFTY to top metrics/i });
+    expect(addBankNifty).not.toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(addBankNifty);
+
+    await waitFor(() => expect(within(topMetricsGrid).getAllByRole("article")).toHaveLength(4));
+    expect(within(topMetricsGrid).getByText("BANK NIFTY")).toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText("NIFTY 50")).not.toBeInTheDocument();
+    expect(within(topMetricsGrid).queryByText(/Private bank leadership/i)).not.toBeInTheDocument();
+  });
+
+  it("lays out the market heatmap, breadth strip, and lower rail sections", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const heatmapSection = await screen.findByRole("region", { name: /Full-width market heatmap/i });
+    expect(within(heatmapSection).getByRole("heading", { name: /NIFTY 50 Heatmap/i })).toBeInTheDocument();
+    const heatmapHeader = within(heatmapSection).getByRole("banner");
+    const marketDepth = within(heatmapHeader).getByRole("group", { name: /Market depth/i });
+    const heatmapPanel = heatmapSection.querySelector(".portfolio-heatmap-panel");
+    const heatmapStage = within(heatmapSection).getByRole("img", {
+      name: /NIFTY 50 stock heatmap grouped by sector/i,
+    });
+
+    expect(heatmapPanel).not.toContainElement(heatmapHeader);
+    expect(heatmapStage.closest(".portfolio-heatmap-panel")).toBe(heatmapPanel);
+    expect(within(heatmapPanel as HTMLElement).queryByRole("heading", { name: /NIFTY 50 Heatmap/i })).not.toBeInTheDocument();
+    expect(within(marketDepth).getByText(/Adv/i)).toBeInTheDocument();
+    expect(within(marketDepth).getByText(/Dec/i)).toBeInTheDocument();
+    expect(within(marketDepth).getByText(/52W H\/L/i)).toBeInTheDocument();
+    expect(within(marketDepth).getByText(/FII/i)).toBeInTheDocument();
+    expect(within(marketDepth).getByText(/DII/i)).toBeInTheDocument();
+    expect(within(heatmapSection).queryByText(/DEMO NIFTY 50 MARKET DATA/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /Compact market breadth strip/i })).not.toBeInTheDocument();
+
+    const lowerWorkspace = screen.getByRole("region", { name: /Indian market lower workspace/i });
+    expect(within(lowerWorkspace).getByRole("heading", { name: /Recent Developments/i })).toBeInTheDocument();
+    expect(within(lowerWorkspace).getByRole("heading", { name: /Names moving with force/i })).toBeInTheDocument();
+
+    const lowerRail = within(lowerWorkspace).getByRole("complementary", { name: /Market movers and sectors/i });
+    expect(within(lowerRail).getByRole("heading", { name: /Live Indian movers/i })).toBeInTheDocument();
+    expect(within(lowerRail).getByRole("heading", { name: /Sector performance/i })).toBeInTheDocument();
+  });
+
+  it("renders market mover filters as a semantic slider without sample-data meta text", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const lowerRail = await screen.findByRole("complementary", { name: /Market movers and sectors/i });
+    const moversHeading = within(lowerRail).getByRole("heading", { name: /Live Indian movers/i });
+    const moversPanel = moversHeading.closest("section");
+    expect(moversPanel).toBeTruthy();
+
+    const tabGroup = within(moversPanel as HTMLElement).getByRole("group", { name: /Market mover category/i });
+    const gainersButton = within(tabGroup).getByRole("button", { name: /Show gainers movers/i });
+    const losersButton = within(tabGroup).getByRole("button", { name: /Show losers movers/i });
+    const activeButton = within(tabGroup).getByRole("button", { name: /Show active movers/i });
+
+    expect(within(moversPanel as HTMLElement).queryByText(/Sample data/i)).not.toBeInTheDocument();
+    expect(tabGroup).toHaveClass("portfolio-mover-tabs", "is-gainers");
+    expect((tabGroup as HTMLElement).style.getPropertyValue("--mover-active-index")).toBe("0");
+    expect(gainersButton).toHaveAttribute("data-mover-tab", "gainers");
+    expect(gainersButton).toHaveClass("is-mover-gainers", "is-active");
+    expect(losersButton).toHaveAttribute("aria-pressed", "false");
+    expect(activeButton).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(losersButton);
+
+    await waitFor(() => {
+      expect(tabGroup).toHaveClass("is-losers");
+      expect((tabGroup as HTMLElement).style.getPropertyValue("--mover-active-index")).toBe("1");
+      expect(losersButton).toHaveClass("is-mover-losers", "is-active");
+    });
+
+    fireEvent.click(activeButton);
+
+    await waitFor(() => {
+      expect(tabGroup).toHaveClass("is-active");
+      expect((tabGroup as HTMLElement).style.getPropertyValue("--mover-active-index")).toBe("2");
+      expect(activeButton).toHaveClass("is-mover-active", "is-active");
+    });
+  });
+
+  it("keeps NIFTY heatmap sector labels on the shared stage background", async () => {
+    window.history.pushState({}, "", "/markets");
+    setViewportWidth(1440);
+    render(<App />);
+
+    const heatmapSection = await screen.findByRole("region", { name: /Full-width market heatmap/i });
+    const stage = within(heatmapSection).getByRole("img", {
+      name: /NIFTY 50 stock heatmap grouped by sector/i,
+    });
+    const sectorLabels = Array.from(
+      stage.querySelectorAll<HTMLElement>(
+        ".portfolio-heatmap-sector:not(.is-label-none) .portfolio-heatmap-sector-label",
+      ),
+    );
+
+    expect(sectorLabels.length).toBeGreaterThan(0);
+
+    sectorLabels.forEach((label) => {
+      const sector = label.closest<HTMLElement>(".portfolio-heatmap-sector");
+      const reserve = Number.parseFloat(sector?.style.getPropertyValue("--heatmap-sector-header") ?? "");
+      const expectedReserve = sector?.classList.contains("is-label-full") ? 3.4 : 2.8;
+      const maxReserve = sector?.classList.contains("is-label-full") ? 4.4 : 3.4;
+
+      expect(label.querySelector("span")).toBeNull();
+      expect(reserve).toBeGreaterThanOrEqual(expectedReserve);
+      expect(reserve).toBeLessThanOrEqual(maxReserve);
+      expect(sector?.style.getPropertyValue("--heatmap-sector-header-size")).toMatch(/%$/);
+    });
+
+    const firstSector = sectorLabels[0].closest<HTMLElement>(".portfolio-heatmap-sector");
+    expect(Number.parseFloat(firstSector?.style.left ?? "")).toBeGreaterThanOrEqual(0.16);
+
+    expect(financeFinishCss).toMatch(/\.portfolio-app-view-markets \.portfolio-heatmap-sector\s*\{[^}]*border-color:\s*transparent;[^}]*background:\s*transparent;/s);
+    expect(financeFinishCss).toMatch(/\.portfolio-app-view-markets \.portfolio-heatmap-sector-label\s*\{[^}]*background:\s*transparent;/s);
+  });
+
+  it("uses vivid NIFTY heatmap tones for strong gain and loss moves", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const heatmapSection = await screen.findByRole("region", { name: /Full-width market heatmap/i });
+    const strongGainTile = within(heatmapSection).getByRole("button", { name: /Zomato, \+3\.80%/i });
+    const strongLossTile = within(heatmapSection).getByRole("button", { name: /Oil & Natural Gas Corp, -3\.16%/i });
+
+    expect(strongGainTile.style.getPropertyValue("--heatmap-bg")).toBe("#63ad49");
+    expect(strongGainTile.style.getPropertyValue("--heatmap-border")).toBe("rgba(126, 207, 91, 0.46)");
+    expect(strongLossTile.style.getPropertyValue("--heatmap-bg")).toBe("#d25b75");
+    expect(strongLossTile.style.getPropertyValue("--heatmap-border")).toBe("rgba(248, 116, 146, 0.46)");
+  });
+
+  it("cycles recent developments one card at a time", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const developments = await screen.findByRole("region", { name: /Recent Developments/i });
+
+    expect(within(developments).getByText(/Sensex, Nifty Break Four-Day Losing Streak Wednesday/i)).toBeInTheDocument();
+    expect(within(developments).getByText(/IT Shares Tumble Following OpenAI Enterprise Investment/i)).toBeInTheDocument();
+    expect(within(developments).getByText(/FII Outflows Exceeding/i)).toBeInTheDocument();
+    expect(within(developments).queryByText(/Gold & Silver Import Duty Hiked/i)).not.toBeInTheDocument();
+    expect(within(developments).queryByText(/Based on \d+ sources/i)).not.toBeInTheDocument();
+
+    fireEvent.click(within(developments).getByRole("button", { name: /Show next recent development/i }));
+
+    await waitFor(() => expect(within(developments).queryByText(/Sensex, Nifty Break Four-Day Losing Streak Wednesday/i)).not.toBeInTheDocument());
+    expect(within(developments).getByText(/IT Shares Tumble Following OpenAI Enterprise Investment/i)).toBeInTheDocument();
+    expect(within(developments).getByText(/FII Outflows Exceeding/i)).toBeInTheDocument();
+    expect(within(developments).getByText(/Gold & Silver Import Duty Hiked/i)).toBeInTheDocument();
+
+    fireEvent.click(within(developments).getByRole("button", { name: /Show previous recent development/i }));
+
+    await waitFor(() => expect(within(developments).getByText(/Sensex, Nifty Break Four-Day Losing Streak Wednesday/i)).toBeInTheDocument());
+    expect(within(developments).queryByText(/Gold & Silver Import Duty Hiked/i)).not.toBeInTheDocument();
+  });
+
+  it("places market carousel edge controls beside the card rail instead of the heading", async () => {
+    window.history.pushState({}, "", "/markets");
+    render(<App />);
+
+    const developments = await screen.findByRole("region", { name: /Recent Developments/i });
+    const developmentMeta = developments.querySelector(".portfolio-recent-developments-meta");
+    const developmentSyncButton = within(developments).getByRole("button", { name: /Refresh recent developments/i });
+    const developmentPreviousButton = within(developments).getByRole("button", { name: /Show previous recent development/i });
+    const developmentNextButton = within(developments).getByRole("button", { name: /Show next recent development/i });
+    const developmentStage = developments.querySelector(".markets-carousel-stage");
+
+    expect(developmentMeta).toContainElement(within(developments).getByText(/Updated 12 minutes ago/i));
+    expect(developmentMeta).toContainElement(developmentSyncButton);
+    expect(developmentSyncButton).not.toHaveTextContent(/sync/i);
+    expect(developmentSyncButton.querySelector("svg")).toBeInTheDocument();
+    expect(financeFinishCss).toMatch(/\.portfolio-app-view-markets \.portfolio-recent-developments-meta strong\s*\{[^}]*font-size:\s*12px;[^}]*font-weight:\s*440;/s);
+    expect(within(developments).queryByText(/1-3\s*\/\s*6/i)).not.toBeInTheDocument();
+    expect(developmentStage).toContainElement(developmentPreviousButton);
+    expect(developmentStage).toContainElement(developmentNextButton);
+    expect(developmentPreviousButton).toHaveClass("is-previous");
+    expect(developmentNextButton).toHaveClass("is-next");
+    expect(developmentPreviousButton.closest(".portfolio-recent-developments-heading")).toBeNull();
+    expect(developmentNextButton.closest(".portfolio-recent-developments-heading")).toBeNull();
+
+    const standouts = screen.getByRole("region", { name: /Standouts/i });
+    expect(standouts.querySelector(".markets-carousel-stage")).toBeInTheDocument();
+  });
+
+  it("keeps the funds add button on the restored glass liquid-metal treatment", async () => {
+    window.history.pushState({}, "", "/funds");
+    render(<App />);
+
+    const fundsScreen = await screen.findByRole("region", { name: /Funds comparison screen/i });
+    const addFundButton = within(fundsScreen).getByRole("button", { name: /Add fund/i });
+
+    expect(addFundButton).toHaveClass("fund-picker-trigger", "liquid-metal-button");
+    expect(financeFinishCss).toMatch(/Funds premium glass restoration/s);
+    expect(financeFinishCss).toMatch(
+      /\.portfolio-app-view-funds \.fund-picker-trigger\.liquid-metal-button\s*\{[^}]*--funds-liquid-rim/s,
+    );
+    expect(financeFinishCss).toMatch(
+      /\.portfolio-app-view-funds \.fund-picker-trigger\.liquid-metal-button \.liquid-metal-button-shader\s*\{[^}]*display:\s*block !important/s,
+    );
+    expect(financeFinishCss).toMatch(/@keyframes funds-liquid-outline-flow/s);
   });
 
   it("opens Earnings from the top navigation", async () => {
@@ -378,7 +660,7 @@ describe("Sovereign Lens app", () => {
     window.history.pushState({}, "", "/markets");
     const { unmount } = render(<App />);
     await waitFor(() => expect(screen.getByRole("region", { name: /Indian Markets screen/i })).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: /Top Assets/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Top Metrics/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Market Summary/i })).toBeInTheDocument();
     unmount();
 

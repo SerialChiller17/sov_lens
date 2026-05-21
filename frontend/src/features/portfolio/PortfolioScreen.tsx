@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpRight, Bell, Maximize2, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Bell, ChevronDown, ChevronLeft, ChevronRight, Maximize2, Plus, RefreshCw, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import type { AppView } from "../../app/routes";
 import { DetailedSparkline } from "../../components/charts/DetailedSparkline";
+import { MarketTape } from "../market-tape/MarketTape";
+import {
+  INDIAN_MARKET_TAPE,
+  WATCHLIST_MARKET_TAPE,
+} from "../market-tape/marketTapeData";
 import {
   NIFTY_50_PERFORMANCE,
+  PORTFOLIO_MARKET_TAPE,
   PORTFOLIO_ALLOCATION_COLORS,
   PORTFOLIO_AI_TRUST,
   PORTFOLIO_COCKPIT,
@@ -29,7 +35,6 @@ import {
   EARNINGS_DAYS,
   EARNINGS_EVENTS,
   MARKET_BREADTH,
-  MARKET_DATA_NOTICE,
   MARKET_DEVELOPMENTS,
   MARKET_HEATMAP_TILES,
   MARKET_INDEX_CARDS,
@@ -81,6 +86,11 @@ const WATCHLIST_TRACKED_STORAGE_KEY = "sov-finance-watchlist-tracked";
 const WATCHLIST_ALERTS_STORAGE_KEY = "sov-finance-watchlist-alerts";
 const DEFAULT_TRACKED_TICKERS = WATCHLIST_ITEMS.slice(0, 4).map((item) => item.ticker);
 const DEFAULT_ALERT_TICKERS = WATCHLIST_ITEMS.filter((item) => item.alert).map((item) => item.ticker);
+
+const FINANCE_TAPE_BY_VIEW = {
+  markets: { basket: INDIAN_MARKET_TAPE, statusLabel: "India Tape" },
+  watchlist: { basket: WATCHLIST_MARKET_TAPE, statusLabel: "Watchlist Tape" },
+} as const;
 
 const FINANCE_VIEW_PLACEHOLDER: Partial<Record<AppView, string>> = {
   markets: "Search stocks, sectors, funds...",
@@ -156,6 +166,11 @@ function formatCompactCrores(value: number) {
   return `${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr`;
 }
 
+function formatCompactFlowCrores(value: number) {
+  const sign = value < 0 ? "-" : "";
+  return `${sign}₹${Math.abs(value).toLocaleString("en-IN")}Cr`;
+}
+
 interface HeatmapRect {
   x: number;
   y: number;
@@ -168,9 +183,13 @@ interface HeatmapTileLayout extends HeatmapRect {
   labelLevel: "full" | "medium" | "compact" | "micro";
 }
 
+type HeatmapSectorLabelLevel = "full" | "compact" | "none";
+
 interface HeatmapSectorLayout extends HeatmapRect {
   sector: string;
   industries: string;
+  labelLevel: HeatmapSectorLabelLevel;
+  headerHeight: number;
   totalWeight: number;
   weightedMove: number;
   tiles: HeatmapTileLayout[];
@@ -193,6 +212,13 @@ function sumWeighted<T>(items: T[], getWeight: (item: T) => number) {
 function heatmapWeight(stock: MarketHeatmapTile) {
   return Math.max(stock.marketCapCr, 1);
 }
+
+const HEATMAP_SECTOR_GUTTER_X = 0.18;
+const HEATMAP_SECTOR_GUTTER_Y = 0.06;
+const HEATMAP_SECTOR_BODY_GAP_X = 0.035;
+const HEATMAP_SECTOR_BODY_GAP_Y = 0.025;
+const HEATMAP_TILE_GAP_X = 0.035;
+const HEATMAP_TILE_GAP_Y = 0.035;
 
 function insetHeatmapRect(rect: HeatmapRect, horizontalGap: number, verticalGap = horizontalGap): HeatmapRect {
   return {
@@ -294,15 +320,29 @@ function getHeatmapLabelLevel(rect: HeatmapRect): HeatmapTileLayout["labelLevel"
   const area = rect.width * rect.height;
   const shortSide = Math.min(rect.width, rect.height);
 
-  if (area >= 96 && shortSide >= 4.8) return "full";
-  if (area >= 38 && shortSide >= 3.1) return "medium";
-  if (area >= 12 && shortSide >= 1.9) return "compact";
+  if (area >= 150 && rect.height >= 13 && rect.width >= 11 && shortSide >= 6) return "full";
+  if (area >= 70 && rect.height >= 7 && rect.width >= 6 && shortSide >= 4) return "medium";
+  if (area >= 24 && rect.height >= 4.6 && rect.width >= 4.5 && shortSide >= 2.8) return "compact";
   return "micro";
 }
 
 function getWeightedMove(stocks: MarketHeatmapTile[]) {
   const totalWeight = sumWeighted(stocks, heatmapWeight);
   return stocks.reduce((sum, stock) => sum + stock.changePercent * heatmapWeight(stock), 0) / Math.max(totalWeight, 0.001);
+}
+
+function getHeatmapSectorHeader(rect: HeatmapRect): { height: number; labelLevel: HeatmapSectorLabelLevel } {
+  if (rect.width < 8 || rect.height < 10) {
+    return { height: 0, labelLevel: "none" };
+  }
+
+  const canShowFullLabel = rect.width >= 18 && rect.height >= 15;
+  const labelLevel: HeatmapSectorLabelLevel = canShowFullLabel ? "full" : "compact";
+  const minHeight = canShowFullLabel ? 3.4 : 2.8;
+  const maxHeight = canShowFullLabel ? 4.4 : 3.4;
+  const height = Math.min(maxHeight, Math.max(minHeight, rect.height * 0.105));
+
+  return { height: Math.min(height, rect.height * 0.32), labelLevel };
 }
 
 function buildNiftyHeatmapLayout(stocks: MarketHeatmapTile[]): HeatmapLayout {
@@ -325,6 +365,7 @@ function buildNiftyHeatmapLayout(stocks: MarketHeatmapTile[]): HeatmapLayout {
   const sectorRects = buildWeightedRects(sectors, { x: 0, y: 0, width: 100, height: 100 }, (sector) => sector.totalWeight);
 
   const sectorLayouts = sectorRects.map(({ item: sector, rect }) => {
+    const sectorFrame = insetHeatmapRect(rect, HEATMAP_SECTOR_GUTTER_X, HEATMAP_SECTOR_GUTTER_Y);
     const industries = Array.from(
       sector.stocks.reduce((industryMap, stock) => {
         industryMap.set(stock.industry, (industryMap.get(stock.industry) ?? 0) + heatmapWeight(stock));
@@ -335,20 +376,20 @@ function buildNiftyHeatmapLayout(stocks: MarketHeatmapTile[]): HeatmapLayout {
       .slice(0, 2)
       .map(([industry]) => industry)
       .join(" / ");
-    const headerHeight = rect.height >= 7.6 && rect.width >= 7 ? Math.min(3.4, Math.max(1.7, rect.height * 0.11)) : 0;
+    const sectorHeader = getHeatmapSectorHeader(sectorFrame);
     const bodyRect = insetHeatmapRect(
       {
-        x: rect.x,
-        y: rect.y + headerHeight,
-        width: rect.width,
-        height: Math.max(rect.height - headerHeight, 0.1),
+        x: sectorFrame.x,
+        y: sectorFrame.y + sectorHeader.height,
+        width: sectorFrame.width,
+        height: Math.max(sectorFrame.height - sectorHeader.height, 0.1),
       },
-      0.08,
-      0.08,
+      HEATMAP_SECTOR_BODY_GAP_X,
+      HEATMAP_SECTOR_BODY_GAP_Y,
     );
     const tileRects = buildWeightedRects(sector.stocks, bodyRect, heatmapWeight);
     const tiles = tileRects.map(({ item: stock, rect: tileRect }) => {
-      const insetRect = insetHeatmapRect(tileRect, 0.04, 0.04);
+      const insetRect = insetHeatmapRect(tileRect, HEATMAP_TILE_GAP_X, HEATMAP_TILE_GAP_Y);
       return {
         ...insetRect,
         stock,
@@ -357,9 +398,11 @@ function buildNiftyHeatmapLayout(stocks: MarketHeatmapTile[]): HeatmapLayout {
     });
 
     return {
-      ...insetHeatmapRect(rect, 0.08, 0.08),
+      ...sectorFrame,
       sector: sector.sector,
       industries,
+      labelLevel: sectorHeader.labelLevel,
+      headerHeight: sectorHeader.height,
       totalWeight: sector.totalWeight,
       weightedMove: sector.weightedMove,
       tiles,
@@ -384,41 +427,41 @@ function heatmapToneStyles(value: number) {
 
   if (absValue < 0.08) {
     return {
-      "--heatmap-bg": "#333332",
-      "--heatmap-border": "rgba(255, 255, 255, 0.07)",
-      "--heatmap-accent": "rgba(235, 235, 230, 0.68)",
-      "--heatmap-text": "rgba(245, 245, 240, 0.84)",
+      "--heatmap-bg": "#343434",
+      "--heatmap-border": "rgba(210, 210, 204, 0.13)",
+      "--heatmap-accent": "rgba(235, 235, 230, 0.82)",
+      "--heatmap-text": "rgba(244, 244, 239, 0.92)",
     } as React.CSSProperties;
   }
 
   if (clampedValue > 0) {
     const tone =
       absValue >= 2
-        ? { bg: "#5a8f46", border: "rgba(176, 218, 145, 0.24)", accent: "rgba(234, 246, 223, 0.86)" }
+        ? { bg: "#63ad49", border: "rgba(126, 207, 91, 0.46)", accent: "rgba(225, 252, 207, 0.96)" }
         : absValue >= 1
-          ? { bg: "#3f6d35", border: "rgba(154, 196, 128, 0.2)", accent: "rgba(226, 240, 216, 0.8)" }
-          : { bg: "#334f2f", border: "rgba(135, 176, 110, 0.17)", accent: "rgba(215, 233, 205, 0.74)" };
+          ? { bg: "#4f8d3e", border: "rgba(111, 184, 82, 0.38)", accent: "rgba(219, 246, 204, 0.9)" }
+          : { bg: "#385f32", border: "rgba(92, 148, 72, 0.3)", accent: "rgba(206, 231, 195, 0.82)" };
 
     return {
       "--heatmap-bg": tone.bg,
       "--heatmap-border": tone.border,
       "--heatmap-accent": tone.accent,
-      "--heatmap-text": "rgba(244, 249, 240, 0.9)",
+      "--heatmap-text": "rgba(246, 252, 242, 0.95)",
     } as React.CSSProperties;
   }
 
   const tone =
     absValue >= 2
-      ? { bg: "#a44e61", border: "rgba(229, 142, 161, 0.26)", accent: "rgba(255, 229, 234, 0.86)" }
+      ? { bg: "#d25b75", border: "rgba(248, 116, 146, 0.46)", accent: "rgba(255, 225, 232, 0.96)" }
       : absValue >= 1
-        ? { bg: "#783d49", border: "rgba(216, 128, 146, 0.2)", accent: "rgba(248, 218, 224, 0.8)" }
-        : { bg: "#553036", border: "rgba(190, 107, 123, 0.17)", accent: "rgba(237, 203, 211, 0.74)" };
+        ? { bg: "#9e4858", border: "rgba(222, 91, 116, 0.38)", accent: "rgba(251, 211, 219, 0.9)" }
+        : { bg: "#713a43", border: "rgba(181, 79, 98, 0.3)", accent: "rgba(237, 197, 205, 0.82)" };
 
   return {
     "--heatmap-bg": tone.bg,
     "--heatmap-border": tone.border,
     "--heatmap-accent": tone.accent,
-    "--heatmap-text": "rgba(250, 239, 241, 0.9)",
+    "--heatmap-text": "rgba(255, 240, 244, 0.96)",
   } as React.CSSProperties;
 }
 
@@ -588,22 +631,25 @@ function WorkspaceLayout({
 }
 
 function MarketIndexTile({ item }: { item: MarketIndexCard }) {
-  const label = item.symbol === "SENSEX" ? "Broad benchmark" : item.name;
   const moveTone = toneClass(item.changePercent);
+  const DirectionIcon = item.changePercent >= 0 ? ArrowUpRight : ArrowDownRight;
+  const formattedPercent = formatPercent(item.changePercent);
 
   return (
-    <article className="portfolio-index-card">
+    <article className="portfolio-index-card" aria-label={`${item.symbol} ${item.value}, ${formattedPercent}, ${item.changeValue}`}>
       <header className="markets-asset-card-header">
-        <div>
+        <div className="markets-asset-identity">
           <h3>{item.symbol}</h3>
-          <span>{label}</span>
+          <strong className="markets-asset-value">{item.value}</strong>
         </div>
         <div className={`markets-asset-move ${moveTone}`}>
-          <strong>{formatPercent(item.changePercent)}</strong>
-          <em>{item.changeValue}</em>
+          <strong className="markets-asset-percent">
+            <DirectionIcon size={16} strokeWidth={2} aria-hidden="true" />
+            <span>{formattedPercent}</span>
+          </strong>
+          <em className="markets-asset-change">{item.changeValue}</em>
         </div>
       </header>
-      <strong className="markets-asset-value">{item.value}</strong>
       <DetailedSparkline
         className="portfolio-mini-sparkline"
         data={item.points}
@@ -611,6 +657,157 @@ function MarketIndexTile({ item }: { item: MarketIndexCard }) {
         ariaLabel={`${item.symbol} intraday trend chart`}
       />
     </article>
+  );
+}
+
+const MAX_VISIBLE_TOP_METRICS = 4;
+const DEFAULT_TOP_METRIC_SYMBOLS = ["NIFTY 50", "SENSEX", "INDIA VIX", "USD/INR"];
+
+function MarketTopMetricsRail() {
+  const [selectedMetricSymbols, setSelectedMetricSymbols] = useState<string[]>(DEFAULT_TOP_METRIC_SYMBOLS);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const selectedMetricSet = useMemo(() => new Set(selectedMetricSymbols), [selectedMetricSymbols]);
+  const visibleMetrics = useMemo(
+    () =>
+      selectedMetricSymbols
+        .map((symbol) => MARKET_INDEX_CARDS.find((item) => item.symbol === symbol))
+        .filter((item): item is MarketIndexCard => Boolean(item)),
+    [selectedMetricSymbols],
+  );
+  const isAtVisibleLimit = selectedMetricSymbols.length >= MAX_VISIBLE_TOP_METRICS;
+  const availableMetricSlots = Math.max(0, MAX_VISIBLE_TOP_METRICS - selectedMetricSymbols.length);
+  const pickerLimitHint = isAtVisibleLimit ? "Remove one to add another" : `${availableMetricSlots} slot${availableMetricSlots === 1 ? "" : "s"} open`;
+
+  useEffect(() => {
+    if (!isPickerOpen) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!pickerRef.current?.contains(event.target as Node)) {
+        setIsPickerOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsPickerOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPickerOpen]);
+
+  const toggleMetric = (symbol: string) => {
+    setSelectedMetricSymbols((currentSymbols) => {
+      if (currentSymbols.includes(symbol)) {
+        return currentSymbols.filter((currentSymbol) => currentSymbol !== symbol);
+      }
+
+      if (currentSymbols.length >= MAX_VISIBLE_TOP_METRICS) return currentSymbols;
+      return [...currentSymbols, symbol];
+    });
+  };
+
+  return (
+    <aside className="markets-top-assets-rail" aria-labelledby="markets-top-metrics-heading">
+      <section className="portfolio-market-overview-panel">
+        <header className="markets-section-heading markets-top-metrics-heading">
+          <h2 id="markets-top-metrics-heading">Top Metrics</h2>
+          <div className="markets-indicator-picker" ref={pickerRef}>
+            <button
+              type="button"
+              className="markets-indicator-picker-button"
+              aria-label={`Choose top metrics, ${selectedMetricSymbols.length} of ${MAX_VISIBLE_TOP_METRICS} selected`}
+              aria-expanded={isPickerOpen}
+              aria-controls="markets-indicator-picker-menu"
+              onClick={() => setIsPickerOpen((isOpen) => !isOpen)}
+            >
+              <SlidersHorizontal size={14} strokeWidth={1.8} aria-hidden="true" />
+              <span>Indicators</span>
+              <em>
+                {selectedMetricSymbols.length}/{MAX_VISIBLE_TOP_METRICS}
+              </em>
+              <ChevronDown size={14} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+
+            {isPickerOpen ? (
+              <div id="markets-indicator-picker-menu" className="markets-indicator-picker-menu" role="group" aria-label="Choose visible top metrics">
+                <div className="markets-indicator-picker-menu-header">
+                  <div>
+                    <span>Indicator stack</span>
+                    <strong>
+                      {selectedMetricSymbols.length}/{MAX_VISIBLE_TOP_METRICS} selected
+                    </strong>
+                  </div>
+                  <small>{pickerLimitHint}</small>
+                </div>
+                <div className="markets-indicator-picker-options">
+                  {MARKET_INDEX_CARDS.map((item) => {
+                    const isSelected = selectedMetricSet.has(item.symbol);
+                    const isBlocked = !isSelected && isAtVisibleLimit;
+                    const optionTone = toneClass(item.changePercent);
+                    const optionLabel = isSelected
+                      ? `Remove ${item.symbol} from top metrics`
+                      : isBlocked
+                        ? `Remove one indicator before adding ${item.symbol}`
+                        : `Add ${item.symbol} to top metrics`;
+                    const optionClassName = [
+                      "markets-indicator-option",
+                      isSelected ? "is-selected" : "",
+                      isBlocked ? "is-blocked" : "is-addable",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+
+                    return (
+                      <button
+                        key={item.symbol}
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        aria-disabled={isBlocked || undefined}
+                        aria-label={optionLabel}
+                        title={optionLabel}
+                        className={optionClassName}
+                        onClick={() => {
+                          if (isBlocked) return;
+                          toggleMetric(item.symbol);
+                        }}
+                      >
+                        <span className="markets-indicator-option-state" aria-hidden="true" />
+                        <strong>{item.symbol}</strong>
+                        <span className="markets-indicator-option-meta">
+                          <em className={optionTone}>{formatPercent(item.changePercent)}</em>
+                          {isSelected ? (
+                            <span className="markets-indicator-option-action is-remove" aria-hidden="true">
+                              <X size={11} strokeWidth={2} />
+                            </span>
+                          ) : isBlocked ? (
+                            <small>Remove one</small>
+                          ) : (
+                            <span className="markets-indicator-option-action is-add" aria-hidden="true">
+                              <Plus size={11} strokeWidth={2} />
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </header>
+        <div className="portfolio-index-grid" aria-label={`Selected top metrics, ${visibleMetrics.length} shown`}>
+          {visibleMetrics.map((item) => (
+            <MarketIndexTile key={item.symbol} item={item} />
+          ))}
+        </div>
+      </section>
+    </aside>
   );
 }
 
@@ -634,23 +831,37 @@ function MoverList({ items }: { items: MarketMover[] }) {
 }
 
 function MarketMoversPanel() {
+  const moverTabs = ["gainers", "losers", "active"] as const;
   const [activeMoverTab, setActiveMoverTab] = useState<keyof typeof MARKET_MOVERS>("gainers");
+  const activeMoverIndex = moverTabs.indexOf(activeMoverTab);
+  const moverTabStyle = { "--mover-active-index": String(activeMoverIndex) } as CSSProperties;
 
   return (
     <section className="portfolio-workspace-panel">
-      <PanelHeading eyebrow="Market movers" title="Live Indian movers" meta="Sample data" />
-      <div className="portfolio-segmented-control" aria-label="Market mover category">
-        {(["gainers", "losers", "active"] as Array<keyof typeof MARKET_MOVERS>).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className={activeMoverTab === tab ? "is-active" : ""}
-            aria-pressed={activeMoverTab === tab}
-            onClick={() => setActiveMoverTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
+      <PanelHeading eyebrow="Market movers" title="Live Indian movers" />
+      <div
+        className={`portfolio-segmented-control portfolio-mover-tabs is-${activeMoverTab}`}
+        style={moverTabStyle}
+        role="group"
+        aria-label="Market mover category"
+      >
+        {moverTabs.map((tab) => {
+          const isActive = activeMoverTab === tab;
+
+          return (
+            <button
+              key={tab}
+              type="button"
+              className={`portfolio-mover-tab is-mover-${tab}${isActive ? " is-active" : ""}`}
+              data-mover-tab={tab}
+              aria-pressed={isActive}
+              aria-label={`Show ${tab} movers`}
+              onClick={() => setActiveMoverTab(tab)}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </div>
       <MoverList items={MARKET_MOVERS[activeMoverTab]} />
     </section>
@@ -705,14 +916,66 @@ function HeatmapLegend() {
   );
 }
 
+function HeatmapMarketDepthStrip() {
+  const depthItems = [
+    { label: "Adv", value: MARKET_BREADTH.advances.toLocaleString("en-IN"), tone: "positive" },
+    { label: "Dec", value: MARKET_BREADTH.declines.toLocaleString("en-IN"), tone: "negative" },
+    { label: "52W H/L", value: `${MARKET_BREADTH.highs52Week}/${MARKET_BREADTH.lows52Week}`, tone: "neutral" },
+    { label: "FII", value: formatCompactFlowCrores(MARKET_BREADTH.fiiFlowCr), tone: "neutral" },
+    { label: "DII", value: formatCompactFlowCrores(MARKET_BREADTH.diiFlowCr), tone: "neutral" },
+  ];
+
+  return (
+    <div className="portfolio-heatmap-depth-strip" role="group" aria-label="Market depth">
+      <span className="portfolio-heatmap-depth-caption">NSE depth</span>
+      {depthItems.map((item) => (
+        <span key={item.label} className={`portfolio-heatmap-depth-item is-${item.tone}`}>
+          <b>{item.label}</b>
+          <strong>{item.value}</strong>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const NIFTY_HEATMAP_TIMESTAMP = "May 8, 2026, 12:37 PM GMT+5:30";
 
-function NiftyHeatmapSurface({
+function NiftyHeatmapHeader({
   expanded = false,
   onExpand,
   onClose,
 }: {
   expanded?: boolean;
+  onExpand?: () => void;
+  onClose?: () => void;
+}) {
+  return (
+    <header className="portfolio-heatmap-header" role="banner">
+      <div className="portfolio-heatmap-title-block">
+        <h2>NIFTY 50 Heatmap</h2>
+        {!expanded ? <p>Size by market cap. Color by 1D move.</p> : null}
+      </div>
+      <HeatmapMarketDepthStrip />
+      <button
+        type="button"
+        className="portfolio-heatmap-action"
+        onClick={expanded ? onClose : onExpand}
+        aria-label={expanded ? "Close expanded NIFTY 50 heatmap" : "Expand NIFTY 50 heatmap"}
+      >
+        {expanded ? <X size={22} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
+      </button>
+    </header>
+  );
+}
+
+function NiftyHeatmapSurface({
+  expanded = false,
+  showHeader = true,
+  onExpand,
+  onClose,
+}: {
+  expanded?: boolean;
+  showHeader?: boolean;
   onExpand?: () => void;
   onClose?: () => void;
 }) {
@@ -739,20 +1002,7 @@ function NiftyHeatmapSurface({
 
   return (
     <div className={`portfolio-heatmap-surface ${expanded ? "is-expanded" : ""}`}>
-      <header className="portfolio-heatmap-header">
-        <div className="portfolio-heatmap-title-block">
-          <h2>NIFTY 50 Heatmap</h2>
-          {!expanded ? <p>Size by market cap. Color by 1D move.</p> : null}
-        </div>
-        <button
-          type="button"
-          className="portfolio-heatmap-action"
-          onClick={expanded ? onClose : onExpand}
-          aria-label={expanded ? "Close expanded NIFTY 50 heatmap" : "Expand NIFTY 50 heatmap"}
-        >
-          {expanded ? <X size={22} aria-hidden="true" /> : <Maximize2 size={16} aria-hidden="true" />}
-        </button>
-      </header>
+      {showHeader ? <NiftyHeatmapHeader expanded={expanded} onExpand={onExpand} onClose={onClose} /> : null}
 
       <div className="portfolio-heatmap-content">
         <div
@@ -763,19 +1013,22 @@ function NiftyHeatmapSurface({
           {layout.sectors.map((sector) => (
             <section
               key={sector.sector}
-              className="portfolio-heatmap-sector"
+              className={`portfolio-heatmap-sector is-label-${sector.labelLevel}`}
               style={{
                 left: `${sector.x}%`,
                 top: `${sector.y}%`,
                 width: `${sector.width}%`,
                 height: `${sector.height}%`,
-              }}
-              aria-label={`${sector.sector} sector, ${formatPercent(sector.weightedMove)} weighted move`}
+                "--heatmap-sector-header": `${sector.headerHeight.toFixed(2)}%`,
+                "--heatmap-sector-header-size": `${((sector.headerHeight / Math.max(sector.height, 0.01)) * 100).toFixed(2)}%`,
+              } as React.CSSProperties}
+              aria-label={`${sector.sector} sector, ${sector.industries ? `${sector.industries}, ` : ""}${formatPercent(sector.weightedMove)} weighted move`}
             >
-              <div className="portfolio-heatmap-sector-label">
-                <strong>{sector.sector}</strong>
-                {sector.industries ? <span>{sector.industries}</span> : null}
-              </div>
+              {sector.labelLevel !== "none" ? (
+                <div className="portfolio-heatmap-sector-label" title={sector.industries ? `${sector.sector}: ${sector.industries}` : sector.sector}>
+                  <strong>{sector.sector}</strong>
+                </div>
+              ) : null}
             </section>
           ))}
 
@@ -820,7 +1073,6 @@ function NiftyHeatmapSurface({
           <HeatmapLegend />
           <time dateTime="2026-05-08T12:37:00+05:30">{NIFTY_HEATMAP_TIMESTAMP}</time>
         </div>
-        <span>{MARKET_DATA_NOTICE}</span>
       </footer>
 
       {tooltip ? (
@@ -892,17 +1144,35 @@ function MarketHeatmapPanel() {
 
   return (
     <>
+      <NiftyHeatmapHeader onExpand={() => setIsExpanded(true)} />
       <section className="portfolio-workspace-panel portfolio-heatmap-panel">
-        <NiftyHeatmapSurface onExpand={() => setIsExpanded(true)} />
+        <NiftyHeatmapSurface showHeader={false} />
       </section>
       {expandedHeatmap}
     </>
   );
 }
 
+const VISIBLE_MARKET_DEVELOPMENT_COUNT = 3;
+
 function MarketDevelopmentGrid({ onAnswer }: { onAnswer: FinanceNavigationProps["onAnswer"] }) {
   const [openingDevelopmentId, setOpeningDevelopmentId] = useState<string | null>(null);
+  const [developmentStartIndex, setDevelopmentStartIndex] = useState(0);
   const openingDevelopmentRef = useRef<string | null>(null);
+  const visibleDevelopmentCount = Math.min(VISIBLE_MARKET_DEVELOPMENT_COUNT, MARKET_DEVELOPMENTS.length);
+  const maxDevelopmentStartIndex = Math.max(MARKET_DEVELOPMENTS.length - visibleDevelopmentCount, 0);
+  const visibleDevelopments = MARKET_DEVELOPMENTS.slice(developmentStartIndex, developmentStartIndex + visibleDevelopmentCount);
+  const hasDevelopmentCycle = MARKET_DEVELOPMENTS.length > visibleDevelopmentCount;
+
+  const handlePreviousDevelopmentSet = () => {
+    if (!hasDevelopmentCycle) return;
+    setDevelopmentStartIndex((currentIndex) => (currentIndex <= 0 ? maxDevelopmentStartIndex : currentIndex - 1));
+  };
+
+  const handleNextDevelopmentSet = () => {
+    if (!hasDevelopmentCycle) return;
+    setDevelopmentStartIndex((currentIndex) => (currentIndex >= maxDevelopmentStartIndex ? 0 : currentIndex + 1));
+  };
 
   const handleOpenDevelopment = (item: MarketDevelopment) => {
     if (openingDevelopmentRef.current) return;
@@ -932,43 +1202,67 @@ function MarketDevelopmentGrid({ onAnswer }: { onAnswer: FinanceNavigationProps[
   };
 
   return (
-    <section className="portfolio-recent-developments-section">
+    <section className="portfolio-recent-developments-section" aria-labelledby="markets-recent-developments-heading">
       <header className="portfolio-recent-developments-heading">
-        <h2>Recent Developments</h2>
-        <strong>Updated 12 minutes ago</strong>
-      </header>
-      <div className="portfolio-development-grid">
-        {MARKET_DEVELOPMENTS.map((item) => {
-          const isOpening = openingDevelopmentId === item.id;
-
-          return (
+        <div>
+          <h2 id="markets-recent-developments-heading">Recent Developments</h2>
+          <span className="portfolio-recent-developments-meta">
+            <strong>Updated 12 minutes ago</strong>
             <button
-              key={item.id}
               type="button"
-              className={`portfolio-development-card ${isOpening ? "is-opening" : ""}`}
-              aria-label={`Open synthesis for ${item.title}`}
-              aria-busy={isOpening}
-              disabled={openingDevelopmentId !== null}
-              onClick={() => void handleOpenDevelopment(item)}
+              className="portfolio-recent-developments-sync"
+              aria-label="Refresh recent developments"
+              title="Refresh recent developments"
+              onClick={() => setDevelopmentStartIndex(0)}
             >
-              <span className="portfolio-development-meta">
-                <span className="portfolio-development-source-stack" aria-hidden="true">
-                  {item.sources.slice(0, 2).map((source) => (
-                    <RecentDevelopmentSourceIcon key={`${item.id}-${source.name}`} source={source} />
-                  ))}
-                </span>
-                <time>{item.timeAgo}</time>
-              </span>
-              <strong>{item.title}</strong>
-              <span className="portfolio-development-divider" aria-hidden="true" />
-              <p>{item.summary}</p>
-              <span className="portfolio-development-evidence">{`Based on ${item.sources.length} sources`}</span>
-              <span className="portfolio-development-opening" aria-hidden={!isOpening}>
-                {isOpening ? "Opening synthesis" : ""}
-              </span>
+              <RefreshCw size={13} strokeWidth={2} aria-hidden="true" />
             </button>
-          );
-        })}
+          </span>
+        </div>
+      </header>
+      <div className="markets-carousel-stage">
+        <div className="portfolio-development-grid">
+          {visibleDevelopments.map((item) => {
+            const isOpening = openingDevelopmentId === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`portfolio-development-card ${isOpening ? "is-opening" : ""}`}
+                aria-label={`Open synthesis for ${item.title}`}
+                aria-busy={isOpening}
+                disabled={openingDevelopmentId !== null}
+                onClick={() => void handleOpenDevelopment(item)}
+              >
+                <span className="portfolio-development-meta">
+                  <span className="portfolio-development-source-stack" aria-hidden="true">
+                    {item.sources.slice(0, 2).map((source) => (
+                      <RecentDevelopmentSourceIcon key={`${item.id}-${source.name}`} source={source} />
+                    ))}
+                  </span>
+                  <time>{item.timeAgo}</time>
+                </span>
+                <strong>{item.title}</strong>
+                <span className="portfolio-development-divider" aria-hidden="true" />
+                <p>{item.summary}</p>
+                <span className="portfolio-development-opening" aria-hidden={!isOpening}>
+                  {isOpening ? "Opening synthesis" : ""}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {hasDevelopmentCycle ? (
+          <button className="markets-carousel-edge-button is-previous" type="button" onClick={handlePreviousDevelopmentSet} aria-label="Show previous recent development">
+            <ChevronLeft size={18} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        ) : null}
+        {hasDevelopmentCycle ? (
+          <button className="markets-carousel-edge-button is-next" type="button" onClick={handleNextDevelopmentSet} aria-label="Show next recent development">
+            <ChevronRight size={18} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -1105,48 +1399,58 @@ function StandoutMetricStrip({ item }: { item: MarketStandout }) {
   );
 }
 
-function MarketStandoutsPanel() {
-  return (
-    <section className="portfolio-workspace-panel portfolio-standouts-panel">
-      <PanelHeading eyebrow="Standouts" title="Names moving with force" />
-      <div className="portfolio-standout-list">
-        {MARKET_STANDOUTS.map((item) => (
-          <article key={item.ticker} className="portfolio-standout-card">
-            <div className="portfolio-standout-header">
-              <div className="portfolio-standout-identity">
-                <span>{item.ticker}</span>
-                <strong>{item.company}</strong>
-              </div>
-              <div className="portfolio-standout-price">
-                <strong>{formatPortfolioTapePrice(item.price)}</strong>
-                <em className={toneClass(item.move)}>{formatPercent(item.move)}</em>
-              </div>
-            </div>
-            <MarketStandoutSparkline item={item} />
-            <StandoutMetricStrip item={item} />
-            <p>{item.summary}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
+const VISIBLE_MARKET_STANDOUT_COUNT = 3;
 
-function MarketBreadthPanel() {
+function MarketStandoutsPanel() {
+  const [standoutStartIndex, setStandoutStartIndex] = useState(0);
+  const visibleStandoutCount = Math.min(VISIBLE_MARKET_STANDOUT_COUNT, MARKET_STANDOUTS.length);
+  const maxStandoutStartIndex = Math.max(MARKET_STANDOUTS.length - visibleStandoutCount, 0);
+  const visibleStandouts = MARKET_STANDOUTS.slice(standoutStartIndex, standoutStartIndex + visibleStandoutCount);
+  const hasStandoutCycle = MARKET_STANDOUTS.length > visibleStandoutCount;
+
+  const handlePreviousStandoutSet = () => {
+    if (!hasStandoutCycle) return;
+    setStandoutStartIndex((currentIndex) => (currentIndex <= 0 ? maxStandoutStartIndex : currentIndex - 1));
+  };
+
+  const handleNextStandoutSet = () => {
+    if (!hasStandoutCycle) return;
+    setStandoutStartIndex((currentIndex) => (currentIndex >= maxStandoutStartIndex ? 0 : currentIndex + 1));
+  };
+
   return (
-    <section className="portfolio-workspace-panel portfolio-market-pulse-panel">
-      <PanelHeading title="Market breadth" meta="NSE sample" />
-      <div className="portfolio-breadth-grid">
-        <MetricTile label="Advances" value={MARKET_BREADTH.advances.toLocaleString("en-IN")} tone="positive" />
-        <MetricTile label="Declines" value={MARKET_BREADTH.declines.toLocaleString("en-IN")} tone="negative" />
-        <MetricTile label="52W highs" value={MARKET_BREADTH.highs52Week.toString()} tone="positive" />
-        <MetricTile label="52W lows" value={MARKET_BREADTH.lows52Week.toString()} tone="negative" />
-      </div>
-      <div className="portfolio-flow-strip">
-        <span>FII flow</span>
-        <strong>{formatPortfolioCurrency(MARKET_BREADTH.fiiFlowCr * 10000000)}</strong>
-        <span>DII flow</span>
-        <strong>{formatPortfolioCurrency(MARKET_BREADTH.diiFlowCr * 10000000)}</strong>
+    <section className="portfolio-workspace-panel portfolio-standouts-panel" aria-label="Standouts">
+      <PanelHeading eyebrow="Standouts" title="Names moving with force" />
+      <div className="markets-carousel-stage">
+        <div className="portfolio-standout-list">
+          {visibleStandouts.map((item) => (
+            <article key={item.ticker} className="portfolio-standout-card">
+              <div className="portfolio-standout-header">
+                <div className="portfolio-standout-identity">
+                  <span>{item.ticker}</span>
+                  <strong>{item.company}</strong>
+                </div>
+                <div className="portfolio-standout-price">
+                  <strong>{formatPortfolioTapePrice(item.price)}</strong>
+                  <em className={toneClass(item.move)}>{formatPercent(item.move)}</em>
+                </div>
+              </div>
+              <MarketStandoutSparkline item={item} />
+              <StandoutMetricStrip item={item} />
+              <p>{item.summary}</p>
+            </article>
+          ))}
+        </div>
+        {hasStandoutCycle ? (
+          <button className="markets-carousel-edge-button is-previous" type="button" onClick={handlePreviousStandoutSet} aria-label="Show previous standout">
+            <ChevronLeft size={18} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        ) : null}
+        {hasStandoutCycle ? (
+          <button className="markets-carousel-edge-button is-next" type="button" onClick={handleNextStandoutSet} aria-label="Show next standout">
+            <ChevronRight size={18} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -1155,32 +1459,28 @@ function MarketBreadthPanel() {
 function IndianMarketsTab({ onAnswer }: { onAnswer: FinanceNavigationProps["onAnswer"] }) {
   return (
     <section className="markets-page-flow" aria-label="Indian Markets">
-      <section className="portfolio-market-overview-panel" aria-labelledby="markets-top-assets-heading">
-        <header className="markets-section-heading">
-          <h2 id="markets-top-assets-heading">Top Assets</h2>
-          <span>IN</span>
-        </header>
-        <div className="portfolio-index-grid">
-          {MARKET_INDEX_CARDS.slice(0, 4).map((item) => (
-            <MarketIndexTile key={item.symbol} item={item} />
-          ))}
-        </div>
+      <section className="markets-primary-workspace" aria-label="Indian market workspace">
+        <section className="markets-summary-column" aria-label="Market summary workspace">
+          <MarketSummary items={MARKET_SUMMARY_ITEMS} sources={MARKET_SUMMARY_SOURCES} />
+        </section>
+
+        <MarketTopMetricsRail />
       </section>
 
-      <MarketSummary items={MARKET_SUMMARY_ITEMS} sources={MARKET_SUMMARY_SOURCES} />
-
-      <section className="markets-heatmap-breadth-grid">
+      <section className="markets-heatmap-section" aria-label="Full-width market heatmap">
         <MarketHeatmapPanel />
-        <MarketBreadthPanel />
       </section>
 
-      <section className="portfolio-workspace-split markets-context-grid">
-        <MarketMoversPanel />
-        <SectorPerformancePanel />
+      <section className="markets-lower-workspace" aria-label="Indian market lower workspace">
+        <div className="markets-lower-main">
+          <MarketDevelopmentGrid onAnswer={onAnswer} />
+          <MarketStandoutsPanel />
+        </div>
+        <aside className="markets-lower-rail" aria-label="Market movers and sectors">
+          <MarketMoversPanel />
+          <SectorPerformancePanel />
+        </aside>
       </section>
-
-      <MarketDevelopmentGrid onAnswer={onAnswer} />
-      <MarketStandoutsPanel />
       <FinanceDisclaimer />
     </section>
   );
@@ -3171,6 +3471,7 @@ function FinanceScreenShell({
 }) {
   const financeAppRef = useRef<HTMLElement | null>(null);
   const commandPlaceholder = searchPlaceholder ?? FINANCE_VIEW_PLACEHOLDER[activeView] ?? "Inspect ticker, sector, or event...";
+  const tapeConfig = FINANCE_TAPE_BY_VIEW[activeView as keyof typeof FINANCE_TAPE_BY_VIEW];
 
   return (
     <main ref={financeAppRef} className={`app-shell portfolio-app portfolio-app-view-${activeView}`}>
@@ -3184,6 +3485,9 @@ function FinanceScreenShell({
         onWatchlist={onWatchlist}
         onPortfolio={onPortfolio}
       />
+      {tapeConfig ? (
+        <MarketTape basket={tapeConfig.basket} includeGlobalItems={false} statusLabel={tapeConfig.statusLabel} />
+      ) : null}
 
       <section className="portfolio-screen portfolio-workspace-screen" aria-label={label}>
         <div className="portfolio-background-grid" aria-hidden="true" />
@@ -3509,6 +3813,7 @@ export function PortfolioScreen({ onHome, onMarkets, onEarnings, onFunds, onScre
         onWatchlist={onWatchlist}
         onPortfolio={onPortfolio}
       />
+      <MarketTape basket={PORTFOLIO_MARKET_TAPE} includeGlobalItems={false} statusLabel="Portfolio Tape" />
 
       <section className="portfolio-screen portfolio-workspace-screen" aria-label="Synced portfolio screen">
         <div className="portfolio-background-grid" aria-hidden="true" />

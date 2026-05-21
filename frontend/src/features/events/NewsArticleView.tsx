@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
+import { MarketTape } from "../market-tape/MarketTape";
+import { EVENT_RISK_TAPE } from "../market-tape/marketTapeData";
 import type { Sector } from "../../types";
 import { PREMIUM_ORANGE_THEME } from "./eventsData";
 import type { GeotaggedNewsItem } from "./eventsTypes";
@@ -35,6 +37,7 @@ export function NewsArticleView({
       }
     >
       <GlobalBrandNav activeView="article" {...navHandlers} />
+      <MarketTape basket={EVENT_RISK_TAPE} includeGlobalItems={false} statusLabel="Brief Tape" />
 
       <header className="news-article-contextbar">
         <p>Intelligence brief</p>

@@ -237,6 +237,22 @@ export const MARKET_INDEX_CARDS: MarketIndexCard[] = [
     points: [35, 35, 34, 33, 32, 33, 35, 34, 36, 37, 36, 38, 39, 41, 40, 42, 43, 42, 44, 45, 44, 46],
   },
   {
+    symbol: "INDIA VIX",
+    name: "Volatility gauge",
+    value: "18.72",
+    changePercent: -1.86,
+    changeValue: "-0.36",
+    points: [51, 53, 52, 50, 48, 49, 47, 45, 44, 46, 43, 42, 40, 41, 39, 37, 38, 35, 34, 36, 33, 32],
+  },
+  {
+    symbol: "USD/INR",
+    name: "Rupee reference",
+    value: "₹85.47",
+    changePercent: 0.12,
+    changeValue: "+0.10",
+    points: [38, 37, 39, 38, 40, 41, 40, 42, 43, 42, 44, 45, 44, 46, 47, 48, 47, 49, 50, 49, 51, 52],
+  },
+  {
     symbol: "SMALLCAP 250",
     name: "Breadth check",
     value: "18,226.45",
@@ -655,6 +671,105 @@ export const MARKET_DEVELOPMENTS: MarketDevelopment[] = [
           title: "Investor Implications",
           body:
             "The key is whether selling remains a one-day risk event or becomes a flow trend. Watch daily FII/DII data, USD/INR, Brent crude, India VIX, Bank Nifty, and breadth outside the top five index weights.",
+        },
+      ],
+    },
+    tone: "negative",
+  },
+  {
+    id: "gold-silver-duty-jewellery",
+    title: "Gold & Silver Import Duty Hiked to 15%, Jewellery Stocks in Focus",
+    summary:
+      "Higher import duty on gold and silver pushed jewellery and organised retail names back into focus. Investors are watching whether margin discipline, wedding-season demand, and inventory gains offset weaker discretionary demand.",
+    timeAgo: "3 hours ago",
+    sources: [
+      { name: "Moneycontrol", domain: "moneycontrol.com", url: "https://www.moneycontrol.com" },
+      { name: "Business Standard", domain: "business-standard.com", url: "https://www.business-standard.com" },
+    ],
+    aiQuery:
+      "Explain how higher gold and silver import duty affects Indian jewellery stocks. Cover margins, inventory gains, demand risk, organised retailers, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "The duty hike can support inventory gains for some jewellers, but it also raises end-prices and tests demand elasticity in discretionary categories.",
+      lead:
+        "Jewellery stocks can react positively when policy changes improve near-term inventory value or formal-sector positioning. The durability of the move depends on whether demand holds after higher landed costs flow into retail prices.",
+      sections: [
+        {
+          title: "Market Context",
+          body:
+            "Organised jewellery retailers are watched closely during duty changes because they can benefit from inventory revaluation and better compliance-led share gains. Smaller unorganised players may face more working-capital pressure.",
+          citations: ["Moneycontrol", "Business Standard"],
+        },
+        {
+          title: "What To Watch Next",
+          body:
+            "Watch gross margins, gold price volatility, wedding-season demand, inventory days, and management commentary on whether higher prices are delaying purchases.",
+        },
+      ],
+    },
+    tone: "neutral",
+  },
+  {
+    id: "berger-paints-q4-profit",
+    title: "Berger Paints Q4 FY26: Net Profit Jumps 27.8% YoY",
+    summary:
+      "Berger Paints reported stronger quarterly profit as input costs moderated and decorative demand improved. The market is watching whether margin recovery can hold against competitive pressure in paints.",
+    timeAgo: "4 hours ago",
+    sources: [
+      { name: "CNBC TV18", domain: "cnbctv18.com", url: "https://www.cnbctv18.com" },
+      { name: "BSE", domain: "bseindia.com", url: "https://www.bseindia.com" },
+    ],
+    aiQuery:
+      "Explain Berger Paints Q4 FY26 profit growth. Cover volume growth, margin recovery, input costs, competitive pressure, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "Berger Paints' profit growth points to margin recovery, but investors still need evidence that volume growth can withstand competitive intensity.",
+      lead:
+        "Paint companies are being judged on both demand and margin quality. A strong profit print helps sentiment, but the market will look for sustained volume growth and pricing discipline before rewarding the move fully.",
+      sections: [
+        {
+          title: "Result Read",
+          body:
+            "The profit jump suggests lower input-cost pressure and better operating leverage. If decorative demand stays healthy, margin recovery can support earnings upgrades.",
+          citations: ["CNBC TV18", "BSE"],
+        },
+        {
+          title: "What To Watch Next",
+          body:
+            "Watch volume growth, dealer commentary, raw material inflation, ad spending, and competitive pricing from larger and newer paint players.",
+        },
+      ],
+    },
+    tone: "positive",
+  },
+  {
+    id: "dixon-q4-profit-slump",
+    title: "Dixon Technologies Q4 FY26: Net Profit Slumps 36% YoY",
+    summary:
+      "Dixon Technologies' quarterly profit decline put electronics manufacturing margins back under scrutiny. Investors are watching order book quality, segment mix, and whether operating leverage improves next quarter.",
+    timeAgo: "5 hours ago",
+    sources: [
+      { name: "Economic Times", domain: "economictimes.indiatimes.com", url: "https://economictimes.indiatimes.com" },
+      { name: "NSE", domain: "nseindia.com", url: "https://www.nseindia.com" },
+    ],
+    aiQuery:
+      "Explain Dixon Technologies Q4 FY26 profit decline. Cover EMS margins, order book quality, segment mix, operating leverage, and what investors should watch next.",
+    answer: {
+      shortAnswer:
+        "Dixon's profit decline raises questions about mix and margin quality, even if the longer-term electronics manufacturing story remains intact.",
+      lead:
+        "EMS stocks can trade at premium valuations when growth visibility is high. A profit miss forces investors to separate revenue momentum from margin conversion and assess whether the weakness is temporary or structural.",
+      sections: [
+        {
+          title: "Result Read",
+          body:
+            "The decline suggests that revenue growth did not translate cleanly into profit. Segment mix, component costs, and execution timing can all affect operating leverage in EMS businesses.",
+          citations: ["Economic Times", "NSE"],
+        },
+        {
+          title: "What To Watch Next",
+          body:
+            "Watch management commentary on order book conversion, mobile and consumer electronics mix, margin guidance, and working-capital movement.",
         },
       ],
     },
