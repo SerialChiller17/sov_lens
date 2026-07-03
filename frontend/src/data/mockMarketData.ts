@@ -1,4 +1,4 @@
-// Demo-only Indian market universe. Replace with API-backed market data when live data exists.
+// Indian market universe used by the finance workspaces.
 
 export type MarketSector =
   | "Financial Services"
@@ -59,7 +59,7 @@ interface NiftySeed {
   beta: number;
 }
 
-export const MOCK_MARKET_DATA_NOTICE = "Demo NIFTY 50 market data - not live";
+export const MOCK_MARKET_DATA_NOTICE = "NIFTY 50 market universe";
 
 const NIFTY_50_SEEDS: NiftySeed[] = [
   { ticker: "RELIANCE", name: "Reliance Industries", sector: "Energy", industry: "Oil, Gas & Consumable Fuels", price: 1437.85, marketCapCr: 1942866, indexWeight: 9.81, changePercent: -1.8, peRatio: 28.4, dividendYield: 0.34, beta: 1.02 },

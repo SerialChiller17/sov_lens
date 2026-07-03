@@ -157,7 +157,7 @@ export function MarketSummary({ items, sources, updatedLabel = "Updated 1 minute
         <div>
           <h2 id="market-summary-heading">Market Summary</h2>
         </div>
-        <strong>{updatedLabel}</strong>
+        <strong className="market-summary-updated portfolio-update-status-text">{updatedLabel}</strong>
       </header>
 
       <div className="market-summary-card">

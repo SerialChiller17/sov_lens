@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { Search } from "lucide-react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../app/GlobalBrandNav";
+import { AnimatedSearchPrompt } from "../components/search/AnimatedSearchPrompt";
 import { MarketTape } from "../features/market-tape/MarketTape";
 import { FUNDS_MARKET_TAPE } from "../features/market-tape/marketTapeData";
 import { FundSelector } from "./FundSelector";
@@ -341,11 +342,23 @@ export function FundsScreen(navHandlers: GlobalBrandNavHandlers) {
           <header className="portfolio-section-header">
             <div>
               <h1>Funds</h1>
-              <p>Static sample fund comparison. NAV history is illustrative.</p>
+              <p>Compare fund performance, rolling returns, allocation, risk, and overlap.</p>
             </div>
-            <button type="button" className="portfolio-funds-command" onClick={() => setIsFundPickerOpen(true)}>
+            <button
+              type="button"
+              className="portfolio-funds-command has-animated-search-prompt"
+              aria-label="Search funds or compare category"
+              onClick={() => setIsFundPickerOpen(true)}
+            >
               <Search aria-hidden="true" />
-              <span>Search funds or compare category...</span>
+              <AnimatedSearchPrompt
+                prompts={[
+                  "Which funds beat NIFTY with lower drawdowns?",
+                  "Compare large-cap funds against the benchmark",
+                  "Find funds with steadier rolling returns",
+                  "Which category fits a defensive allocation?",
+                ]}
+              />
             </button>
           </header>
 

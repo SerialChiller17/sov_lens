@@ -164,9 +164,9 @@ export const PORTFOLIO_AI_TRUST = {
   confidence: "Medium-high",
   changedToday: ["Private banks widened leadership", "Tata Motors added most upside", "Reliance stayed the main drag"],
   assumptions: [
-    "Portfolio values are local sample holdings, not a broker sync.",
-    "Market/news references are frontend product-demo context.",
-    "Recommendations are sizing logic, not trade execution.",
+    "Portfolio values are evaluated against the holdings currently shown.",
+    "Market and news references are grouped by affected holding and driver.",
+    "Portfolio views are decision-support context and need user confirmation before action.",
   ],
   needsConfirmation: ["Bank Nifty breadth after earnings", "JLR margin commentary", "IT demand beyond currency support"],
 };
@@ -347,7 +347,7 @@ export const PORTFOLIO_SUGGESTED_PLAYS: PortfolioSuggestedPlay[] = [
 
 export const PORTFOLIO_COCKPIT: PortfolioCockpitData = {
   status: {
-    view: "Local browser view",
+    view: "Portfolio view",
     evidenceLevel: PORTFOLIO_AI_TRUST.confidence,
     lastUpdated: PORTFOLIO_AI_TRUST.lastUpdated,
     sourceCount: PORTFOLIO_AI_TRUST.sourceCount,

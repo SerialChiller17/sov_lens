@@ -145,12 +145,16 @@ function App() {
   }
 
   if (activeView === "earnings") {
+    const earningsParams = new URLSearchParams(window.location.search);
+
     return (
-      <EarningsScreen
-        initialQuery={new URLSearchParams(window.location.search).get("q") ?? ""}
-        {...financeNavigation}
-      />
-    );
+        <EarningsScreen
+          initialQuery={earningsParams.get("q") ?? ""}
+          initialSelectedTicker={earningsParams.get("selected") ?? earningsParams.get("q") ?? ""}
+          initialSelectedDate={earningsParams.get("selectedDate") ?? ""}
+          {...financeNavigation}
+        />
+      );
   }
 
   if (activeView === "funds") {

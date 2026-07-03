@@ -10,6 +10,7 @@
 .ai-answer-shell {
   --font-ui: "Satoshi", "IBM Plex Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-data: "IBM Plex Mono", "Geist Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
+  --finance-move-font: Manrope, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --finance-bg: #050607;
   --finance-bg-2: #07080a;
@@ -242,6 +243,169 @@
 .portfolio-app .portfolio-search-control input::placeholder,
 .portfolio-app .fund-picker-search input::placeholder {
   color: rgba(161, 168, 179, 0.72);
+}
+
+.has-animated-search-prompt {
+  position: relative;
+  overflow: hidden;
+}
+
+.has-animated-search-prompt input,
+.has-animated-search-prompt textarea {
+  position: relative;
+  z-index: 2;
+}
+
+.has-animated-search-prompt input::placeholder,
+.has-animated-search-prompt textarea::placeholder {
+  color: transparent !important;
+}
+
+.has-animated-search-prompt > svg,
+.has-animated-search-prompt .events-search-icon {
+  position: relative;
+  z-index: 3;
+}
+
+.animated-search-prompt {
+  --animated-search-prompt-slot: 4.8s;
+  position: absolute;
+  top: var(--animated-search-top, 50%);
+  right: var(--animated-search-right, 0.72rem);
+  left: var(--animated-search-left, 2.2rem);
+  z-index: 1;
+  display: block;
+  height: 1.35em;
+  overflow: hidden;
+  color: var(--animated-search-color, rgba(161, 168, 179, 0.72));
+  font-family: var(--font-ui, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--animated-search-font-size, 0.82rem);
+  font-weight: var(--animated-search-font-weight, 460);
+  letter-spacing: 0;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: translateY(var(--animated-search-translate-y, -50%)) translateX(0);
+  transition:
+    opacity 150ms ease,
+    visibility 150ms ease,
+    transform 190ms ease;
+}
+
+.animated-search-prompt-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: max-content;
+  max-width: 0;
+  overflow: hidden;
+  border-right: 1px solid transparent;
+  opacity: 0;
+  white-space: nowrap;
+  animation-name: animated-search-prompt-cycle;
+  animation-duration: calc(var(--animated-search-prompt-count) * var(--animated-search-prompt-slot));
+  animation-delay: calc(var(--animated-search-prompt-index) * var(--animated-search-prompt-slot));
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  will-change: max-width, opacity;
+}
+
+.has-animated-search-prompt:focus-within .animated-search-prompt,
+.has-animated-search-prompt.has-search-value .animated-search-prompt {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--animated-search-translate-y, -50%)) translateX(4px);
+}
+
+.has-animated-search-prompt:focus-within .animated-search-prompt-line,
+.has-animated-search-prompt.has-search-value .animated-search-prompt-line {
+  animation-play-state: paused;
+}
+
+.portfolio-app .portfolio-finance-search {
+  --animated-search-left: 2.12rem;
+  --animated-search-right: 0.78rem;
+  --animated-search-font-size: 0.78rem;
+}
+
+.portfolio-app .portfolio-search-control {
+  --animated-search-left: 2.04rem;
+  --animated-search-right: 0.68rem;
+  --animated-search-font-size: 0.78rem;
+}
+
+.portfolio-app .fund-picker-search {
+  --animated-search-left: 2rem;
+  --animated-search-right: 0.78rem;
+  --animated-search-font-size: 0.76rem;
+}
+
+.portfolio-app .portfolio-funds-command {
+  --animated-search-left: 2rem;
+  --animated-search-right: 0.76rem;
+  --animated-search-font-size: 0.72rem;
+}
+
+.events-search {
+  --animated-search-left: 1rem;
+  --animated-search-right: 2.55rem;
+  --animated-search-font-size: 0.82rem;
+}
+
+.portfolio-app-view-screener .portfolio-screener-query-composer {
+  --animated-search-top: 0.94rem;
+  --animated-search-left: 1.18rem;
+  --animated-search-right: 4.35rem;
+  --animated-search-translate-y: 0;
+  --animated-search-font-size: clamp(0.98rem, 1.35vw, 1.28rem);
+  --animated-search-font-weight: 430;
+}
+
+@keyframes animated-search-prompt-cycle {
+  0% {
+    max-width: 0;
+    border-right-color: transparent;
+    opacity: 0;
+  }
+
+  1.25% {
+    border-right-color: rgba(215, 215, 207, 0.64);
+    opacity: 1;
+  }
+
+  12%,
+  17% {
+    max-width: calc(var(--animated-search-prompt-ch) * 1ch);
+    border-right-color: rgba(215, 215, 207, 0.64);
+    opacity: 1;
+  }
+
+  23.5% {
+    max-width: 0;
+    border-right-color: rgba(215, 215, 207, 0.64);
+    opacity: 1;
+  }
+
+  25%,
+  100% {
+    max-width: 0;
+    border-right-color: transparent;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-search-prompt-line {
+    animation: none;
+    opacity: 0;
+  }
+
+  .animated-search-prompt-line:first-child {
+    max-width: none;
+    border-right-color: transparent;
+    opacity: 1;
+  }
 }
 
 .portfolio-app .portfolio-finance-search:focus-within,
@@ -1563,6 +1727,44 @@
   padding: 0.22rem 0.62rem !important;
 }
 
+.portfolio-app .portfolio-update-status-text {
+  flex: 0 0 auto;
+  min-height: 0;
+  border: 0 !important;
+  border-radius: 0;
+  padding: 0 !important;
+  color: rgba(161, 168, 179, 0.68) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  font-weight: 440 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+.portfolio-app .portfolio-workspace-panel > .portfolio-workspace-panel-heading:first-child .portfolio-update-status-text,
+.portfolio-app .portfolio-market-summary-panel .market-summary-heading .portfolio-update-status-text,
+.portfolio-app .portfolio-panel-heading .portfolio-update-status-text,
+.portfolio-app .portfolio-status-updated .portfolio-update-status-text,
+.portfolio-app .portfolio-evidence-freshness .portfolio-update-status-text,
+.portfolio-app .portfolio-overview-chart-rail .portfolio-update-status-text {
+  border: 0 !important;
+  padding: 0 !important;
+  color: rgba(161, 168, 179, 0.68) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  font-weight: 440 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
 .portfolio-app .is-positive,
 .portfolio-app .is-positive strong,
 .portfolio-app .is-positive em {
@@ -1573,6 +1775,38 @@
 .portfolio-app .is-negative strong,
 .portfolio-app .is-negative em {
   color: var(--finance-negative) !important;
+}
+
+.portfolio-app :is(strong, em, span, td, dd, b).is-positive,
+.portfolio-app :is(strong, em, span, td, dd, b).is-negative,
+.portfolio-app :is(.is-positive, .is-negative) > :is(strong, em, b),
+.portfolio-app .markets-asset-move,
+.portfolio-app .markets-asset-percent,
+.portfolio-app .markets-asset-change,
+.portfolio-app .markets-indicator-option-meta em,
+.portfolio-app .markets-news-card-top em,
+.portfolio-app .portfolio-sector-performance-counts,
+.portfolio-app .portfolio-sector-performance-row > em,
+.portfolio-app .portfolio-heatmap-depth-item strong,
+.portfolio-app .portfolio-heatmap-tile em,
+.portfolio-app .portfolio-heatmap-tooltip em,
+.portfolio-app .portfolio-mover-row em,
+.portfolio-app .portfolio-standout-price em,
+.portfolio-app .portfolio-summary-card.is-positive strong,
+.portfolio-app .portfolio-summary-card.is-negative strong,
+.portfolio-app .portfolio-contribution-value,
+.portfolio-app .portfolio-market-driver-topline em,
+.portfolio-app .portfolio-status-strip :is(.is-positive, .is-negative) :is(strong, em),
+.portfolio-app .portfolio-chart-readout :is(.is-positive, .is-negative) strong,
+.portfolio-app .portfolio-analysis-summary-strip :is(.is-positive, .is-negative) strong,
+.portfolio-app .portfolio-today-moved-module > header > strong,
+.portfolio-app .portfolio-today-moved-columns article em,
+.portfolio-app .portfolio-ranked-contribution-bars article em,
+.portfolio-app .portfolio-market-signal-list article em,
+.portfolio-app .fund-comparison-matrix :is(.is-positive, .is-negative) {
+  font-family: var(--finance-move-font) !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0 !important;
 }
 
 .portfolio-app .portfolio-chart-card,
@@ -2853,6 +3087,1773 @@
     var(--finance-surface-2) !important;
 }
 
+.portfolio-app .portfolio-finance-header-title p {
+  margin: 0.24rem 0 0;
+  max-width: 42rem;
+  font-size: 0.74rem;
+  line-height: 1.28;
+}
+
+.portfolio-app .portfolio-finance-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+  margin-top: 0.42rem;
+}
+
+.portfolio-app .portfolio-finance-header-meta span {
+  border: 1px solid var(--finance-border);
+  border-radius: 999px;
+  padding: 0.16rem 0.44rem;
+  color: var(--finance-faint);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--font-data);
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+}
+
+/* Earnings workstation route. Keep this scoped away from the globe and markets route. */
+.portfolio-app-view-earnings .portfolio-workspace-screen {
+  width: min(calc(100vw - 1.5rem), 94rem);
+  max-width: 94rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header {
+  grid-template-columns: minmax(18rem, 0.82fr) minmax(24rem, 1fr);
+  align-items: end;
+  gap: 0.95rem;
+  margin-bottom: 0.72rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title h1 {
+  font-size: clamp(1.42rem, 1.8vw, 2rem);
+  font-weight: 690;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title p {
+  max-width: 34rem;
+  margin-top: 0.22rem;
+  color: var(--finance-muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search {
+  min-height: 2.18rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-grid {
+  grid-template-columns: minmax(0, 3.15fr) minmax(17.5rem, 1fr);
+  align-items: start;
+  gap: 0.82rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-main {
+  display: grid;
+  gap: 0.68rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.62rem;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-full-span {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.portfolio-app-view-earnings .portfolio-workspace-panel {
+  padding: 0.68rem !important;
+}
+
+.portfolio-app-view-earnings .earnings-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.64rem;
+  margin-bottom: 0.46rem;
+}
+
+.portfolio-app-view-earnings .earnings-section-heading h2 {
+  margin: 0;
+  color: var(--finance-text);
+  font-size: 0.94rem;
+  font-weight: 660;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.portfolio-app-view-earnings .earnings-section-heading p {
+  margin: 0.16rem 0 0;
+  max-width: 34rem;
+  color: var(--finance-muted);
+  font-size: 0.64rem;
+  line-height: 1.25;
+}
+
+.portfolio-app-view-earnings .earnings-section-heading > span {
+  flex: 0 0 auto;
+  border: 1px solid var(--finance-border);
+  border-radius: 6px;
+  padding: 0.14rem 0.36rem;
+  color: var(--finance-faint);
+  background: rgba(255, 255, 255, 0.028);
+  font-family: var(--font-data);
+  font-size: 0.52rem;
+  letter-spacing: 0.03em;
+}
+
+.portfolio-app-view-earnings .earnings-impact-timeline,
+.portfolio-app-view-earnings .earnings-queue-panel,
+.portfolio-app-view-earnings .earnings-selected-dossier,
+.portfolio-app-view-earnings .earnings-table-section,
+.portfolio-app-view-earnings .earnings-themes-panel,
+.portfolio-app-view-earnings .earnings-force-panel {
+  min-width: 0;
+}
+
+.portfolio-app-view-earnings .earnings-timeline-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.52rem;
+  align-items: center;
+}
+
+.portfolio-app-view-earnings .earnings-week-map {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.34rem;
+  margin-top: 0 !important;
+}
+
+.portfolio-app-view-earnings .earnings-day-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.1rem 0.32rem;
+  min-height: 3.05rem;
+  overflow: hidden;
+  border: 1px solid var(--finance-border) !important;
+  border-radius: 7px !important;
+  padding: 0.42rem 0.44rem !important;
+  color: var(--finance-muted) !important;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.026) !important;
+  box-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.035) !important;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-day-card:hover {
+  border-color: rgba(184, 106, 75, 0.34) !important;
+  background: rgba(184, 106, 75, 0.07) !important;
+}
+
+.portfolio-app-view-earnings .earnings-day-card:focus-visible {
+  outline: 2px solid rgba(184, 106, 75, 0.72);
+  outline-offset: 2px;
+}
+
+.portfolio-app-view-earnings .earnings-day-card.is-active {
+  border-color: rgba(184, 106, 75, 0.5) !important;
+  background: rgba(184, 106, 75, 0.11) !important;
+}
+
+.portfolio-app-view-earnings .earnings-day-card span,
+.portfolio-app-view-earnings .earnings-day-card em,
+.portfolio-app-view-earnings .earnings-day-card small {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.5rem;
+  font-style: normal;
+  line-height: 1.08;
+}
+
+.portfolio-app-view-earnings .earnings-day-card strong {
+  color: var(--finance-text);
+  font-size: 0.66rem;
+  font-weight: 650;
+}
+
+.portfolio-app-view-earnings .earnings-day-card small {
+  grid-column: 1 / -1;
+}
+
+.portfolio-app-view-earnings .earnings-day-card i {
+  position: absolute;
+  right: auto;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--finance-accent), rgba(114, 191, 135, 0.72));
+}
+
+.portfolio-app-view-earnings .portfolio-earnings-filter-bar {
+  margin-top: 0 !important;
+}
+
+.portfolio-app-view-earnings .portfolio-earnings-filter-bar .portfolio-segmented-control {
+  min-height: 2rem;
+}
+
+.portfolio-app-view-earnings .earnings-desk-grid {
+  display: grid;
+  grid-template-columns: minmax(19rem, 0.42fr) minmax(0, 0.58fr);
+  gap: 0.72rem;
+  align-items: stretch;
+}
+
+.portfolio-app-view-earnings .earnings-queue-panel,
+.portfolio-app-view-earnings .earnings-selected-dossier {
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.94), rgba(8, 9, 11, 0.98)),
+    var(--finance-surface-2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.04),
+    0 0.62rem 1.35rem rgba(0, 0, 0, 0.22) !important;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table-shell,
+.portfolio-app-view-earnings .earnings-table-shell {
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 7px;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  color: var(--finance-muted);
+  font-size: 0.58rem;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th:nth-child(1),
+.portfolio-app-view-earnings .earnings-queue-table td:nth-child(1) {
+  width: 32%;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th:nth-child(2),
+.portfolio-app-view-earnings .earnings-queue-table td:nth-child(2) {
+  width: 16%;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th:nth-child(3),
+.portfolio-app-view-earnings .earnings-queue-table td:nth-child(3) {
+  width: 22%;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th:nth-child(4),
+.portfolio-app-view-earnings .earnings-queue-table td:nth-child(4) {
+  width: 18%;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th:nth-child(5),
+.portfolio-app-view-earnings .earnings-queue-table td:nth-child(5) {
+  width: 12%;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th,
+.portfolio-app-view-earnings .earnings-queue-table td,
+.portfolio-app-view-earnings .earnings-data-table th,
+.portfolio-app-view-earnings .earnings-data-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.42rem 0.46rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table th,
+.portfolio-app-view-earnings .earnings-data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--finance-faint);
+  background: rgba(10, 11, 13, 0.96);
+  font-family: var(--font-data);
+  font-size: 0.5rem;
+  font-weight: 540;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table tbody tr {
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-queue-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.portfolio-app-view-earnings .earnings-queue-table tbody tr[aria-selected="true"] {
+  background: rgba(184, 106, 75, 0.1);
+  box-shadow: inset 1px 0 0 rgba(184, 106, 75, 0.72);
+}
+
+.portfolio-app-view-earnings .earnings-queue-select {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 7.8rem;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.portfolio-app-view-earnings .earnings-queue-select:focus-visible {
+  outline: 2px solid rgba(184, 106, 75, 0.72);
+  outline-offset: 3px;
+}
+
+.portfolio-app-view-earnings .earnings-queue-select strong,
+.portfolio-app-view-earnings .earnings-data-table strong {
+  color: var(--finance-text);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.portfolio-app-view-earnings .earnings-queue-select span,
+.portfolio-app-view-earnings .earnings-data-table span,
+.portfolio-app-view-earnings .earnings-queue-date {
+  display: block;
+  color: var(--finance-faint);
+}
+
+.portfolio-app-view-earnings .earnings-queue-table b,
+.portfolio-app-view-earnings .earnings-queue-number {
+  font-family: var(--finance-move-font);
+  font-weight: 680;
+}
+
+.portfolio-app-view-earnings .earnings-queue-setup {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.portfolio-app-view-earnings .earnings-queue-setup span,
+.portfolio-app-view-earnings .earnings-queue-setup strong {
+  display: block;
+  min-width: 0;
+}
+
+.portfolio-app-view-earnings .earnings-selected-dossier {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.56rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-header h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--finance-text);
+  font-size: clamp(1.02rem, 1.25vw, 1.28rem);
+  font-weight: 690;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-header span,
+.portfolio-app-view-earnings .earnings-dossier-status span,
+.portfolio-app-view-earnings .earnings-dossier-schedule span,
+.portfolio-app-view-earnings .earnings-dossier-schedule em,
+.portfolio-app-view-earnings .earnings-dossier-metrics span,
+.portfolio-app-view-earnings .earnings-dossier-move span,
+.portfolio-app-view-earnings .earnings-dossier-move em {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.54rem;
+  font-style: normal;
+  letter-spacing: 0.035em;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-status {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-status strong {
+  color: var(--finance-accent);
+  font-size: 0.64rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-schedule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.52rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.46rem 0;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-schedule strong {
+  color: var(--finance-text-soft);
+  font-family: var(--finance-move-font);
+  font-size: 0.68rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-fragments {
+  display: grid;
+  gap: 0.26rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-fragments p,
+.portfolio-app-view-earnings .earnings-dossier-readthrough,
+.portfolio-app-view-earnings .earnings-dossier-brief p {
+  margin: 0;
+  color: var(--finance-muted);
+  font-size: 0.68rem;
+  line-height: 1.32;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-fragments b {
+  color: var(--finance-text-soft);
+  font-weight: 650;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--finance-border);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics div {
+  min-width: 0;
+  padding: 0.42rem;
+  box-shadow: inset 1px 0 0 var(--finance-border);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics div:first-child {
+  box-shadow: none;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.1rem;
+  color: var(--finance-text);
+  font-family: var(--finance-move-font);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics .is-positive strong,
+.portfolio-app-view-earnings .earnings-dossier-move strong.is-positive,
+.portfolio-app-view-earnings .earnings-queue-number.is-positive {
+  color: var(--finance-positive);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-metrics .is-negative strong,
+.portfolio-app-view-earnings .earnings-dossier-move strong.is-negative,
+.portfolio-app-view-earnings .earnings-queue-number.is-negative {
+  color: var(--finance-negative);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move strong {
+  color: var(--finance-text);
+  font-family: var(--finance-move-font);
+  font-size: 0.9rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move-track {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--finance-accent);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move-track i.is-positive {
+  background: var(--finance-positive);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-move-track i.is-negative {
+  background: var(--finance-negative);
+}
+
+.portfolio-app-view-earnings .earnings-dossier-brief {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 0.4rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-brief summary {
+  color: var(--finance-text-soft);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-brief summary:focus-visible {
+  outline: 2px solid rgba(184, 106, 75, 0.72);
+  outline-offset: 3px;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-brief p {
+  margin-top: 0.34rem;
+}
+
+.portfolio-app-view-earnings .earnings-dossier-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 0.46rem;
+}
+
+.portfolio-app-view-earnings .earnings-lower-workspace {
+  display: grid;
+  gap: 0.86rem;
+}
+
+.portfolio-app-view-earnings .earnings-lower-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.86rem;
+}
+
+.portfolio-app-view-earnings .earnings-table-section,
+.portfolio-app-view-earnings .earnings-themes-panel,
+.portfolio-app-view-earnings .earnings-force-panel {
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.72rem;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 23, 0.92), rgba(8, 9, 11, 0.96)),
+    var(--finance-surface-2);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.04),
+    0 0.62rem 1.35rem rgba(0, 0, 0, 0.2);
+}
+
+.portfolio-app-view-earnings .earnings-data-table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  color: var(--finance-muted);
+  font-size: 0.62rem;
+}
+
+.portfolio-app-view-earnings .earnings-data-table strong,
+.portfolio-app-view-earnings .earnings-data-table span {
+  display: block;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list {
+  display: grid;
+  gap: 0;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list article,
+.portfolio-app-view-earnings .earnings-force-card {
+  padding: 0.56rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.portfolio-app-view-earnings .earnings-theme-list article:first-child,
+.portfolio-app-view-earnings .earnings-force-card:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list article div,
+.portfolio-app-view-earnings .earnings-force-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list strong,
+.portfolio-app-view-earnings .earnings-force-card strong {
+  color: var(--finance-text);
+  font-size: 0.74rem;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list span,
+.portfolio-app-view-earnings .earnings-theme-list em,
+.portfolio-app-view-earnings .earnings-force-card span,
+.portfolio-app-view-earnings .earnings-force-card p {
+  color: var(--finance-muted);
+}
+
+.portfolio-app-view-earnings .earnings-theme-list p,
+.portfolio-app-view-earnings .earnings-force-card p {
+  margin: 0.28rem 0;
+  font-size: 0.64rem;
+  line-height: 1.28;
+}
+
+.portfolio-app-view-earnings .earnings-theme-list em {
+  font-family: var(--font-data);
+  font-size: 0.53rem;
+  font-style: normal;
+}
+
+.portfolio-app-view-earnings .earnings-force-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0 0.7rem;
+}
+
+.portfolio-app-view-earnings .earnings-force-card {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.portfolio-app-view-earnings .earnings-force-card header span {
+  display: block;
+  color: var(--finance-faint);
+  font-size: 0.58rem;
+}
+
+.portfolio-app-view-earnings .earnings-force-card header em {
+  color: var(--finance-positive);
+  font-family: var(--finance-move-font);
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 720;
+}
+
+.portfolio-app-view-earnings .earnings-force-card.is-negative header em {
+  color: var(--finance-negative);
+}
+
+.portfolio-app-view-earnings .earnings-force-sparkline {
+  width: 100%;
+}
+
+.portfolio-app-view-earnings .earnings-force-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.28rem;
+}
+
+.portfolio-app-view-earnings .earnings-force-metrics span {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 0.22rem;
+  font-family: var(--font-data);
+  font-size: 0.51rem;
+}
+
+.portfolio-app-view-earnings .earnings-force-metrics b {
+  display: block;
+  margin-top: 0.08rem;
+  color: var(--finance-text);
+  font-size: 0.56rem;
+}
+
+.portfolio-app-view-earnings .portfolio-earnings-rail-panel {
+  display: grid;
+  gap: 0.44rem;
+}
+
+.portfolio-app-view-earnings .earnings-rail-row-list,
+.portfolio-app-view-earnings .earnings-risk-list,
+.portfolio-app-view-earnings .earnings-sector-calendar {
+  display: grid;
+  gap: 0;
+}
+
+.portfolio-app-view-earnings .earnings-rail-row-list article,
+.portfolio-app-view-earnings .earnings-risk-list article,
+.portfolio-app-view-earnings .earnings-sector-calendar article {
+  padding: 0.42rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.065);
+}
+
+.portfolio-app-view-earnings .earnings-rail-row-list article:first-child,
+.portfolio-app-view-earnings .earnings-risk-list article:first-child,
+.portfolio-app-view-earnings .earnings-sector-calendar article:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.portfolio-app-view-earnings .earnings-risk-list article div,
+.portfolio-app-view-earnings .earnings-sector-calendar article div,
+.portfolio-app-view-earnings .earnings-rail-row-list article {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.portfolio-app-view-earnings .earnings-rail-row-list strong,
+.portfolio-app-view-earnings .earnings-rail-callout strong,
+.portfolio-app-view-earnings .earnings-risk-list strong,
+.portfolio-app-view-earnings .earnings-sector-calendar strong {
+  color: var(--finance-text);
+  font-size: 0.68rem;
+  line-height: 1.16;
+}
+
+.portfolio-app-view-earnings .earnings-rail-row-list span,
+.portfolio-app-view-earnings .earnings-rail-callout span,
+.portfolio-app-view-earnings .earnings-rail-callout em,
+.portfolio-app-view-earnings .earnings-risk-list span,
+.portfolio-app-view-earnings .earnings-sector-calendar span,
+.portfolio-app-view-earnings .earnings-sector-calendar em {
+  color: var(--finance-faint);
+  font-family: var(--font-data);
+  font-size: 0.51rem;
+  font-style: normal;
+  line-height: 1.24;
+}
+
+.portfolio-app-view-earnings .earnings-rail-callout {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.portfolio-app-view-earnings .earnings-risk-meter {
+  display: block !important;
+  height: 3px;
+  margin-top: 0.34rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.portfolio-app-view-earnings .earnings-risk-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--finance-accent), var(--finance-negative));
+}
+
+.portfolio-app-view-earnings .portfolio-finance-disclaimer {
+  margin: 0;
+  border: 1px solid var(--finance-border);
+  border-radius: 8px;
+  padding: 0.6rem;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--finance-faint);
+  font-size: 0.62rem;
+  line-height: 1.34;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .portfolio-app-view-earnings .portfolio-workspace-screen {
+    width: min(calc(100vw - 1rem), 92rem);
+  }
+
+  .portfolio-app-view-earnings .portfolio-finance-header,
+  .portfolio-app-view-earnings .portfolio-finance-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-earnings .portfolio-finance-rail {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .portfolio-app-view-earnings .earnings-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1120px) {
+  .portfolio-app-view-earnings .earnings-timeline-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-earnings .earnings-week-map {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portfolio-app-view-earnings .earnings-desk-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-earnings .portfolio-finance-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Earnings Perplexity-style correction. Route-local, no globe selectors. */
+.portfolio-app-view-earnings {
+  --earnings-pplx-bg: #10100f;
+  --earnings-pplx-panel: #1a1917;
+  --earnings-pplx-panel-soft: #151514;
+  --earnings-pplx-border: rgba(235, 233, 224, 0.105);
+  --earnings-pplx-border-strong: rgba(235, 233, 224, 0.17);
+  --earnings-pplx-text: #e9e7df;
+  --earnings-pplx-muted: #a5a29a;
+  --earnings-pplx-faint: #77746d;
+  --earnings-pplx-accent: #b86a4b;
+  --earnings-pplx-page-gutter: clamp(28px, 4.8vw, 76px);
+  --earnings-pplx-shell-gap: clamp(28px, 3.7vw, 54px);
+  --earnings-pplx-rail-width: 25rem;
+  --earnings-pplx-composer-clearance: 176px;
+}
+
+.portfolio-app-view-earnings .portfolio-background-grid {
+  opacity: 0.09;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 72%);
+}
+
+.portfolio-app-view-earnings .portfolio-workspace-screen {
+  width: min(100%, 1480px);
+  max-width: 1480px;
+  padding: 94px clamp(28px, 4.8vw, 76px) 42px;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header {
+  grid-template-columns: minmax(12rem, 0.75fr) minmax(28rem, 1fr);
+  gap: 28px;
+  align-items: end;
+  margin: 0 0 28px;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title h1 {
+  margin: 0;
+  color: var(--earnings-pplx-text);
+  font-size: 24px;
+  font-weight: 640;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title p {
+  margin-top: 6px;
+  max-width: 34rem;
+  color: var(--earnings-pplx-muted);
+  font-size: 13px;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search {
+  height: 42px;
+  max-width: none;
+  border-color: var(--earnings-pplx-border);
+  border-radius: 10px;
+  background: rgba(20, 19, 18, 0.78);
+  box-shadow: none;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search:focus-within {
+  border-color: rgba(184, 106, 75, 0.34);
+  box-shadow: 0 0 0 3px rgba(184, 106, 75, 0.07);
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search input {
+  color: var(--earnings-pplx-text);
+  font-size: 14px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 25rem);
+  gap: clamp(28px, 3.7vw, 54px);
+  align-items: start;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-main {
+  display: flex;
+  min-width: 0;
+  min-height: calc(100vh - 11.5rem);
+  flex-direction: column;
+  padding-bottom: var(--earnings-pplx-composer-clearance);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-section-header {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 10px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-section-header h2 {
+  margin: 0;
+  color: var(--earnings-pplx-text);
+  font-size: 18px;
+  font-weight: 630;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--earnings-pplx-muted);
+  font-size: 13px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--earnings-pplx-muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:hover,
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:focus-visible {
+  color: var(--earnings-pplx-text);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:active {
+  transform: scale(0.97);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools .earnings-pplx-today-button {
+  width: auto;
+  min-width: 56px;
+  padding: 0 9px;
+  font-weight: 560;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-popover,
+.portfolio-app-view-earnings .earnings-pplx-date-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  border: 1px solid var(--earnings-pplx-border-strong);
+  border-radius: 14px;
+  background: #191817;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-popover {
+  width: min(250px, 64vw);
+  padding: 10px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list {
+  display: grid;
+  gap: 5px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list button,
+.portfolio-app-view-earnings .earnings-pplx-popover-reset {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 34px;
+  justify-content: stretch;
+  border-radius: 8px;
+  padding: 0 7px;
+  text-align: left;
+  transform: none;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list button {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 20px;
+  gap: 9px;
+  align-items: center;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list .portfolio-company-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  font-size: 6px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list span {
+  overflow: hidden;
+  color: var(--earnings-pplx-text);
+  font-size: 13px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list i {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(235, 233, 224, 0.14);
+  border-radius: 6px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-list button[aria-checked="true"] i {
+  border-color: rgba(184, 106, 75, 0.62);
+  background:
+    linear-gradient(135deg, rgba(184, 106, 75, 0.7), rgba(184, 106, 75, 0.35)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 4px #191817;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-filter-popover .earnings-pplx-popover-reset {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  margin-top: 10px;
+  justify-content: center;
+  border: 1px solid var(--earnings-pplx-border);
+  color: var(--earnings-pplx-text);
+  background: transparent;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover {
+  width: min(338px, 74vw);
+  padding: 16px 18px 14px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover header,
+.portfolio-app-view-earnings .earnings-pplx-date-popover header div,
+.portfolio-app-view-earnings .earnings-pplx-date-popover footer {
+  display: flex;
+  align-items: center;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover header {
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover h3 {
+  margin: 0;
+  color: var(--earnings-pplx-text);
+  font-size: 19px;
+  font-weight: 660;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover header div {
+  gap: 8px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover header button {
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-weekdays,
+.portfolio-app-view-earnings .earnings-pplx-date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-weekdays {
+  margin-bottom: 10px;
+  color: var(--earnings-pplx-muted);
+  font-size: 15px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-weekdays span {
+  text-align: center;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-grid {
+  gap: 5px 6px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-grid button {
+  width: 100%;
+  height: 32px;
+  border-radius: 7px;
+  color: var(--earnings-pplx-text);
+  background: transparent;
+  font-size: 17px;
+  font-weight: 520;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-grid button.is-outside-month {
+  color: var(--earnings-pplx-faint);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-grid button.is-selected {
+  color: #171615;
+  background: var(--earnings-pplx-text);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover footer {
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover footer button {
+  width: auto;
+  height: 36px;
+  border: 1px solid var(--earnings-pplx-border);
+  border-radius: 8px;
+  padding: 0 13px;
+  color: var(--earnings-pplx-text);
+  background: transparent;
+  font-size: 14px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-date-popover footer button:last-child {
+  flex: 1;
+  color: var(--earnings-pplx-muted);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-call-list a:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-watchlist button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button:focus-visible {
+  outline: 2px solid rgba(184, 106, 75, 0.72);
+  outline-offset: 2px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button {
+  display: grid;
+  width: 100%;
+  min-height: 76px;
+  align-content: start;
+  justify-items: center;
+  gap: 5px;
+  border: 1px solid var(--earnings-pplx-border);
+  border-radius: 12px;
+  padding: 9px 8px 10px;
+  color: var(--earnings-pplx-muted);
+  background: var(--earnings-pplx-panel);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button:hover {
+  border-color: rgba(235, 233, 224, 0.18);
+  background: #201f1d;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button:active {
+  transform: scale(0.99);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button.is-selected {
+  border-color: rgba(235, 233, 224, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    var(--earnings-pplx-panel);
+  box-shadow: inset 0 0 0 1px rgba(235, 233, 224, 0.06);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid span:first-child,
+.portfolio-app-view-earnings .earnings-pplx-day-grid em {
+  color: var(--earnings-pplx-faint);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid strong {
+  color: var(--earnings-pplx-text);
+  font-size: 15px;
+  font-weight: 590;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-logo-stack {
+  display: inline-flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-logo-stack .portfolio-company-avatar {
+  width: 18px;
+  height: 18px;
+  margin-left: -4px;
+  border-color: rgba(235, 233, 224, 0.3);
+  border-radius: 999px;
+  font-size: 7px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-logo-stack .portfolio-company-avatar:first-child {
+  margin-left: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-panel {
+  min-height: 250px;
+  overflow: hidden;
+  border: 1px solid var(--earnings-pplx-border);
+  border-radius: 14px;
+  background: var(--earnings-pplx-panel);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-empty {
+  display: grid;
+  min-height: 250px;
+  place-items: center;
+  color: var(--earnings-pplx-muted);
+  font-size: 15px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-empty strong {
+  font-weight: 520;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list li + li {
+  border-top: 1px solid rgba(235, 233, 224, 0.07);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list a {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 14px;
+  min-height: 92px;
+  align-items: start;
+  padding: 18px 20px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list a:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list a:active {
+  transform: scale(0.997);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-list .portfolio-company-avatar,
+.portfolio-app-view-earnings .earnings-pplx-watchlist .portfolio-company-avatar,
+.portfolio-app-view-earnings .earnings-pplx-movers .portfolio-company-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #f2f0e8;
+  color: #171615;
+  font-size: 11px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-copy strong {
+  overflow: hidden;
+  color: var(--earnings-pplx-text);
+  font-size: 17px;
+  font-weight: 590;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-copy span {
+  color: var(--earnings-pplx-muted);
+  font-family: var(--font-data);
+  font-size: 13px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-copy p {
+  margin: 0;
+  color: var(--earnings-pplx-muted);
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--earnings-pplx-border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--earnings-pplx-muted);
+  background: rgba(255, 255, 255, 0.026);
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-meta span,
+.portfolio-app-view-earnings .earnings-pplx-call-meta strong {
+  font-size: 13px;
+  font-weight: 520;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer {
+  position: fixed;
+  right: calc(
+    max(0px, calc((100vw - 1480px) / 2)) + var(--earnings-pplx-page-gutter) +
+      var(--earnings-pplx-rail-width) + var(--earnings-pplx-shell-gap)
+  );
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: calc(max(0px, calc((100vw - 1480px) / 2)) + var(--earnings-pplx-page-gutter));
+  z-index: 32;
+  display: grid;
+  overflow: hidden;
+  gap: 0;
+  margin-top: 0;
+  border: 1px solid var(--earnings-pplx-border-strong);
+  border-radius: 16px;
+  padding: 0;
+  background: var(--earnings-pplx-panel);
+  will-change: transform;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer:focus-within {
+  border-color: rgba(184, 106, 75, 0.45);
+  box-shadow: 0 0 0 1px rgba(184, 106, 75, 0.12);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sr-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  border-bottom: 1px solid var(--earnings-pplx-border);
+  padding: 18px 20px 16px;
+  list-style: none;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list button {
+  display: grid;
+  width: 100%;
+  min-height: 42px;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 11px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 8px;
+  color: var(--earnings-pplx-muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list button:hover {
+  color: var(--earnings-pplx-text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list .portfolio-company-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 8px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 560;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list em {
+  overflow: hidden;
+  color: var(--earnings-pplx-faint);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 520;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list svg {
+  color: var(--earnings-pplx-faint);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-input-row {
+  padding: 17px 18px 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: var(--earnings-pplx-text);
+  background: transparent;
+  caret-color: var(--earnings-pplx-accent);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer input::placeholder {
+  color: var(--earnings-pplx-muted);
+  opacity: 0.9;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 17px 18px 18px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions > span,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--earnings-pplx-text);
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 13px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions > span:first-child,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button {
+  width: 32px;
+  padding: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button {
+  margin-left: auto;
+  color: #171615;
+  background: var(--earnings-pplx-text);
+  cursor: pointer;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button:hover {
+  opacity: 0.86;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button:active {
+  transform: scale(0.97);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-main .portfolio-finance-disclaimer {
+  margin-top: 14px;
+  border: 0;
+  padding: 0;
+  color: var(--earnings-pplx-faint);
+  background: transparent;
+  font-size: 11px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-rail {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  color: var(--earnings-pplx-muted);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment span {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment i {
+  width: 3px;
+  height: 11px;
+  border-radius: 99px;
+  background: var(--finance-positive);
+  opacity: 0.55;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment i:nth-child(n + 7) {
+  opacity: 0.22;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment strong {
+  color: var(--finance-positive);
+  font-size: 14px;
+  font-weight: 570;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-sentiment em {
+  color: var(--earnings-pplx-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist,
+.portfolio-app-view-earnings .earnings-pplx-movers {
+  overflow: hidden;
+  border: 1px solid var(--earnings-pplx-border);
+  border-radius: 14px;
+  background: var(--earnings-pplx-panel);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist {
+  padding: 6px 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist button,
+.portfolio-app-view-earnings .earnings-pplx-movers article {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto 20px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  padding: 8px 12px;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist button {
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist button:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist span,
+.portfolio-app-view-earnings .earnings-pplx-movers span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist span strong,
+.portfolio-app-view-earnings .earnings-pplx-movers span strong {
+  overflow: hidden;
+  color: var(--earnings-pplx-text);
+  font-size: 14px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist span em,
+.portfolio-app-view-earnings .earnings-pplx-movers span em,
+.portfolio-app-view-earnings .earnings-pplx-price strong {
+  color: var(--earnings-pplx-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-price {
+  justify-items: end;
+  text-align: right;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-price em {
+  font-size: 14px !important;
+  font-weight: 560;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-price em.is-positive {
+  color: var(--finance-positive);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-price em.is-negative {
+  color: var(--finance-negative);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-movers .portfolio-mover-identity em {
+  color: var(--earnings-pplx-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 520;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-watchlist svg {
+  color: var(--earnings-pplx-faint);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-movers article + article {
+  border-top: 1px solid rgba(235, 233, 224, 0.07);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid rgba(235, 233, 224, 0.07);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button {
+  position: relative;
+  border: 0;
+  padding: 10px 8px;
+  color: var(--earnings-pplx-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button.is-active {
+  color: var(--earnings-pplx-text);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button.is-active::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 0;
+  left: 22%;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--earnings-pplx-text);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-movers article {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-selected-anchor {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .portfolio-app-view-earnings {
+    --earnings-pplx-page-gutter: clamp(16px, 3vw, 28px);
+  }
+
+  .portfolio-app-view-earnings .portfolio-workspace-screen {
+    padding-inline: clamp(16px, 3vw, 28px);
+  }
+
+  .portfolio-app-view-earnings .portfolio-finance-header,
+  .portfolio-app-view-earnings .earnings-pplx-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-main {
+    min-height: auto;
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-composer {
+    right: var(--earnings-pplx-page-gutter);
+    left: var(--earnings-pplx-page-gutter);
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-sentiment {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 960px) {
+  .portfolio-app-view-earnings .earnings-pplx-day-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-call-list a {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-call-meta {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .portfolio-app-view-earnings .earnings-pplx-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .portfolio-app-view-funds .portfolio-section-header {
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 30rem);
 }
@@ -3053,6 +5054,10 @@
   --markets-faint: #777b82;
   --markets-green: #58b66d;
   --markets-red: #e76d7b;
+  --markets-section-heading-size: 23px;
+  --markets-associated-panel-gap: 8px;
+  --markets-component-gap: 24px;
+  --markets-sticky-rail-top: 96px;
   background: var(--markets-bg);
 }
 
@@ -3086,6 +5091,10 @@
 }
 
 .portfolio-app-view-markets .portfolio-finance-search {
+  --animated-search-left: 2.56rem;
+  --animated-search-right: 1rem;
+  --animated-search-font-size: 15px;
+  --animated-search-color: rgba(161, 163, 168, 0.72);
   height: 48px;
   max-width: none;
   border-color: var(--markets-border);
@@ -3111,7 +5120,7 @@
 
 .markets-page-flow {
   display: grid;
-  gap: 28px;
+  gap: var(--markets-component-gap);
 }
 
 .markets-primary-workspace {
@@ -3128,7 +5137,7 @@
 
 .portfolio-app-view-markets .portfolio-market-overview-panel {
   display: grid;
-  gap: 16px;
+  gap: var(--markets-associated-panel-gap);
   border: 0 !important;
   padding: 0 !important;
   background: transparent !important;
@@ -3143,6 +5152,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 0 !important;
 }
 
 .markets-section-heading h2,
@@ -3152,32 +5162,21 @@
   margin: 0;
   color: var(--markets-text) !important;
   font-family: var(--font-ui);
-  font-size: 23px !important;
-  font-weight: 620;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-size: var(--markets-section-heading-size) !important;
+  font-weight: 620 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.15 !important;
   text-transform: none;
 }
 
 .markets-section-heading span,
 .portfolio-app-view-markets .portfolio-workspace-panel-heading strong,
-.portfolio-app-view-markets .market-summary-heading strong,
 .portfolio-app-view-markets .portfolio-recent-developments-heading strong {
   color: var(--markets-muted) !important;
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 520;
   letter-spacing: 0;
-  text-transform: none !important;
-}
-
-.portfolio-app-view-markets .portfolio-market-summary-panel .market-summary-heading strong {
-  color: var(--markets-muted) !important;
-  font-family: var(--font-ui) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0;
-  line-height: 1.35;
   text-transform: none !important;
 }
 
@@ -3196,18 +5195,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 30px;
+  gap: 5px;
+  min-height: 26px;
   border: 1px solid rgba(232, 233, 229, 0.12);
   border-radius: 999px;
-  padding: 0 10px;
+  padding: 0 8px;
   color: var(--markets-muted);
   background:
     linear-gradient(180deg, rgba(32, 32, 34, 0.9), rgba(12, 12, 14, 0.96)),
     var(--markets-surface-soft);
   box-shadow:
     inset 0 1px 0 rgba(232, 233, 229, 0.055),
-    0 8px 18px rgba(0, 0, 0, 0.24);
+    0 5px 12px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition:
     border-color 150ms ease,
@@ -3228,7 +5227,7 @@
 
 .markets-indicator-picker-button span {
   color: inherit !important;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 620;
   letter-spacing: 0;
   line-height: 1;
@@ -3237,15 +5236,20 @@
 .markets-indicator-picker-button em {
   display: inline-flex;
   align-items: center;
-  min-height: 18px;
+  min-height: 15px;
   border-left: 1px solid rgba(232, 233, 229, 0.12);
-  padding-left: 7px;
+  padding-left: 6px;
   color: var(--markets-text);
   font-family: var(--font-data);
-  font-size: 10.5px;
+  font-size: 9.8px;
   font-style: normal;
   font-weight: 650;
   line-height: 1;
+}
+
+.markets-indicator-picker-button svg {
+  width: 12px;
+  height: 12px;
 }
 
 .markets-indicator-picker-button svg:last-child {
@@ -3498,16 +5502,14 @@
   gap: 0;
   overflow: hidden;
   width: 100%;
-  border: 1px solid rgba(232, 233, 229, 0.105) !important;
-  border-radius: 999px;
-  margin: -2px 0 12px;
-  padding: 3px;
+  border: 1px solid rgba(232, 233, 229, 0.085) !important;
+  border-radius: 10px;
+  margin: 0 0 4px;
+  padding: 2px;
   background:
-    linear-gradient(180deg, rgba(31, 32, 34, 0.92), rgba(9, 10, 11, 0.96)),
-    #101112 !important;
-  box-shadow:
-    inset 0 1px 0 rgba(232, 233, 229, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.46) !important;
+    linear-gradient(180deg, rgba(23, 24, 25, 0.72), rgba(9, 10, 11, 0.8)),
+    rgba(232, 233, 229, 0.018) !important;
+  box-shadow: none !important;
 }
 
 .portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs.is-losers {
@@ -3525,20 +5527,19 @@
 .portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs::before {
   content: "";
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
   z-index: 0;
-  width: calc((100% - 6px) / 3);
-  border: 1px solid var(--mover-tab-outline);
-  border-radius: 999px;
+  width: calc((100% - 4px) / 3);
+  border: 1px solid rgba(232, 233, 229, 0.04);
+  border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(232, 233, 229, 0.085), rgba(232, 233, 229, 0.012)),
-    linear-gradient(180deg, var(--mover-tab-fill), rgba(16, 17, 18, 0.7));
+    linear-gradient(180deg, rgba(232, 233, 229, 0.052), rgba(232, 233, 229, 0.01)),
+    linear-gradient(180deg, var(--mover-tab-fill), rgba(16, 17, 18, 0.42));
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.34),
-    0 8px 18px var(--mover-tab-glow),
-    inset 0 1px 0 rgba(232, 233, 229, 0.08);
+    inset 0 1px 0 rgba(232, 233, 229, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   transform: translateX(calc(var(--mover-active-index) * 100%));
   transition:
     transform 190ms ease,
@@ -3550,15 +5551,15 @@
 .portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button {
   position: relative;
   z-index: 1;
-  min-height: 32px !important;
+  min-height: 27px !important;
   border: 0 !important;
-  border-radius: 999px !important;
-  padding: 0 10px;
+  border-radius: 8px !important;
+  padding: 0 8px;
   color: var(--markets-muted) !important;
   background: transparent !important;
   box-shadow: none !important;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 620;
   letter-spacing: 0;
   text-transform: capitalize;
@@ -3592,6 +5593,208 @@
   color: rgba(255, 239, 196, 0.96) !important;
 }
 
+.portfolio-app-view-markets .markets-news-panel {
+  display: grid;
+  gap: var(--markets-associated-panel-gap);
+  min-width: 0;
+  overflow: visible;
+  padding: 0 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .markets-news-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .markets-news-heading div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .markets-news-heading span {
+  color: rgba(218, 213, 202, 0.44);
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-markets .markets-news-heading h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: var(--markets-section-heading-size) !important;
+  font-weight: 620 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.15 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .markets-news-heading strong {
+  flex: 0 0 auto;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 540;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .markets-news-card-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .markets-news-card {
+  display: grid;
+  align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  min-width: 0;
+  min-height: 118px;
+  border: 1px solid var(--markets-border);
+  border-radius: 16px;
+  padding: 10px 11px;
+  background:
+    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(16, 16, 18, 0.98)),
+    var(--markets-surface-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.047),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.24);
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.portfolio-app-view-markets .markets-news-card:hover {
+  border-color: rgba(232, 233, 229, 0.16);
+  background:
+    linear-gradient(180deg, rgba(35, 35, 37, 0.97), rgba(18, 18, 20, 0.99)),
+    var(--markets-surface-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 1rem 2.2rem rgba(0, 0, 0, 0.28);
+}
+
+.portfolio-app-view-markets .markets-news-card-top {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .markets-news-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(232, 233, 229, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 250, 235, 0.78);
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 250, 235, 0.14), transparent 58%),
+    rgba(232, 233, 229, 0.055);
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.portfolio-app-view-markets .markets-news-logo img {
+  width: 27px;
+  height: 27px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.portfolio-app-view-markets .markets-news-card-top em {
+  grid-column: 3;
+  justify-self: end;
+  font-family: var(--font-data);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .markets-news-company {
+  display: flex;
+  grid-column: 2;
+  min-width: 0;
+  align-items: center;
+}
+
+.portfolio-app-view-markets .markets-news-company strong {
+  overflow: hidden;
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: 13.6px;
+  font-weight: 640;
+  letter-spacing: 0;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .markets-news-card p {
+  display: -webkit-box;
+  align-self: start;
+  min-width: 0;
+  min-height: 32px;
+  margin: 0;
+  overflow: hidden;
+  border-left: 2px solid rgba(232, 233, 229, 0.13);
+  padding-left: 14px;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 11.8px;
+  font-weight: 440;
+  letter-spacing: 0;
+  line-height: 1.36;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.portfolio-app-view-markets .markets-news-card time {
+  align-self: end;
+  justify-self: start;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 6px;
+  font-weight: 430;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-markets .markets-news-empty {
+  margin: 0;
+  border: 1px dashed rgba(232, 233, 229, 0.11);
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
 .portfolio-app-view-markets .portfolio-index-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3603,12 +5806,12 @@
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .portfolio-market-overview-panel {
-  gap: 10px;
+  gap: var(--markets-associated-panel-gap);
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .portfolio-app-view-markets .portfolio-index-card {
@@ -3628,11 +5831,11 @@
 
 .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-card {
   position: relative;
-  grid-template-rows: auto minmax(40px, 1fr);
-  gap: 9px;
-  min-height: 112px;
-  border-radius: 12px;
-  padding: 14px 14px 10px;
+  grid-template-rows: auto minmax(20px, 1fr);
+  gap: 4px;
+  min-height: 76px;
+  border-radius: 10px;
+  padding: 9px 10px 7px;
 }
 
 .portfolio-app-view-markets .portfolio-index-card:hover {
@@ -3650,14 +5853,14 @@
 .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-card-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  min-height: 39px;
+  gap: 7px;
+  min-height: 31px;
   padding-right: 0;
 }
 
 .markets-asset-identity {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -3676,10 +5879,10 @@
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-card h3 {
-  font-size: 17.5px !important;
+  font-size: 14.5px !important;
   font-weight: 650;
   letter-spacing: 0;
-  line-height: 1.04;
+  line-height: 1;
 }
 
 .markets-asset-move {
@@ -3701,8 +5904,8 @@
 
 .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-move {
   position: static;
-  gap: 5px;
-  min-width: 82px;
+  gap: 3px;
+  min-width: 65px;
 }
 
 .markets-asset-percent {
@@ -3714,8 +5917,8 @@
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-percent {
-  font-size: 18px;
-  font-weight: 640;
+  font-size: 13.5px;
+  font-weight: 650;
   letter-spacing: 0;
 }
 
@@ -3752,14 +5955,14 @@
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-change {
-  font-size: 12px !important;
+  font-size: 10.5px !important;
   font-weight: 560;
-  opacity: 0.74;
+  opacity: 0.72;
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-value {
   color: rgba(232, 233, 229, 0.74) !important;
-  font-size: 14.5px;
+  font-size: 12px;
   font-weight: 540;
   letter-spacing: 0;
   line-height: 1;
@@ -3773,8 +5976,8 @@
 }
 
 .portfolio-app-view-markets .markets-top-assets-rail .portfolio-mini-sparkline {
-  height: 34px !important;
-  margin-top: 1px;
+  height: 21px !important;
+  margin-top: 0;
 }
 
 .portfolio-app-view-markets .portfolio-mini-sparkline .detailed-sparkline-grid {
@@ -3826,11 +6029,45 @@
 
 .portfolio-app-view-markets .portfolio-market-summary-panel {
   display: grid;
-  gap: 12px;
+  gap: var(--markets-associated-panel-gap);
   border: 0 !important;
   padding: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-market-summary-panel .market-summary-heading {
+  margin-bottom: 0;
+}
+
+.portfolio-app-view-markets .market-summary-updated {
+  flex: 0 0 auto;
+  margin: 0;
+  border: 0 !important;
+  padding: 0 !important;
+  color: rgba(161, 168, 179, 0.68) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+  font-weight: 440 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-update-status-text {
+  border: 0 !important;
+  padding: 0 !important;
+  color: rgba(161, 168, 179, 0.68) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+  font-weight: 440 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
 }
 
 .portfolio-app-view-markets .market-summary-card {
@@ -3939,6 +6176,8 @@
 }
 
 .markets-heatmap-section,
+.markets-heatmap-main,
+.markets-heatmap-rail,
 .markets-breadth-strip,
 .markets-lower-workspace,
 .markets-lower-main,
@@ -3948,7 +6187,26 @@
 
 .markets-heatmap-section {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 420px);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.markets-heatmap-main,
+.markets-heatmap-rail {
+  display: grid;
+  align-items: start;
+}
+
+.markets-heatmap-main {
+  gap: var(--markets-component-gap);
+}
+
+.markets-heatmap-rail {
+  position: relative;
+  align-self: stretch;
+  align-content: start;
+  gap: var(--markets-component-gap);
 }
 
 .markets-breadth-strip .portfolio-market-pulse-panel {
@@ -3988,17 +6246,21 @@
 }
 
 .markets-lower-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
-  gap: 18px;
-  align-items: start;
+  display: block;
+  margin-top: 0;
 }
 
 .markets-lower-main,
 .markets-lower-rail {
   display: grid;
-  gap: 18px;
+  gap: var(--markets-component-gap);
   align-items: start;
+}
+
+.markets-lower-rail {
+  position: sticky;
+  top: var(--markets-sticky-rail-top);
+  z-index: 4;
 }
 
 .markets-lower-rail .portfolio-workspace-panel {
@@ -4008,6 +6270,8 @@
 .portfolio-app-view-markets .portfolio-heatmap-panel,
 .portfolio-app-view-markets .portfolio-market-pulse-panel,
 .portfolio-app-view-markets .portfolio-workspace-split > .portfolio-workspace-panel,
+.portfolio-app-view-markets .portfolio-market-movers-panel,
+.portfolio-app-view-markets .portfolio-sector-performance-panel,
 .portfolio-app-view-markets .portfolio-standouts-panel {
   border: 1px solid var(--markets-border) !important;
   border-radius: 17px;
@@ -4019,7 +6283,381 @@
 
 .portfolio-app-view-markets .portfolio-heatmap-panel {
   min-height: 0 !important;
-  padding: 12px !important;
+  overflow: visible;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 19px;
+  padding: 8px 8px 12px !important;
+  background: #141414 !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-panel {
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-section {
+  display: grid;
+  gap: var(--markets-associated-panel-gap);
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-section-block,
+.portfolio-app-view-markets .portfolio-market-movers-section,
+.portfolio-app-view-markets .portfolio-standouts-section {
+  display: grid;
+  gap: var(--markets-associated-panel-gap);
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--markets-border) !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(31, 31, 33, 0.92), rgba(16, 16, 18, 0.98)),
+    var(--markets-surface) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.047),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.24) !important;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-list {
+  display: grid;
+  gap: 0;
+  border: 0;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-row {
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-top: 1px solid rgba(232, 233, 229, 0.066);
+  border-radius: 0;
+  padding: 10px 12px;
+  background: transparent;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-row:first-child {
+  border-top: 0;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-row:hover {
+  border-color: rgba(232, 233, 229, 0.1);
+  background: rgba(232, 233, 229, 0.035);
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-company-avatar {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(232, 233, 229, 0.12);
+  border-radius: 6px;
+  color: #171615;
+  background: #f2f0e8;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-identity {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-identity strong {
+  overflow: hidden;
+  color: var(--markets-text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.14;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-identity em {
+  overflow: hidden;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 620;
+  letter-spacing: 0;
+  line-height: 1.15;
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-price {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: max-content;
+  text-align: right;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-price strong {
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-markets .portfolio-market-movers-panel .portfolio-mover-price em {
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs {
+  overflow: hidden;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(232, 233, 229, 0.066) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: rgba(232, 233, 229, 0.035) !important;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs::before {
+  display: none;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button {
+  min-height: 40px !important;
+  border-radius: 0 !important;
+  color: var(--markets-muted) !important;
+  font-size: 14px;
+  font-weight: 520;
+  text-transform: capitalize;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button.is-active {
+  color: var(--markets-text) !important;
+  background: rgba(232, 233, 229, 0.052) !important;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button.is-mover-gainers.is-active,
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button.is-mover-losers.is-active,
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button.is-mover-active.is-active {
+  color: var(--markets-text) !important;
+}
+
+.portfolio-app.portfolio-app-view-markets .portfolio-mover-tabs button.is-active::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 0;
+  left: 22%;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--markets-text);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-section-block {
+  gap: calc(var(--markets-associated-panel-gap) - 1.6px);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 2px;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-heading div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-heading span {
+  color: rgba(218, 213, 202, 0.42);
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-heading h2 {
+  margin: 0;
+  color: var(--markets-text);
+  font-family: var(--font-ui);
+  font-size: var(--markets-section-heading-size) !important;
+  font-weight: 620 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.15 !important;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-heading strong {
+  flex: 0 0 auto;
+  color: var(--markets-muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 540;
+  line-height: 1;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-table {
+  display: grid;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.86fr) minmax(250px, 1.08fr) minmax(118px, 0.34fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 58px;
+  border-top: 1px solid rgba(232, 233, 229, 0.075);
+  padding: 0 18px;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-row:first-child {
+  border-top: 0;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-header {
+  min-height: 40px;
+  background: rgba(232, 233, 229, 0.028);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-header span {
+  color: rgba(218, 213, 202, 0.56);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 620;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-header span:last-child,
+.portfolio-app-view-markets .portfolio-sector-performance-row > em {
+  justify-self: end;
+  text-align: right;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-sector {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: rgba(218, 213, 202, 0.58);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-icon svg {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 12px rgba(232, 233, 229, 0.08));
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-sector strong {
+  display: block;
+  overflow: hidden;
+  color: rgba(255, 250, 235, 0.88);
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  font-weight: 620;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-sector small {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: rgba(218, 213, 202, 0.43);
+  font-family: var(--font-data);
+  font-size: 8.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-breadth {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-counts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  color: rgba(255, 250, 235, 0.78);
+  font-family: var(--font-data);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-counts span:last-child {
+  justify-self: end;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-bar {
+  display: flex;
+  column-gap: 2px;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(232, 233, 229, 0.075);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-bar span {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-bar .is-gainer {
+  border-radius: 999px 0 0 999px;
+  background: #12b886;
+  box-shadow: 0 0 14px rgba(18, 184, 134, 0.2);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-bar .is-loser {
+  border-radius: 0 999px 999px 0;
+  background: #e05f3f;
+  box-shadow: 0 0 14px rgba(224, 95, 63, 0.2);
+}
+
+.portfolio-app-view-markets .portfolio-sector-performance-row > em {
+  font-family: var(--font-data);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-surface {
@@ -4032,44 +6670,102 @@
 
 .portfolio-app-view-markets .portfolio-heatmap-header {
   display: grid;
-  grid-template-columns: minmax(160px, max-content) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: 12px 18px;
+  column-gap: 20px;
+  row-gap: 8px;
   margin-bottom: 0;
-}
-
-.portfolio-app-view-markets .markets-heatmap-section > .portfolio-heatmap-header {
   padding: 0 2px;
 }
 
+.portfolio-app-view-markets .portfolio-heatmap-header-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-header-row.is-secondary {
+  align-items: center;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-control-cluster {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 0;
+  transform: translateY(4px);
+}
+
 .portfolio-app-view-markets .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-header {
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-title-block {
+  display: grid;
+  gap: 6px;
   min-width: 0;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-title-block h2 {
   color: var(--markets-text);
   font-family: var(--font-ui);
-  font-size: 21px;
-  font-weight: 610;
-  letter-spacing: -0.01em;
+  font-size: var(--markets-section-heading-size) !important;
+  font-weight: 620 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.15 !important;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-title-block p {
-  color: var(--markets-muted);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  display: none;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-action {
-  border-color: var(--markets-border);
-  border-radius: 10px;
-  color: var(--markets-muted);
-  background: rgba(232, 233, 229, 0.045);
+  display: inline-flex;
+  width: auto;
+  min-width: 0;
+  height: 23px;
+  min-height: 23px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(232, 233, 229, 0.09);
+  border-radius: 999px;
+  padding: 0 7px;
+  color: rgba(232, 233, 229, 0.58);
+  background: rgba(232, 233, 229, 0.026);
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
   box-shadow: none;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-action:hover,
+.portfolio-app-view-markets .portfolio-heatmap-action:focus-visible {
+  color: rgba(245, 245, 240, 0.82);
+  border-color: rgba(232, 233, 229, 0.16);
+  background: rgba(232, 233, 229, 0.055);
+  box-shadow: none;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-action svg {
+  flex: 0 0 auto;
+  width: 10.5px;
+  height: 10.5px;
+  stroke-width: 1.9;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-action span {
+  line-height: 1;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-stage {
@@ -4077,8 +6773,19 @@
   min-height: 620px;
   border-color: transparent;
   border-radius: 0;
-  background: transparent;
+  background: #111111;
   box-shadow: none;
+}
+
+.portfolio-app-view-markets .markets-heatmap-main .portfolio-heatmap-stage {
+  height: clamp(484px, 36vw, 560px);
+  min-height: 484px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stage,
+.portfolio-app-view-markets .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-stage {
+  height: clamp(620px, 76vh, 820px);
+  min-height: 620px;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-sector {
@@ -4093,31 +6800,33 @@
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-sector-label {
-  top: 0;
+  top: 3px;
   left: 0;
   right: auto;
   display: inline-flex;
   align-items: flex-end;
   width: max-content;
   max-width: 100%;
-  height: var(--heatmap-sector-header-size);
-  min-height: 16px;
+  height: calc(var(--heatmap-sector-header-size) - 3px);
+  min-height: 12px;
   border-bottom: 0;
-  padding: 0 5px 3px;
+  padding: 0 4px 0;
   background: transparent;
   pointer-events: none;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-sector.is-label-compact .portfolio-heatmap-sector-label {
-  min-height: 14px;
-  padding: 0 5px 2px;
+  top: 2px;
+  height: calc(var(--heatmap-sector-header-size) - 2px);
+  min-height: 11px;
+  padding: 0 4px 0;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-sector-label strong {
-  color: rgba(232, 233, 229, 0.82);
+  color: rgba(232, 233, 229, 0.72);
   font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 640;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.12;
 }
@@ -4128,65 +6837,94 @@
 
 .portfolio-app-view-markets .portfolio-heatmap-tile {
   gap: 3px;
-  padding: 7px 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 1px;
+  padding: 5px 6px;
   background: var(--heatmap-bg);
-  border-color: var(--heatmap-border);
-  box-shadow: none;
+  border-color: rgba(10, 10, 10, 0.42);
+  box-shadow: inset 0 0 0 1px var(--heatmap-border);
   filter: none;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-full strong {
-  font-size: clamp(13px, 0.9vw, 16px);
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1.05;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-full span {
-  font-size: 11px;
-  line-height: 1.1;
+  display: -webkit-box;
+  color: rgba(255, 255, 252, 0.58);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.08;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   text-transform: none;
+  white-space: normal;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-full em {
-  font-size: clamp(12px, 0.76vw, 14px);
+  color: rgba(255, 255, 252, 0.76);
+  font-size: 15px;
+  font-weight: 620;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-medium {
-  padding: 6px 7px;
+  gap: 2px;
+  padding: 5px 6px;
 }
 
-.portfolio-app-view-markets .portfolio-heatmap-tile.label-medium strong,
+.portfolio-app-view-markets .portfolio-heatmap-tile.label-medium strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-medium em {
-  font-size: 11.5px;
+  color: rgba(255, 255, 252, 0.74);
+  font-size: 12px;
+  font-weight: 610;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-compact {
-  justify-content: center;
-  padding: 4px 5px;
+  gap: 1px;
+  justify-content: flex-start;
+  padding: 3px 4px;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-compact strong {
   font-size: 10.5px;
+  font-weight: 700;
   line-height: 1;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-compact em {
-  display: none;
+  color: rgba(255, 255, 252, 0.7);
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile.label-micro strong {
-  display: none;
+  color: rgba(255, 255, 252, 0.76);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-tile:hover,
 .portfolio-app-view-markets .portfolio-heatmap-tile:focus-visible {
-  filter: brightness(1.06) saturate(1.04);
-  box-shadow: inset 0 0 0 1px rgba(232, 233, 229, 0.16);
+  filter: brightness(1.055);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 233, 229, 0.16),
+    inset 0 0 0 999px rgba(255, 255, 255, 0.015);
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-footer {
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 8px 14px;
+  margin-top: 13px;
   color: var(--markets-faint);
 }
 
@@ -4194,29 +6932,30 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 10px 16px;
+  width: auto;
   min-width: 0;
-  margin-left: auto;
   color: var(--markets-muted);
   font-family: var(--font-data);
-  font-size: 11px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.portfolio-app-view-markets .portfolio-heatmap-header .portfolio-heatmap-depth-strip {
-  justify-self: end;
-  align-self: end;
-  padding-bottom: 2px;
+.portfolio-app-view-markets .portfolio-heatmap-depth-primary {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-depth-caption {
-  margin-right: 8px;
+  margin-right: 9px;
   color: var(--markets-faint);
-  font-size: 10px;
-  font-weight: 620;
-  letter-spacing: 0.04em;
+  font-size: 13px;
+  font-weight: 520;
+  letter-spacing: 0.08em;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -4224,10 +6963,10 @@
 .portfolio-app-view-markets .portfolio-heatmap-depth-item {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
-  border-left: 1px solid rgba(232, 233, 229, 0.12);
-  padding: 0 8px;
+  border-left: 1px solid rgba(232, 233, 229, 0.1);
+  padding: 0 10px;
   line-height: 1;
 }
 
@@ -4242,25 +6981,443 @@
 
 .portfolio-app-view-markets .portfolio-heatmap-depth-item b {
   color: var(--markets-faint);
-  font-size: 10px;
-  font-weight: 620;
+  font-size: 13px;
+  font-weight: 520;
   letter-spacing: 0;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-depth-item strong {
   color: var(--markets-text);
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 620;
   letter-spacing: 0;
   text-transform: none;
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-depth-item.is-positive strong {
-  color: var(--markets-green);
+  color: rgba(121, 206, 145, 0.9);
 }
 
 .portfolio-app-view-markets .portfolio-heatmap-depth-item.is-negative strong {
-  color: var(--markets-red);
+  color: rgba(244, 108, 119, 0.9);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details {
+  position: relative;
+  margin-left: 0;
+  color: rgba(232, 233, 229, 0.58);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 23px;
+  min-height: 23px;
+  border: 1px solid rgba(232, 233, 229, 0.09);
+  border-radius: 999px;
+  padding: 0 7px;
+  color: inherit;
+  background: rgba(232, 233, 229, 0.026);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details summary::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 150ms ease;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details[open] summary,
+.portfolio-app-view-markets .portfolio-heatmap-stat-details summary:hover,
+.portfolio-app-view-markets .portfolio-heatmap-stat-details summary:focus-visible {
+  outline: none;
+  border-color: rgba(232, 233, 229, 0.16);
+  color: rgba(232, 233, 229, 0.82);
+  background: rgba(232, 233, 229, 0.055);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-details[open] summary::after {
+  transform: translateY(1px) rotate(225deg);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 230px;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #181818;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item {
+  justify-content: space-between;
+  border-left: 0;
+  padding: 0;
+}
+
+.portfolio-app-view-markets .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item b,
+.portfolio-app-view-markets .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item strong {
+  font-size: 12px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded {
+  gap: 0;
+  padding: 20px 24px 17px;
+  color: rgba(232, 233, 229, 0.88);
+  background: #141414;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  min-height: 0;
+  gap: 16px;
+  margin-bottom: 16px;
+  border-bottom: 0;
+  padding: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-title-block {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-header-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-control-cluster {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-title-block h2 {
+  color: rgba(232, 233, 229, 0.92);
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-action {
+  display: inline-flex;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 8px;
+  padding: 4px 0;
+  color: rgba(232, 233, 229, 0.55);
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-action:hover,
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-action:focus-visible {
+  outline: none;
+  color: rgba(245, 245, 240, 0.82);
+  background: transparent;
+  box-shadow: none;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-action svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.9;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-strip,
+.portfolio-heatmap-modal .portfolio-heatmap-depth-primary,
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item {
+  display: flex;
+  align-items: baseline;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-strip {
+  justify-content: space-between;
+  gap: 10px 16px;
+  width: 100%;
+  color: var(--markets-muted);
+  font-family: var(--font-data);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-caption {
+  margin-right: 9px;
+  color: var(--markets-faint);
+  font-size: 13px;
+  font-weight: 520;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item {
+  gap: 5px;
+  border-left: 1px solid rgba(232, 233, 229, 0.1);
+  padding: 0 10px;
+  line-height: 1;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item b,
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item strong {
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item b {
+  color: var(--markets-faint);
+  font-weight: 520;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item strong {
+  color: rgba(232, 233, 229, 0.9);
+  font-weight: 620;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item.is-positive strong {
+  color: rgba(121, 206, 145, 0.9);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-depth-item.is-negative strong {
+  color: rgba(244, 108, 119, 0.9);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details {
+  position: relative;
+  margin-left: auto;
+  color: rgba(232, 233, 229, 0.52);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details[open] summary,
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details summary:hover,
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details summary:focus-visible {
+  outline: none;
+  color: rgba(232, 233, 229, 0.82);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-details[open] summary::after {
+  transform: translateY(1px) rotate(225deg);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 230px;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #181818;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item {
+  justify-content: space-between;
+  border-left: 0;
+  padding: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item b,
+.portfolio-heatmap-modal .portfolio-heatmap-stat-popover .portfolio-heatmap-depth-item strong {
+  font-size: 12px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-content,
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-content {
+  padding: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-stage,
+.portfolio-heatmap-modal .portfolio-heatmap-surface.is-expanded .portfolio-heatmap-stage {
+  border-color: transparent;
+  border-radius: 0;
+  background: #111111;
+  box-shadow: none;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-sector {
+  border-color: transparent;
+  background: transparent;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-sector-label {
+  top: 3px;
+  left: 0;
+  right: auto;
+  display: inline-flex;
+  align-items: flex-end;
+  width: max-content;
+  max-width: 100%;
+  height: calc(var(--heatmap-sector-header-size) - 3px);
+  min-height: 12px;
+  padding: 0 4px 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-sector-label strong {
+  color: rgba(232, 233, 229, 0.72);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile {
+  gap: 3px;
+  border-color: rgba(10, 10, 10, 0.42);
+  border-radius: 1px;
+  padding: 5px 6px;
+  background: var(--heatmap-bg);
+  box-shadow: inset 0 0 0 1px var(--heatmap-border);
+  filter: none;
+  font-family: var(--font-ui);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-full strong {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-full span {
+  display: -webkit-box;
+  color: rgba(255, 255, 252, 0.58);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.08;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-full em {
+  color: rgba(255, 255, 252, 0.76);
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-medium strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-medium em {
+  color: rgba(255, 255, 252, 0.74);
+  font-size: 12px;
+  font-weight: 610;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-compact {
+  justify-content: flex-start;
+  padding: 3px 4px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-compact strong {
+  font-size: 10.5px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile.label-compact em {
+  display: block;
+  color: rgba(255, 255, 252, 0.7);
+  font-size: 10px;
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-tile:hover,
+.portfolio-heatmap-modal .portfolio-heatmap-tile:focus-visible {
+  filter: brightness(1.055);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 233, 229, 0.16),
+    inset 0 0 0 999px rgba(255, 255, 255, 0.015);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-footer {
+  margin: 13px 0 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgba(218, 218, 212, 0.54);
+}
+
+.portfolio-heatmap-modal .portfolio-heatmap-legend strong,
+.portfolio-heatmap-modal .portfolio-heatmap-footer time {
+  color: rgba(218, 218, 212, 0.58);
 }
 
 .portfolio-app-view-markets .portfolio-market-pulse-panel {
@@ -4372,7 +7529,7 @@
 
 .portfolio-app-view-markets .portfolio-recent-developments-section {
   display: grid;
-  gap: 14px;
+  gap: var(--markets-associated-panel-gap);
   overflow: visible;
 }
 
@@ -4554,16 +7711,41 @@
   gap: 12px;
 }
 
+.portfolio-app-view-markets .portfolio-standouts-panel {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 .portfolio-app-view-markets .portfolio-standout-card {
   gap: 10px;
   min-width: 0;
   border-color: var(--markets-border);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 14px;
   background:
-    linear-gradient(180deg, rgba(27, 27, 29, 0.92), rgba(15, 15, 17, 0.98)),
+    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(16, 16, 18, 0.98)),
     var(--markets-surface-soft);
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.047),
+    0 0.9rem 2rem rgba(0, 0, 0, 0.24);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-markets .portfolio-standout-card:hover {
+  border-color: rgba(232, 233, 229, 0.16);
+  background:
+    linear-gradient(180deg, rgba(35, 35, 37, 0.97), rgba(18, 18, 20, 0.99)),
+    var(--markets-surface-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.055),
+    0 1rem 2.2rem rgba(0, 0, 0, 0.28);
+  transform: translateY(-1px);
 }
 
 .portfolio-app-view-markets .portfolio-standout-identity strong,
@@ -4604,35 +7786,44 @@
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-card {
-    min-height: 108px;
-    padding: 12px 12px 9px;
+    min-height: 74px;
+    padding: 8px 9px 7px;
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-card-header {
-    gap: 8px;
-    min-height: 37px;
+    gap: 6px;
+    min-height: 29px;
     padding-right: 0;
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-card h3 {
-    font-size: 15.5px !important;
+    font-size: 13.5px !important;
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-move {
-    min-width: 70px;
+    min-width: 60px;
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-percent {
-    font-size: 16px;
+    font-size: 12.5px;
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .markets-asset-change {
     display: block;
-    font-size: 11px !important;
+    font-size: 9.8px !important;
   }
 
   .markets-heatmap-breadth-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .markets-heatmap-section {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
+  }
+
+  .portfolio-app-view-markets .markets-heatmap-main .portfolio-heatmap-stage {
+    height: clamp(440px, 42vw, 500px);
+    min-height: 440px;
   }
 
   .markets-breadth-strip .portfolio-market-pulse-panel {
@@ -4660,8 +7851,54 @@
     white-space: nowrap;
   }
 
-  .markets-lower-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+  .portfolio-app-view-markets .portfolio-sector-performance-heading {
+    padding: 0 2px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-row {
+    grid-template-columns: minmax(150px, 0.86fr) minmax(190px, 1fr) minmax(82px, 0.34fr);
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 14px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-sector {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-sector strong {
+    font-size: 12.5px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-counts {
+    font-size: 11px;
+  }
+
+  .portfolio-app-view-markets .portfolio-sector-performance-row > em {
+    font-size: 12px;
+  }
+
+  .portfolio-app-view-markets .markets-news-panel {
+    padding: 0 2px !important;
+  }
+
+  .portfolio-app-view-markets .markets-news-heading h2 {
+    font-size: var(--markets-section-heading-size) !important;
+  }
+
+  .portfolio-app-view-markets .markets-news-card {
+    min-height: 112px;
+    padding: 9px 10px;
+  }
+
+  .portfolio-app-view-markets .markets-news-card p {
+    font-size: 11.3px;
   }
 }
 
@@ -4687,7 +7924,7 @@
   }
 
   .portfolio-app-view-markets .markets-top-assets-rail .portfolio-index-card {
-    min-height: 104px;
+    min-height: 72px;
   }
 
   .portfolio-app-view-markets .portfolio-heatmap-stage {
@@ -5315,5 +8552,1202 @@
   .portfolio-app-view-funds .portfolio-section-header {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
+  }
+}
+
+/* Watchlist Perplexity-style page. Route-local and Indian-equity only. */
+.portfolio-app-view-watchlist {
+  --watchlist-pplx-panel: #1a1917;
+  --watchlist-pplx-panel-soft: #151514;
+  --watchlist-pplx-border: rgba(236, 232, 222, 0.105);
+  --watchlist-pplx-border-strong: rgba(236, 232, 222, 0.17);
+  --watchlist-pplx-text: #e9e6dc;
+  --watchlist-pplx-muted: #a4a099;
+  --watchlist-pplx-faint: #77736c;
+  --watchlist-pplx-accent: #b86a4b;
+}
+
+.portfolio-app-view-watchlist .portfolio-workspace-screen {
+  width: min(calc(100vw - 2rem), 78rem);
+  max-width: 78rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-header {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0.72rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-header-title {
+  display: none;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-search {
+  width: min(100%, 47rem);
+  min-height: 2.35rem;
+  border-color: var(--watchlist-pplx-border);
+  background: rgba(21, 20, 18, 0.72);
+  justify-self: center;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-grid {
+  grid-template-columns: minmax(0, 42rem) minmax(15.5rem, 17.25rem) !important;
+  align-items: start;
+  gap: 1.35rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-main,
+.portfolio-app-view-watchlist .portfolio-finance-rail {
+  gap: 1rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary {
+  border: 0;
+  padding: 0.22rem 0 0.1rem;
+  background: transparent;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary header,
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary h1 {
+  margin: 0;
+  color: var(--watchlist-pplx-text);
+  font-size: clamp(1.42rem, 2vw, 1.92rem);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary p {
+  max-width: 39rem;
+  margin: 0.55rem 0 0;
+  color: var(--watchlist-pplx-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary p:first-of-type {
+  margin-top: 0.16rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary strong {
+  color: var(--watchlist-pplx-text);
+  font-weight: 720;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary button,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button {
+  border: 1px solid var(--watchlist-pplx-border);
+  border-radius: 999px;
+  color: var(--watchlist-pplx-muted);
+  background: rgba(255, 255, 255, 0.035);
+  font: inherit;
+  line-height: 1;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary button {
+  min-height: 2rem;
+  padding: 0.42rem 0.76rem;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-summary button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-summary button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-summary button.is-active,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button.is-active,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button.is-active {
+  border-color: var(--watchlist-pplx-border-strong);
+  color: var(--watchlist-pplx-text);
+  background: rgba(255, 255, 255, 0.078);
+  transform: translateY(-1px);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-meta-row span {
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 999px;
+  padding: 0.16rem 0.48rem;
+  color: var(--watchlist-pplx-faint);
+  background: rgba(255, 255, 255, 0.028);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  line-height: 1.15;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-manager {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  border: 1px solid var(--watchlist-pplx-border);
+  border-radius: 8px;
+  padding: 0.62rem;
+  background: rgba(26, 25, 23, 0.78);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-feedback {
+  margin: -0.3rem 0 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-table-panel,
+.portfolio-app-view-watchlist .watchlist-pplx-movers,
+.portfolio-app-view-watchlist .watchlist-pplx-notable,
+.portfolio-app-view-watchlist .watchlist-pplx-news,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card,
+.portfolio-app-view-watchlist .watchlist-pplx-composer {
+  border: 1px solid var(--watchlist-pplx-border) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 235, 0.035), rgba(255, 250, 235, 0.012)),
+    var(--watchlist-pplx-panel) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 235, 0.045),
+    0 0.7rem 1.4rem rgba(0, 0, 0, 0.16) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-table-panel {
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+  padding: 0.74rem 0.9rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading h2,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card h2 {
+  margin: 0;
+  color: var(--watchlist-pplx-text);
+  font-size: 0.98rem;
+  font-weight: 740;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading > span {
+  color: var(--watchlist-pplx-faint);
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table {
+  min-width: 0 !important;
+  table-layout: fixed;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th,
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td {
+  padding: 0.62rem 0.86rem !important;
+  border-bottom-color: rgba(255, 255, 255, 0.062);
+  vertical-align: middle;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th {
+  color: var(--watchlist-pplx-faint);
+  font-size: 0.62rem !important;
+  font-weight: 680;
+  text-transform: none;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td {
+  color: var(--watchlist-pplx-muted);
+  font-size: 0.76rem !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(1),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(1) {
+  width: 43% !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(2),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(2) {
+  width: 17% !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(3),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(3),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(4),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(4),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(5),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(5),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th:nth-child(6),
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td:nth-child(6) {
+  width: 10% !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table tbody tr {
+  background: transparent !important;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.028) !important;
+  box-shadow: inset 2px 0 0 rgba(184, 106, 75, 0.7);
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table .is-numeric {
+  color: var(--watchlist-pplx-text);
+  font-family: var(--font-data);
+  font-size: 0.78rem !important;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell {
+  display: grid;
+  grid-template-columns: 1.62rem minmax(0, 1fr) auto !important;
+  align-items: center;
+  gap: 0.52rem !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell .portfolio-company-avatar {
+  width: 1.62rem;
+  height: 1.62rem;
+  border-radius: 6px;
+  font-size: 0.58rem;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell > div:not(.portfolio-table-actions) strong {
+  display: block;
+  overflow: hidden;
+  color: var(--watchlist-pplx-text) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell > div:not(.portfolio-table-actions) span {
+  display: block;
+  margin-top: 0.12rem;
+  overflow: hidden;
+  color: var(--watchlist-pplx-faint) !important;
+  font-family: var(--font-data);
+  font-size: 0.62rem !important;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-actions {
+  grid-column: 3 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 1.35rem);
+  gap: 0.18rem !important;
+  margin: 0 !important;
+  opacity: 0.24;
+  transition: opacity 160ms ease;
+}
+
+.portfolio-app-view-watchlist tr:hover .portfolio-table-actions,
+.portfolio-app-view-watchlist .portfolio-table-actions:focus-within {
+  opacity: 1;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-actions .portfolio-icon-action {
+  width: 1.35rem;
+  height: 1.35rem;
+  min-width: 1.35rem;
+  border-radius: 6px;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions {
+  display: grid;
+  gap: 0.04rem;
+  padding: 0.72rem 0.82rem 0.18rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button {
+  display: grid;
+  grid-template-columns: 1.1rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-height: 1.72rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.18rem 0.24rem;
+  color: var(--watchlist-pplx-muted);
+  background: transparent;
+  text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button svg {
+  width: 0.88rem;
+  height: 0.88rem;
+  color: var(--watchlist-pplx-faint);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button span {
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button:focus-visible {
+  color: var(--watchlist-pplx-text);
+  background: rgba(255, 255, 255, 0.048);
+  transform: translateX(2px);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-input-row {
+  display: block;
+  border-top: 1px solid rgba(255, 255, 255, 0.066);
+  padding: 0.78rem 0.92rem 0.1rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-input-row input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  color: var(--watchlist-pplx-text);
+  background: transparent;
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-input-row input::placeholder {
+  color: rgba(165, 162, 154, 0.74);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0 0.82rem 0.78rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34rem;
+  min-height: 1.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.28rem 0.64rem;
+  color: var(--watchlist-pplx-muted);
+  background: rgba(255, 255, 255, 0.042);
+  font: inherit;
+  font-size: 0.76rem;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button:first-child,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar .watchlist-pplx-submit {
+  width: 1.9rem;
+  padding: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar .watchlist-pplx-submit {
+  margin-left: auto;
+  color: #191817;
+  background: var(--watchlist-pplx-text);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button:focus-visible {
+  border-color: var(--watchlist-pplx-border-strong);
+  color: var(--watchlist-pplx-text);
+  transform: translateY(-1px);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar .watchlist-pplx-submit:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar .watchlist-pplx-submit:focus-visible {
+  color: #111;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.24rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button {
+  min-height: 1.52rem;
+  padding: 0.24rem 0.5rem;
+  font-size: 0.66rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button:last-child {
+  margin-left: 0.22rem;
+  color: var(--watchlist-pplx-text);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart {
+  display: block;
+  width: 100%;
+  height: 13.8rem;
+  padding: 0.8rem 0.9rem 0.3rem;
+  overflow: visible;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart line {
+  stroke: rgba(255, 255, 255, 0.072);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart polyline {
+  filter: drop-shadow(0 0.2rem 0.45rem rgba(0, 0, 0, 0.26));
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend {
+  border-top: 1px solid rgba(255, 255, 255, 0.066);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend article,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list article,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list article {
+  display: grid;
+  align-items: center;
+  gap: 0.54rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.058);
+  padding: 0.62rem 0.82rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend article {
+  grid-template-columns: 1.6rem minmax(0, 1fr) max-content max-content;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend article:last-child,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list article:last-child,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list article:last-child {
+  border-bottom: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend strong,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list strong,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list strong {
+  display: block;
+  overflow: hidden;
+  color: var(--watchlist-pplx-text);
+  font-size: 0.78rem;
+  line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend span,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list span,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--watchlist-pplx-faint);
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend em,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend b,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list em,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list em {
+  color: var(--watchlist-pplx-muted);
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 680;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-timeline {
+  padding: 0.2rem 0.82rem 0.72rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-timeline article {
+  border-color: rgba(255, 255, 255, 0.062) !important;
+  background: transparent !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article {
+  border: 0 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.058) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.058) !important;
+  border-radius: 0 !important;
+  padding: 0.78rem 0.86rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article:nth-child(2n) {
+  border-right: 0 !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  transform: translateY(-1px);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card h2 {
+  padding: 0.72rem 0.84rem 0.54rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs {
+  display: flex;
+  gap: 0.22rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.058);
+  padding: 0 0.84rem 0.58rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button {
+  min-height: 1.5rem;
+  padding: 0.22rem 0.48rem;
+  font-size: 0.64rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list article {
+  grid-template-columns: 1.52rem minmax(0, 1fr) max-content;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list .portfolio-company-avatar,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend .portfolio-company-avatar {
+  width: 1.52rem;
+  height: 1.52rem;
+  border-radius: 6px;
+  font-size: 0.56rem;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list article {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.portfolio-app-view-watchlist .portfolio-finance-disclaimer {
+  margin: 0;
+  border: 1px solid var(--watchlist-pplx-border);
+  border-radius: 8px;
+  padding: 0.62rem 0.72rem;
+  background: rgba(26, 25, 23, 0.62);
+  color: var(--watchlist-pplx-faint);
+  font-size: 0.62rem;
+  line-height: 1.38;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .portfolio-app-view-watchlist .portfolio-workspace-screen {
+    width: min(calc(100vw - 1rem), 70rem);
+  }
+
+  .portfolio-app-view-watchlist .portfolio-finance-header,
+  .portfolio-app-view-watchlist .portfolio-finance-grid,
+  .portfolio-app-view-watchlist .watchlist-pplx-manager {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .portfolio-app-view-watchlist .portfolio-finance-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 920px) {
+  .portfolio-app-view-watchlist .portfolio-finance-rail,
+  .portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-app-view-watchlist .portfolio-watchlist-return-table {
+    min-width: 42rem !important;
+  }
+
+  .portfolio-app-view-watchlist .watchlist-pplx-table-panel {
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-app-view-watchlist .watchlist-pplx-summary button,
+  .portfolio-app-view-watchlist .watchlist-pplx-range-row button,
+  .portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button,
+  .portfolio-app-view-watchlist .watchlist-pplx-suggestions button,
+  .portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button,
+  .portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article {
+    transition: none;
+  }
+
+  .portfolio-app-view-watchlist .watchlist-pplx-summary button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-range-row button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-suggestions button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article:hover {
+    transform: none;
+  }
+}
+
+/* Markets language alignment for earnings and watchlist only.
+   Keeps page structure and data intact while matching the colder graphite
+   workstation finish of /markets. */
+.portfolio-app-view-earnings,
+.portfolio-app-view-watchlist {
+  --route-market-panel: #181819;
+  --route-market-panel-deep: #101012;
+  --route-market-panel-soft: #141416;
+  --route-market-border: rgba(232, 233, 229, 0.106);
+  --route-market-border-strong: rgba(232, 233, 229, 0.18);
+  --route-market-text: #e8e8e2;
+  --route-market-muted: #a7aaa5;
+  --route-market-faint: #747873;
+  --route-market-row-hover: rgba(232, 233, 229, 0.035);
+  --route-market-shadow: inset 0 1px 0 rgba(240, 239, 231, 0.047), 0 0.9rem 2rem rgba(0, 0, 0, 0.24);
+}
+
+.portfolio-app-view-earnings {
+  --earnings-pplx-panel: var(--route-market-panel);
+  --earnings-pplx-panel-soft: var(--route-market-panel-soft);
+  --earnings-pplx-border: var(--route-market-border);
+  --earnings-pplx-border-strong: var(--route-market-border-strong);
+  --earnings-pplx-text: var(--route-market-text);
+  --earnings-pplx-muted: var(--route-market-muted);
+  --earnings-pplx-faint: var(--route-market-faint);
+}
+
+.portfolio-app-view-watchlist {
+  --watchlist-pplx-panel: var(--route-market-panel);
+  --watchlist-pplx-panel-soft: var(--route-market-panel-soft);
+  --watchlist-pplx-border: var(--route-market-border);
+  --watchlist-pplx-border-strong: var(--route-market-border-strong);
+  --watchlist-pplx-text: var(--route-market-text);
+  --watchlist-pplx-muted: var(--route-market-muted);
+  --watchlist-pplx-faint: var(--route-market-faint);
+}
+
+.portfolio-app-view-earnings .portfolio-background-grid,
+.portfolio-app-view-watchlist .portfolio-background-grid {
+  opacity: 0.08;
+  background-size: 10rem 10rem;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 78%);
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title h1,
+.portfolio-app-view-watchlist .watchlist-pplx-summary h1 {
+  color: var(--route-market-text);
+  font-size: 29px;
+  font-weight: 650;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-header-title p,
+.portfolio-app-view-watchlist .watchlist-pplx-summary p {
+  color: var(--route-market-muted);
+  font-size: 14px;
+  font-weight: 440;
+  line-height: 1.48;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search,
+.portfolio-app-view-watchlist .portfolio-finance-search {
+  min-height: 48px;
+  border-color: var(--route-market-border);
+  border-radius: 14px;
+  background: rgba(12, 12, 14, 0.82);
+  box-shadow: none;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search:focus-within,
+.portfolio-app-view-watchlist .portfolio-finance-search:focus-within {
+  border-color: var(--route-market-border-strong);
+  background: rgba(15, 15, 17, 0.92);
+  box-shadow: 0 0 0 1px rgba(240, 239, 231, 0.035);
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search input,
+.portfolio-app-view-watchlist .portfolio-finance-search input {
+  color: var(--route-market-text);
+  font-size: 15px;
+  font-weight: 460;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-search input::placeholder,
+.portfolio-app-view-watchlist .portfolio-finance-search input::placeholder {
+  color: rgba(167, 170, 165, 0.68);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-section-header h2,
+.portfolio-app-view-earnings .earnings-pplx-rail-section h2,
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading h2,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card h2 {
+  color: var(--route-market-text);
+  font-size: 23px;
+  font-weight: 620;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-section-header p,
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading > span,
+.portfolio-app-view-watchlist .watchlist-pplx-meta-row span {
+  color: var(--route-market-faint);
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 520;
+  line-height: 1.2;
+  letter-spacing: 0.015em;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-panel,
+.portfolio-app-view-earnings .earnings-pplx-composer,
+.portfolio-app-view-earnings .earnings-pplx-watchlist,
+.portfolio-app-view-earnings .earnings-pplx-movers,
+.portfolio-app-view-watchlist .watchlist-pplx-table-panel,
+.portfolio-app-view-watchlist .watchlist-pplx-movers,
+.portfolio-app-view-watchlist .watchlist-pplx-notable,
+.portfolio-app-view-watchlist .watchlist-pplx-news,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-card,
+.portfolio-app-view-watchlist .watchlist-pplx-composer {
+  border-color: var(--route-market-border) !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(180deg, rgba(31, 31, 33, 0.92), rgba(16, 16, 18, 0.98)),
+    var(--route-market-panel) !important;
+  box-shadow: var(--route-market-shadow) !important;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button,
+.portfolio-app-view-watchlist .watchlist-pplx-summary button,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button,
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button {
+  border-color: var(--route-market-border);
+  color: var(--route-market-muted);
+  background: rgba(232, 233, 229, 0.045);
+  box-shadow: none;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button:hover,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button[aria-pressed="true"],
+.portfolio-app-view-watchlist .watchlist-pplx-summary button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-summary button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-summary button.is-active,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-range-row button.is-active,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:focus-visible,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button.is-active,
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:hover,
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button:hover,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button:focus-visible,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs button[aria-selected="true"] {
+  border-color: var(--route-market-border-strong);
+  color: var(--route-market-text);
+  background: rgba(232, 233, 229, 0.082);
+  transform: translateY(-1px);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-card,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button {
+  border-radius: 10px;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button strong,
+.portfolio-app-view-earnings .earnings-pplx-call-copy strong,
+.portfolio-app-view-earnings .earnings-pplx-watchlist strong,
+.portfolio-app-view-earnings .earnings-pplx-movers strong,
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell strong,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend strong,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list strong,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list strong {
+  color: var(--route-market-text) !important;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-day-grid button span,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button em,
+.portfolio-app-view-earnings .earnings-pplx-day-grid button small,
+.portfolio-app-view-earnings .earnings-pplx-call-copy span,
+.portfolio-app-view-earnings .earnings-pplx-call-copy p,
+.portfolio-app-view-earnings .earnings-pplx-call-meta,
+.portfolio-app-view-earnings .earnings-pplx-watchlist span,
+.portfolio-app-view-earnings .earnings-pplx-movers span,
+.portfolio-app-view-watchlist .portfolio-watchlist-asset-cell span,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend span,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list span,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list span,
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button {
+  color: var(--route-market-muted);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-panel article,
+.portfolio-app-view-earnings .earnings-pplx-watchlist button,
+.portfolio-app-view-earnings .earnings-pplx-movers article,
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th,
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend article,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list article,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list article,
+.portfolio-app-view-watchlist .watchlist-pplx-timeline article,
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article {
+  border-color: rgba(232, 233, 229, 0.066) !important;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-call-panel article:hover,
+.portfolio-app-view-earnings .earnings-pplx-watchlist button:hover,
+.portfolio-app-view-earnings .earnings-pplx-movers article:hover,
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table tbody tr:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-suggestions button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-news .portfolio-watchlist-news-grid article:hover {
+  background: var(--route-market-row-hover) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-section-heading,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-input-row,
+.portfolio-app-view-earnings .earnings-pplx-composer-input-row,
+.portfolio-app-view-earnings .earnings-pplx-mover-tabs,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-tabs {
+  border-color: rgba(232, 233, 229, 0.066) !important;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table th {
+  color: var(--route-market-faint);
+  background: rgba(16, 16, 18, 0.84);
+  font-size: 11px !important;
+  font-weight: 620;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table td,
+.portfolio-app-view-earnings .earnings-pplx-call-copy p {
+  font-size: 13px !important;
+  line-height: 1.42;
+}
+
+.portfolio-app-view-watchlist .portfolio-watchlist-return-table .is-numeric,
+.portfolio-app-view-earnings .earnings-pplx-watchlist em,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend em,
+.portfolio-app-view-watchlist .watchlist-pplx-chart-legend b,
+.portfolio-app-view-watchlist .watchlist-pplx-rail-list em,
+.portfolio-app-view-watchlist .watchlist-pplx-sector-list em {
+  color: var(--route-market-text);
+  font-family: var(--font-data);
+  font-weight: 620;
+  letter-spacing: 0;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-actions .portfolio-icon-action,
+.portfolio-app-view-earnings .earnings-pplx-watchlist button svg,
+.portfolio-app-view-earnings .earnings-pplx-calendar-tools button svg,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button {
+  color: var(--route-market-muted);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-card {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-card h2 {
+  padding: 0 0 10px !important;
+  background: transparent !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--route-market-border) !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(31, 31, 33, 0.92), rgba(16, 16, 18, 0.98)),
+    var(--route-market-panel) !important;
+  box-shadow: var(--route-market-shadow) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 !important;
+  overflow: hidden;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(232, 233, 229, 0.066) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: rgba(232, 233, 229, 0.035) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs::before {
+  display: none;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs button {
+  position: relative;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 8px !important;
+  color: var(--route-market-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 570 !important;
+  letter-spacing: 0;
+  transform: none !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs button:hover,
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs button:focus-visible {
+  color: var(--route-market-text) !important;
+  background: rgba(232, 233, 229, 0.045) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs button.is-active {
+  color: var(--route-market-text) !important;
+  background: rgba(232, 233, 229, 0.052) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-tabs button.is-active::after {
+  position: absolute;
+  right: 22%;
+  bottom: 0;
+  left: 22%;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--route-market-text);
+  content: "";
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .watchlist-pplx-rail-list {
+  display: grid;
+  gap: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-row {
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 0 !important;
+  border-top: 1px solid rgba(232, 233, 229, 0.066) !important;
+  border-radius: 0 !important;
+  padding: 10px 12px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-row:first-child {
+  border-top: 0 !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-row:hover {
+  border-color: rgba(232, 233, 229, 0.1) !important;
+  background: rgba(232, 233, 229, 0.035) !important;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-company-avatar {
+  display: inline-grid;
+  width: 36px !important;
+  height: 36px !important;
+  place-items: center;
+  border: 1px solid rgba(232, 233, 229, 0.12) !important;
+  border-radius: 6px !important;
+  color: #171615 !important;
+  background: #f2f0e8 !important;
+  font-family: var(--font-ui);
+  font-size: 11px !important;
+  font-weight: 760;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-identity,
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-price {
+  display: grid;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-identity {
+  gap: 3px;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-identity strong {
+  overflow: hidden;
+  color: var(--route-market-text) !important;
+  font-size: 14px !important;
+  font-weight: 650;
+  line-height: 1.14;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-identity em {
+  overflow: hidden;
+  color: var(--route-market-muted) !important;
+  font-family: var(--font-ui);
+  font-size: 13px !important;
+  font-style: normal;
+  font-weight: 620;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-price {
+  justify-items: end;
+  min-width: max-content;
+  gap: 4px;
+  text-align: right;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-price strong {
+  color: var(--route-market-text) !important;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-mover-panel .portfolio-mover-price em {
+  font-family: var(--finance-move-font);
+  font-size: 14px !important;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.portfolio-app-view-watchlist .portfolio-table-actions .portfolio-icon-action,
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar button,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button {
+  border-color: rgba(232, 233, 229, 0.075);
+  background: rgba(232, 233, 229, 0.052);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-composer-toolbar .watchlist-pplx-submit,
+.portfolio-app-view-earnings .earnings-pplx-composer-actions button[type="submit"] {
+  color: #111213;
+  background: var(--route-market-text);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart {
+  background: radial-gradient(circle at 50% 0%, rgba(232, 233, 229, 0.038), transparent 58%);
+}
+
+.portfolio-app-view-watchlist .watchlist-pplx-chart line {
+  stroke: rgba(232, 233, 229, 0.075);
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer {
+  overflow: visible;
+  isolation: isolate;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-composer.is-expanded {
+  z-index: 44;
+}
+
+.portfolio-app-view-earnings .earnings-pplx-suggestion-list {
+  position: absolute;
+  right: -1px;
+  bottom: calc(100% + 10px);
+  left: -1px;
+  z-index: 3;
+  max-height: min(312px, calc(100vh - 210px));
+  overflow-y: auto;
+  border: 1px solid var(--route-market-border) !important;
+  border-radius: 10px;
+  padding: 14px 20px;
+  background:
+    linear-gradient(180deg, rgba(31, 31, 33, 0.94), rgba(16, 16, 18, 0.985)),
+    var(--route-market-panel) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 239, 231, 0.047),
+    0 1.1rem 2.4rem rgba(0, 0, 0, 0.34);
+  overscroll-behavior: contain;
+}
+
+.portfolio-app-view-earnings .portfolio-finance-disclaimer,
+.portfolio-app-view-watchlist .portfolio-finance-disclaimer {
+  border-color: var(--route-market-border);
+  color: var(--route-market-faint);
+  background: rgba(12, 12, 14, 0.62);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-app-view-earnings .earnings-pplx-day-grid button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-summary button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-range-row button:hover,
+  .portfolio-app-view-watchlist .watchlist-pplx-rail-tabs button:hover,
+  .portfolio-app-view-earnings .earnings-pplx-calendar-tools button:hover,
+  .portfolio-app-view-earnings .earnings-pplx-mover-tabs button:hover {
+    transform: none;
   }
 }

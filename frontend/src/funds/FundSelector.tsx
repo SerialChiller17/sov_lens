@@ -1,5 +1,6 @@
 import { ChevronDown, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { AnimatedSearchPrompt } from "../components/search/AnimatedSearchPrompt";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 import { formatIndianCroresCompact, formatPercent } from "./fundUtils";
 import type { Fund, FundCategory, FundSlot } from "./types";
@@ -116,15 +117,23 @@ export function FundSelector({
 
           {isPickerOpen ? (
             <div className="fund-picker-menu" role="dialog" aria-label="Add fund menu">
-              <label className="fund-picker-search">
+              <label className={`fund-picker-search has-animated-search-prompt${query.trim() ? " has-search-value" : ""}`}>
                 <Search aria-hidden="true" size={15} />
                 <span className="sr-only">Search funds</span>
                 <input
                   autoFocus
                   type="search"
-                  placeholder="Search funds, category, benchmark..."
+                  placeholder=" "
                   value={query}
                   onChange={(event) => setQuery(event.currentTarget.value)}
+                />
+                <AnimatedSearchPrompt
+                  prompts={[
+                    "Find funds with lower drawdowns",
+                    "Search NIFTY benchmark funds",
+                    "Compare flexi cap category leaders",
+                    "Show funds with stronger rolling returns",
+                  ]}
                 />
               </label>
 

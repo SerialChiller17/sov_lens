@@ -6,5 +6,8 @@
     "dev:frontend": "cd frontend && npm run dev -- --host 127.0.0.1",
     "test:backend": "cd backend && .venv\\Scripts\\python -m pytest",
     "test:frontend": "cd frontend && npm test"
+  },
+  "dependencies": {
+    "animejs": "^4.4.1"
   }
 }

@@ -2,6 +2,8 @@
 
 For detailed route inventory, architecture, setup commands, implementation notes, and longer product context, refer to `PROJECT_SUMMARY.md`.
 
+Last updated against the current codebase: June 17, 2026.
+
 ## Visual Direction
 
 Non-globe product pages should feel like a deep dark finance workstation: crisp, restrained, dense, premium, low-glow, and highly usable.
@@ -14,13 +16,134 @@ Avoid gold or champagne luxury styling, cyan AI dashboard styling, neon/cyberpun
 
 The globe page can remain atmospheric and cinematic, but its language should not be smeared across the rest of the product.
 
+The current non-globe finish is route-scoped around `.portfolio-app`, `.events-dashboard-shell`, `.news-article-shell`, and `.ai-answer-shell`. Treat that boundary as intentional: it lets finance, event, article, fund, and AI synthesis surfaces share a workstation system without accidentally changing the protected globe route.
+
+## Production Frontend Standard
+
+Design every normal product screen as if Sovereign Lens is already the frontend of a serious, real finance website. The UI should feel capable, expensive, and operating-grade, not like a preview build, prototype, demo, localhost surface, or API-status page.
+
+Do not put implementation-status copy in the visible product UI. Avoid user-facing labels, badges, subtitles, helper text, empty states, table headings, rails, and feedback that say or imply:
+
+- Demo
+- Static sample
+- Browser-only
+- Local
+- Not live
+- Live API
+- Mock data
+- Sample data
+- Source unavailable
+- Confidence unavailable
+- Frontend-only
+
+These facts can live in `PROJECT_SUMMARY.md`, engineering docs, comments, test assertions, admin/debug surfaces, backend/data boundaries, or legal/compliance disclosures. They should not appear as normal page chrome.
+
+Truthfulness is still required. Do not fake live data, broker sync, alerts, source verification, real AI confidence, or trading execution. Instead, design around the available capability:
+
+- omit unsupported claims
+- disable or hide unsupported actions
+- show evidence only when evidence exists
+- use product-language states such as Add holding, Create watchlist, Connect account, Set alert, View evidence, Refresh, Retry, or Manage
+- keep legal/risk copy concise and professional
+
+Past-cleanup directive: future cleanup work should remove implementation-status copy from existing non-globe routes except the protected `/` globe route and the current `/markets` screen, which are excluded from this cleanup directive unless explicitly requested.
+
+## Taste Skill Operating Layer
+
+Use the Taste Skill v2 learning as a permanent design filter, but translate it for Sovereign Lens. The skill is strongest at reading briefs, avoiding generated-web cliches, enforcing visual locks, and forcing pre-flight checks. It is not a dashboard or data-table recipe, so do not import its landing-page patterns blindly into finance workspaces.
+
+Default design read for this product:
+
+```text
+Reading this as: desktop/tablet Indian-market intelligence workstation for active investors, with a dense premium finance-terminal language, leaning toward route-scoped React/CSS, restrained motion, deep dark surfaces, tabular data, and evidence-led workflows.
+```
+
+Default route dials:
+
+- Non-globe finance workspaces: layout variance 4-5, motion intensity 2-3, visual density 8-9.
+- Events, articles, and answer views: layout variance 5-6, motion intensity 2-3, visual density 6-7.
+- Protected globe route: layout variance and motion can stay higher, but globe changes require explicit instruction.
+
+Before changing a route, read the brief and name the dominant object: table, heatmap, timeline, chart, evidence drawer, holdings list, fund comparison, article, or synthesis brief. The dominant object decides the layout. Do not default to equal cards, a hero block, a right rail, or an AI panel unless that object earns the space.
+
+Use these three locks on every route:
+
+- Color Consistency Lock: one product accent per route. Movement colors stay semantic; do not introduce random teal, cyan, purple, gold, or blue accents mid-page.
+- Shape Consistency Lock: one radius system per route. If buttons, cards, inputs, chips, and drawers use different radii, the rule must be intentional and repeated consistently.
+- Page Theme Lock: one page theme. Non-globe routes stay in the dark finance-workstation family; do not insert warm paper, bright marketing blocks, or inverted sections halfway down the page.
+
+Use Taste Skill anti-slop bans as hard UI checks for Sovereign Lens:
+
+- no em dash or en dash characters in visible product copy; rewrite with commas, periods, colons, or short sentences
+- no section-numbering eyebrows such as `01 / Overview`, `002`, or `INDEX`
+- no hero version labels, build numbers, release tags, invite-only badges, or sync/version footers in normal product chrome
+- no decorative time, weather, city, locale, or status strips
+- no scroll cues, down arrows, or "scroll to explore" prompts
+- no decorative status dots; use them only for real semantic state and sparingly
+- no hero decoration strips, floating micro-copy, fake photo credits, or image-overlay pills
+- no three-equal-card rows as the default way to make a page feel complete
+- no AI-purple mesh gradients, sparkle AI badges, magic icons, or generic "AI-powered" panels
+- no div-based fake product UI, fake terminals, fake screenshots, fake controls, empty modals, or dead click-through
+- no hand-rolled decorative SVG illustrations when a real chart, table, source, image, icon library glyph, or route-specific visual would carry meaning
+- no long list/table styling that uses both top and bottom borders on every row just to create texture
+
+Hero discipline becomes workstation discipline here. Non-globe routes should not open with landing-page heroes. The first viewport should show a compact route header, the most useful work surface, and a hint of the next section. Page title should normally fit one line, supporting copy should be short, and the command/search or primary action should not push the core data below the fold.
+
+For redesigns and polish passes, audit before changing. Decide whether the task is preserve, targeted evolution, or overhaul. Preserve route identity, navigation labels, query behavior, local interactions, accessibility wins, and test-covered design-contract language unless the user explicitly asks to change them.
+
+## Frontend Design Skill Adaptation
+
+Use the `frontend-design` skill learning as an execution standard for distinctive, production-grade UI. Do not paste its generic examples directly into the product. Translate them into Sovereign Lens language.
+
+Before coding or polishing a frontend surface, answer four questions:
+
+- Purpose: what finance, market, portfolio, source, or exposure problem does this screen solve?
+- Tone: what is the exact aesthetic direction for this route?
+- Constraints: what route behavior, data truth, accessibility, performance, desktop/tablet policy, and protected screens must remain intact?
+- Differentiation: what is the one memorable product idea the user should remember after using it?
+
+For Sovereign Lens, the default bold direction is:
+
+```text
+Refined industrial finance terminal: dense, calm, dark, precise, evidence-led, Indian-market-native, with macro risk connected to holdings and watchlists.
+```
+
+Bold does not mean visually loud. It means the route has a clear conceptual point of view and executes it with precision. Maximalist chaos, playful toy-like UI, art-deco ornament, pastel softness, decorative organic forms, and generic luxury styling do not fit this product unless the user explicitly asks for a separate experimental surface.
+
+Differentiation should come from the product idea, not decoration. The memorable thing should be the workflow: event or market signal -> explanation -> affected names -> portfolio/watchlist exposure -> evidence -> inspect next. A route can be visually striking through hierarchy, density, data composition, chart quality, table craft, interaction clarity, and restrained material detail.
+
+Production-grade frontend requirements:
+
+- The UI must work, not just look composed. Controls that appear interactive need real behavior, disabled semantics, or removal.
+- Visual polish must support the task. Typography, spacing, color, motion, and surfaces should make data faster to scan.
+- Each route needs one dominant object or memorable composition, such as a heatmap, earnings timeline, holdings table, fund comparison, evidence drawer, or answer brief.
+- Implementation complexity should match the aesthetic. Dense finance workspaces need precise grids, state handling, and table/chart craft more than elaborate decorative animation.
+- Use CSS variables or existing tokens for color, spacing, and surface decisions so the visual system remains coherent across routes.
+
+Frontend aesthetic guidance, adapted:
+
+- Typography: choose distinctive but serious type. Avoid Arial, Roboto-only, system-only styling, default Inter, and repeated Space Grotesk-style defaults. Do not rotate fonts route by route; the product should feel like one terminal.
+- Color and theme: commit to the dark graphite finance palette. Use dominant neutrals with one sharp restrained accent. Do not distribute many colors evenly just to make sections look designed.
+- Motion: prefer one well-orchestrated state transition or page-load rhythm over scattered micro-animations. CSS transitions are preferred for simple states. Use Motion only when it is already available and the interaction needs it.
+- Spatial composition: use controlled asymmetry, dense grids, strong alignment, and data-led composition. Overlap, diagonal flow, and grid-breaking elements are allowed only when they improve hierarchy and do not hurt table/chart readability.
+- Background and material: create atmosphere with subtle graphite surfaces, faint grid/noise, disciplined borders, and local depth. Avoid novelty custom cursors, decorative gradient meshes, loud glassmorphism, dramatic shadows, and effects that compete with market data.
+- Memorability: make the page unforgettable by making the analysis feel uniquely useful, not by adding ornaments.
+
 ## Applied UI Craft Rules
 
 Use these practical checks when shaping or polishing any non-globe interface:
 
 - Affordances must be visible. Selected tabs need a clear container, disabled actions need lower contrast plus disabled semantics, and clickable cards need hover, focus, cursor, or icon cues.
 - Visual hierarchy should be explicit. Make the main object largest or strongest, keep metadata quieter, isolate critical values through position and contrast, and replace repeated labels with icons or structure when it improves scan speed.
+- Avoid duplicate identity text in compact feeds. If a card already shows a clear company, fund, event, or section name, do not repeat its ticker, category, or label as muted metadata unless it disambiguates the item or supports a real workflow action.
+- Read the brief before designing. State the intended design read in your own reasoning, then choose density, motion, layout variance, and component treatment from the actual route purpose rather than defaulting to generic dashboard patterns.
+- Lock color, shape, and page theme per route. Do not mix unrelated accent colors, radius systems, or theme moods halfway down a page.
 - Spacing should follow a 4px rhythm. Keep related title/subtitle groups tight, usually 8-20px, and separate major sections with stronger gaps, usually 24-40px. Use whitespace to group meaning, not just grid columns.
+- Spacing should preserve visual ownership. Metadata, controls, legends, and captions must sit closer to the panel or chart they describe than to neighboring sections. When one component ends and the next component begins, create a clear separation gap so the next heading does not visually attach to the previous panel. Use tight internal gaps for related elements, then a stronger inter-component gap for unrelated sections.
+- Use route-level spacing tokens for repeated dashboard rhythm: one tight association gap for `header -> panel` and one larger component gap for `previous panel -> next header`. Do not reuse the same CSS `gap` for both jobs; wrap header+surface groups when needed so internal and external spacing can differ.
+- Section headers should live outside the panel they represent by default. Put the heading on the page plane, then place the table, chart, cards, or tool surface inside the bordered panel below it. Only put a heading inside a panel when the user explicitly asks for a framed tool/header treatment or the header controls need to be contained with the surface.
+- Avoid panel-within-panel composition. Do not put a bordered card list inside a bordered parent panel, then add bordered child cards inside that again. If content already sits on a surface, use rows, dividers, bands, tabs, or table structure instead of another box.
+- Within a route, repeated section headers should share one size, weight, and line-height unless a hierarchy reason is explicit. The route title can be larger; sibling panels such as heatmaps, news, movers, summaries, tables, and cards should not drift into different header scales.
 - Dense workstation headers should usually stay at or below 24px. Use line-height around 1.1-1.25 for headings, normal tracking for product UI, and tabular numerics for market data.
 - Color should be semantic. Product accent is for selection and inspect actions; green/red are only movement semantics; blue/info, green/success, red/error, and neutral/disabled must not be used as decoration.
 - Dark mode depth comes from lightness, not heavy shadows. Higher surfaces are slightly lighter graphite, borders are barely brighter than the surface, and saturated colors are dimmed before use.
@@ -28,6 +151,7 @@ Use these practical checks when shaping or polishing any non-globe interface:
 - Icons and buttons need optical alignment. Icon boxes should match text line-height where possible, icon-only buttons need labels, and button horizontal padding should normally exceed vertical padding.
 - Every interaction needs feedback. Hover, focus, pressed, disabled, loading, and success states should be visibly distinct without shifting layout.
 - Text over imagery requires a real contrast system. Use a directional gradient or scrim behind copy rather than placing type directly over busy or light areas.
+- Ban decorative status dots, section-numbering eyebrows, version labels, build labels, fake timestamps, location/weather strips, scroll cues, decorative all-caps text strips, AI sparkle badges, and fake product UI made from styled placeholder divs.
 
 ## App Shell And Density
 
@@ -41,21 +165,26 @@ This means serious, compact, readable, and polished. Use enough whitespace for h
 
 ## Page Modes And Route Identity
 
-All routes should share one finance system for typography, surfaces, borders, tables, charts, controls, actions, evidence cues, AI notes, data honesty, loading, and errors. They should not become identical templates.
+All routes should share one finance system for typography, surfaces, borders, tables, charts, controls, actions, evidence cues, AI notes, capability truth, loading, and errors. They should not become identical templates.
 
 Dominant object by route:
 
 - Portfolio: holdings, exposure, allocation, performance, and the working home base.
-- Watchlist: tracked names, movement, alerts, and watch reasons.
-- Screener: filters and results.
+- Markets: market summary, top metrics, heatmap, movers, stocks in news, sector performance, and source-backed market context.
+- Watchlist: tracked names, movement, local alerts, and watch reasons.
+- Screener: filters, sorting, local screening feedback, and results.
 - Earnings: calendar, result events, and affected names.
-- Funds: comparison, overlap, cost, risk, and category context.
+- Funds: comparison, benchmark context, cost, risk, allocation, and overlap preview states.
 - Events/articles: evidence, exposure, source context, and affected sectors or holdings.
 - AI answer/synthesis: concise synthesis tied to data, sources, assumptions, and inspect-next paths.
 
 Do not give every route the same metric strip, big AI card, table, right rail, generic chart, and "see more" links. Coherent system, distinct work surfaces.
 
 Workstation pages should be denser, scan-first, chart/table-led, compact, and interaction-heavy. Research, article, and event pages can be slightly more editorial, but must keep market relevance visible through metadata, source/freshness labels, exposure callouts, affected holdings, evidence, and inspect-next actions.
+
+The current markets route is the reference for a dense non-globe workspace: a source-aware market summary in the main column, configurable top metrics in a right rail, a sector-grouped NIFTY heatmap, stocks-in-news rail, semantic mover slider, recent-development carousel, sector performance, and standout stocks. Keep its section ownership clear: headers on the page plane, panels directly below, one visible box per content unit, and no decorative eyebrow copy inside repeated panel headings.
+
+The current portfolio route is the reference for the working home base: status strip, primary action module, performance interpretation, today's P&L, diagnosis, risk radar, market signals, holdings decision table, allocation view, and evidence drawer. Future cleanup should remove implementation-storage language from visible portfolio copy while preserving the underlying capability truth in docs and code boundaries.
 
 ## Typography And Voice
 
@@ -117,6 +246,8 @@ Backgrounds should use one base layer and one or two disciplined surface levels.
 
 Panels should be distinct through tonal difference, graphite borders, disciplined spacing, internal alignment, crisp typography, and restrained elevation. Avoid nested card stacks. If content already sits inside a surface, use dividers, rows, subtle bands, spacing, or table structure instead of more cards.
 
+Use one visible box per content unit. Section groups such as `Recent Developments`, `Stocks in news today`, watchlist headlines, or other repeated feeds should usually sit directly on the page background with an unboxed heading. The repeated cards, rows, table, chart surface, or selected item can own the border and tonal surface. Do not place card lists inside a second bordered parent panel unless the parent is a true tool frame with controls that need containment. This avoids the dashboard-like box-inside-box feel and keeps the interface closer to a finance workspace than a widget grid.
+
 Depth should feel engineered, not decorated.
 
 ## Information Hierarchy
@@ -159,7 +290,9 @@ Avoid:
 
 Most workstation AI notes should be one or two compact sentences or one to three short bullets. Long-form explanation belongs on research/article pages.
 
-Prefer `Based on X sources` when real source counts exist. Use `Source-limited`, `Source unavailable`, `Confidence unavailable`, `Demo context`, or `Assumption` when evidence is limited. Do not use fake confidence percentages.
+Prefer source counts, source names, and assumptions only when real supporting data exists. Do not use fake confidence percentages, fake evidence chips, or source-status placeholders. If evidence is not available, omit the unsupported claim or phrase the item as a concise analyst note without false provenance.
+
+The `/answer` route should read as a synthesis page, not a chat room. It should show the submitted command, a short answer, compact sections, inspect-next actions, and source chips only when supporting source data exists. It should not expose frontend fallback mechanics through normal UI copy.
 
 ## Search And Command
 
@@ -184,6 +317,10 @@ Preferred language:
 
 Avoid "Ask anything," "Chat with AI," "What can I help you with?", sparkle icons, generic full-width prompt boxes, and repeated Perplexity-style inputs. Chat/follow-up search can exist later as contextual command behavior, not the main identity.
 
+Current implementation uses `AnimatedSearchPrompt` on finance workspaces, event search, fund search, and fund picker search. These prompts are rotating examples of useful market commands, not a chatbot promise. They should disappear on focus or once a value exists, respect `prefers-reduced-motion`, and remain route-specific: markets prompts should sound like market inspection, earnings prompts like result research, screener prompts like factor filters, watchlist prompts like tracked-name triage, funds prompts like comparison work, and events prompts like market-impact discovery.
+
+When a search currently only changes page state or routes to another surface, keep behavior modest and clear. Do not imply backend semantic search, live AI answering, or real alert creation unless that service exists, and do not describe the limitation with implementation labels.
+
 ## Market Tape
 
 Keep the existing market-status strip/tape largely as it is. Preserve its visual language unless explicitly asked to redesign it.
@@ -198,7 +335,9 @@ The tape can appear on non-globe pages where market context supports the workflo
 - events/news: affected sectors or holdings, freshness/source cue
 - AI answer: referenced symbols, sectors, events, or evidence freshness
 
-Do not make it taller, louder, neon, crypto-like, aggressively animated, or stuffed with random instruments. Label demo, delayed, static sample, or local data lightly when relevant.
+Do not make it taller, louder, neon, crypto-like, aggressively animated, or stuffed with random instruments. Do not label the tape with implementation-status copy such as demo, static, local, or not live. If a feed state is not product-ready, omit unsupported freshness claims rather than exposing scaffolding.
+
+Movement numerics outside the globe route currently use a calmer finance movement font with tabular numerics. Preserve that distinction so green/red move values scan like market data rather than generic UI badges. Do not broaden this rule onto the globe route without an explicit globe request.
 
 ## Page Headers And Metrics
 
@@ -208,28 +347,27 @@ Default header structure:
 
 1. page title
 2. one-line purpose or current status
-3. lightweight data honesty label where relevant
-4. one compact command/search input or one primary action, not both unless clearly needed
+3. one compact command/search input or one primary action, not both unless clearly needed
 
 Avoid big hero headers, marketing copy, welcome panels, oversized slogans, decorative icons, huge empty top sections, and making every page start like a dashboard.
 
-`/portfolio` can have the strongest concise header because it is the working home base. It may include portfolio value, today's P&L, source/local/demo status, last updated status, and compact command input. It should still move quickly into the main decision surface.
+`/portfolio` can have the strongest concise header because it is the working home base. It may include portfolio value, today's P&L, current account/holdings context, and compact command input. It should still move quickly into the main decision surface and should not show implementation-storage labels.
 
 Summary metrics should be used sparingly and deliberately. Do not add an automatic row of four KPI cards to every page. Use metrics only when they answer what changed, how large the move was, what is exposed, what the impact is, how fresh the data is, or what needs attention.
 
-Metrics should have a clear label, value, unit where needed, change context where relevant, and source/freshness label where trust is affected. Use compact strips or small cards, tabular numerics, muted labels, strong value contrast, and green/red only for actual movement.
+Metrics should have a clear label, value, unit where needed, and change context where relevant. Use compact strips or small cards, tabular numerics, muted labels, strong value contrast, and green/red only for actual movement. Do not add scaffolding labels just to explain current data plumbing.
 
 ## Right Rail And Inspection
 
 A right-side context rail is allowed as a recurring finance-page pattern only when it earns its space.
 
-Use a rail for useful secondary context such as watchlist context, portfolio exposure summary, related events, source/evidence cues, gainers/losers, upcoming earnings, alerts, inspect-next paths, related holdings or sectors, scenario assumptions, and confidence/source notes.
+Use a rail for useful secondary context such as watchlist context, portfolio exposure summary, related events, evidence cues, gainers/losers, upcoming earnings, alerts, inspect-next paths, related holdings or sectors, and scenario assumptions.
 
 The main column must remain the priority. Primary decisions and primary data stay in the main workspace. The rail should not hold primary workflow controls, squeeze charts or tables, or become generic widget noise. On tablet widths, the rail should usually collapse below the main content or become a compact secondary band.
 
 Inspection should preserve context. When a user clicks a holding, event, fund, earnings item, chart point, or table row, prefer inline selection plus a right rail, local detail drawer, expandable row, or adjacent inspection panel. Reserve full pages for deeper research flows. Use modals only for confirmations, destructive actions, small edits, settings, or small form entry.
 
-A detail rail/drawer should show item identity, current status, why it matters, portfolio/watchlist exposure, key drivers or risks, evidence/source context, assumptions/confidence if AI is involved, and inspect-next actions. Keep it compact.
+A detail rail/drawer should show item identity, current status, why it matters, portfolio/watchlist exposure, key drivers or risks, evidence when available, assumptions if AI is involved, and inspect-next actions. Keep it compact.
 
 ## Evidence And Sources
 
@@ -241,8 +379,6 @@ Use compact evidence triggers near the claim they support:
 - Evidence
 - Sources
 - Updated 9m ago
-- Source unavailable
-- Confidence unavailable
 
 Evidence should appear near analyst notes, event exposure, alerts, charts, portfolio actions, watchlist movement explanations, earnings summaries, and market signal rows.
 
@@ -252,7 +388,7 @@ Use three levels:
 2. Expandable source preview: source name, short title/snippet, timestamp, and relevance.
 3. Full evidence view: only for deeper research pages, event dossiers, or source-heavy investigations.
 
-Do not put all sources at the bottom of a page if the user cannot tell which claim they support. Do not show giant citation walls, bright source badges, or logos as decoration. If source links are not implemented, use `Source preview` or `Source unavailable` rather than fake links.
+Do not put all sources at the bottom of a page if the user cannot tell which claim they support. Do not show giant citation walls, bright source badges, or logos as decoration. If source links are not implemented, do not render fake links or source-unavailable badges in the normal UI.
 
 ## Tables
 
@@ -288,7 +424,7 @@ Column priority:
 
 Use finance-grade formatting: `₹`, `%`, bps, `x`, `Cr`, `L`, tabular numerics, consistent decimals, clear `+` and `-`, and muted neutral values. Do not use the product accent for positive/negative movement.
 
-Data freshness, local/demo state, or source status should appear near the table title or section header. Do not repeat the same label in every row unless row-level source status differs.
+Freshness or source context should appear near the table title or section header only when it is real product information. Do not repeat the same label in every row unless row-level evidence differs. Do not show local, demo, static, browser-only, or not-live labels in normal table chrome.
 
 ## Charts
 
@@ -370,21 +506,21 @@ Avoid vague actions such as See more, Explore, Learn more, Get started, Discover
 
 Avoid broker/execution language unless real execution exists: Buy, Sell, Trade now, Invest now, Execute, Place order, Book profit, Exit position.
 
-Secondary actions should be quiet text buttons, ghost buttons, or small icon buttons only when obvious. Disabled/future actions must be visibly disabled and labelled Coming soon, Preview, Not connected, Unavailable, Demo, Local only, or Requires connection. Do not add fake buttons, empty modals, hidden console behavior, or dead click-through.
+Secondary actions should be quiet text buttons, ghost buttons, or small icon buttons only when obvious. Disabled or future actions must be visibly disabled, professionally worded, and backed by an intentional interaction contract. Avoid labels such as demo, local only, browser-only, not connected, or preview in normal product chrome. Do not add fake buttons, empty modals, hidden console behavior, or dead click-through.
 
 Route-to-route navigation should follow the investor's investigation path: signal -> exposure -> evidence -> comparison -> decision support. Use intent labels such as Inspect exposure, Review watchlist, Compare funds, View evidence, Check affected names, Review risk, Compare alternatives, Add to watchlist, and Track this signal. Avoid link mazes.
 
 ## Empty, Loading, Error, And Alert States
 
-Empty states should be compact, operational, and honest. They should explain what is missing, why it is empty, whether the data is Local, Demo, Preview, Not connected, Browser-only, or unavailable, and one clear next action. Avoid cute illustrations, mascots, motivational copy, oversized blank panels, fake progress, and decorative empty cards.
+Empty states should be compact, operational, and honest. They should explain what the user can do next without exposing implementation storage or feed limitations. Use clear actions such as Add holding, Create watchlist, Search company, Connect account, Set alert, or Retry when those actions exist. Avoid cute illustrations, mascots, motivational copy, oversized blank panels, fake progress, implementation labels, and decorative empty cards.
 
 Loading states should be quiet skeleton rows, skeleton chart blocks, compact status rows, muted labels, and preserved layout space. Avoid big centered spinners, full-page drama, glowing loaders, fake terminal animations, and layout shifts.
 
-Error states should be precise and section-level where possible. Explain what failed, what data is still available, whether visible data is stale/local/demo/unavailable, and what the user can do next. Only show Retry if retry is actually implemented. Use muted amber or neutral grey for unavailable/delayed/stale states; reserve red for real failures.
+Error states should be precise and section-level where possible. Explain what failed in product language and what the user can do next. Only show Retry if retry is actually implemented. Use muted amber or neutral grey for recoverable states; reserve red for real failures.
 
-Alerts should be evidence-linked watch/inspect signals, not pushy urgency. They should connect to evidence, affected holdings, watchlist assets, sectors, or events and disclose Local, Demo, Static, Delayed, or Not connected status. Separate market movement from risk/event severity. Use severity labels only when there is a defined reason.
+Alerts should be evidence-linked watch/inspect signals, not pushy urgency. They should connect to evidence, affected holdings, watchlist assets, sectors, or events. Separate market movement from risk/event severity. Use severity labels only when there is a defined reason.
 
-Preferred alert labels: Watch, Review, Inspect, Evidence, Source unavailable, Local alert, Browser-only, Not connected, Demo signal, Confidence unavailable.
+Preferred alert labels: Watch, Review, Inspect, Evidence, Exposure, Risk, Driver, Drag, Catalyst, Alert.
 
 Failure states should preserve trust and keep the user working.
 
@@ -421,6 +557,8 @@ Motion should confirm state, guide attention, and preserve flow. It should never
 Allowed motion: row selection, hover/focus, tab transitions, drawer/rail open-close, expandable evidence, chart tooltip/crosshair movement, selected chart series, loading skeletons, command focus, filter selection, and small saved/added/removed/updated states.
 
 Keep motion fast, subtle, functional, predictable, and easy to ignore. Avoid cinematic motion outside the globe, animated glow, particles, pulsing borders, bouncing cards, slow easing, parallax, animated gradients, distracting chart redraws, and AI magic animations.
+
+Do not hand-roll scroll animation with `window.addEventListener("scroll")` or React state updated on every frame. Use CSS state, `IntersectionObserver`, an existing motion utility, or a small isolated client component with cleanup and reduced-motion handling. Continuous pointer, scroll, or physics values should not re-render the full React tree.
 
 The `/` globe route is the only surface allowed to be more cinematic, and globe changes require explicit instruction.
 
@@ -465,7 +603,59 @@ Important rules:
 - New CSS layers must avoid globe selectors unless the task explicitly asks for globe changes.
 - Before final response, mention which route shells and CSS files were touched.
 
+Several frontend regression tests intentionally read this file and assert key design-contract phrases around section header sizing, spacing ownership, avoiding duplicate identity text, and one-box-per-content-unit composition. If those principles change, update the design direction and tests together; do not delete the text just to satisfy an implementation shortcut.
+
 For broad redesign tasks, first identify target routes, protected routes, shared files that could cause visual side effects, and screenshots or viewport checks needed before calling the task complete.
+
+## Web Interface Guidelines Review Layer
+
+Use the `web-design-guidelines` skill learning as the functional UI review gate. This complements the taste layers above: taste decides whether the product feels like Sovereign Lens; interface guidelines decide whether the UI behaves like a serious, accessible web application.
+
+When the user asks to review, audit, check accessibility, check UX, or validate UI files, fetch the current rules before reviewing:
+
+```text
+https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
+```
+
+Then read the requested files and report concise findings in `file:line` format. For implementation work, use the current guidelines as a pre-flight checklist before visual completion.
+
+Core interface rules to preserve in Sovereign Lens:
+
+- Use semantic HTML first: `<button>` for actions, `<a>` or route links for navigation, `<label>` for form controls, and `<table>` for tabular data.
+- Icon-only buttons need `aria-label`; decorative icons need `aria-hidden="true"`.
+- Interactive non-button elements need keyboard handling, but prefer changing them to real buttons or links.
+- Focus must be visible with `:focus-visible` or equivalent. Never remove outlines without a replacement.
+- Compound controls should support `:focus-within`; selected, disabled, expanded, and pressed states must be visible without instructions.
+- Form controls need labels, meaningful `name`, relevant `autocomplete`, correct `type`, and `inputmode` where useful.
+- Never block paste. Inline errors should appear near the field and focus should move to the first error on submit.
+- Async feedback such as save states, validation, or toasts needs `aria-live="polite"` when the update is not otherwise announced.
+- Headings should be hierarchical. Anchor targets need `scroll-margin-top` when sticky headers can cover them.
+- Images need `alt`; decorative images use empty alt. Real images should define width and height to prevent layout shift.
+- Animations must honor `prefers-reduced-motion`, animate compositor-friendly properties such as `transform` and `opacity`, and avoid `transition: all`.
+- Text containers must survive long values with `min-w-0`, truncation, line clamp, or wrapping. Empty strings and empty arrays should not render broken UI.
+- Large lists need virtualization or `content-visibility: auto` when they can exceed practical DOM size.
+- State that affects navigation or sharing should be reflected in the URL when useful: filters, tabs, pagination, selected panels, or expanded context.
+- Destructive actions need confirmation or undo. Do not make destructive clicks immediate.
+- Modals, drawers, and sheets should contain overscroll, preserve focus behavior, and avoid background interaction leaks.
+- Dark theme needs `color-scheme: dark`; native selects and inputs need explicit dark-surface color treatment.
+- Dates, times, numbers, and currencies should use `Intl.DateTimeFormat` and `Intl.NumberFormat`, not hand-formatted strings, when formatting dynamic values.
+- Hydration-sensitive date/time rendering needs deliberate handling. Do not use `suppressHydrationWarning` as a casual escape hatch.
+- Buttons and links need hover and active states; interactive states should increase clarity, not merely decorate.
+- Copy should be active, specific, and action-oriented. Error messages should tell the user what to do next.
+
+Flag these as review failures:
+
+- `user-scalable=no` or `maximum-scale=1`
+- `onPaste` with `preventDefault`
+- `transition: all`
+- `outline-none` or `outline: none` without a focus-visible replacement
+- click handlers on `<div>` or `<span>` where a button or link should exist
+- icon buttons without accessible labels
+- form inputs without labels
+- images without dimensions
+- hardcoded dynamic date, time, number, or currency formatting
+- uncontrolled layout measurement in render
+- `autoFocus` without clear desktop-only justification
 
 ## Visual QA Before Completion
 
@@ -480,6 +670,21 @@ For broad UI changes, redesigns, visual polish passes, layout changes, chart/tab
 Inspect for squeezed charts, cramped tables, broken rails, oversized headers, poor density, unreadable text, wrapping, overflow, broken filters, tablet issues, loud market tape, cheap icon clutter, huge hero cards, muddy haze, and fake-looking controls.
 
 For broad non-globe UI work, include `/` only as a protection check. Verify the globe route remains visually unchanged and mention any shared/global files that could affect it.
+
+Taste Skill pre-flight for Sovereign Lens UI work:
+
+- Brief read is clear: route, user, dominant object, density, motion, and protected routes are understood.
+- Page theme, accent, and radius system are locked before styling begins.
+- No banned implementation-status copy appears in normal product chrome.
+- No banned anti-slop patterns appear: section-numbering eyebrows, decorative status dots, version labels, build labels, scroll cues, AI-purple mesh, sparkle AI, fake product UI, three-equal-card filler, or decorative SVG workarounds.
+- First viewport contains real workflow surface, not a landing-page hero or empty brand statement.
+- Buttons, tabs, filters, inputs, tables, and cards have default, hover, focus, selected, disabled, loading, and error states where relevant.
+- Button and form contrast is readable on dark surfaces; no white-on-white, low-contrast ghost controls, or invisible focus rings.
+- CTA and action labels do not wrap awkwardly at desktop/tablet widths.
+- Tables and charts remain readable at `1440x900`, `1024x768`, and `900x768`.
+- Motion is motivated by feedback, hierarchy, or state transition; reduced-motion behavior is respected.
+- Web Interface Guidelines checks are satisfied for semantics, focus, labels, aria attributes, motion, long-content handling, image dimensions, URL state, dark-mode controls, and dynamic formatting.
+- The globe route is visually unchanged unless explicitly in scope.
 
 Before final response, report changed routes, screenshots/viewports checked, visual issues found and fixed, whether `/` was checked when relevant, build/typecheck result, and files changed.
 

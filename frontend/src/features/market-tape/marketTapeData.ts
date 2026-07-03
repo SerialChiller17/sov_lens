@@ -37,6 +37,20 @@ export const WATCHLIST_MARKET_TAPE: MarketTapeBasket = {
   ],
 };
 
+export const EARNINGS_MARKET_TAPE: MarketTapeBasket = {
+  label: "Earnings Tape",
+  items: [
+    { label: "Nifty 50", value: "24,330.95", move: "+1.24%", direction: "up" },
+    { label: "Bank Nifty", value: "55,981.05", move: "+2.63%", direction: "up" },
+    { label: "Nifty IT", value: "34,812.80", move: "-0.32%", direction: "down" },
+    { label: "India VIX", value: "13.84", move: "-2.10%", direction: "down" },
+    { label: "RELIANCE setup", value: "Today", move: "+/-2.4%", direction: "up" },
+    { label: "TCS setup", value: "Thu", move: "+/-1.9%", direction: "down" },
+    { label: "MARUTI setup", value: "Thu", move: "+/-2.7%", direction: "up" },
+    { label: "INFY post", value: "Beat", move: "+1.35%", direction: "up" },
+  ],
+};
+
 export const FUNDS_MARKET_TAPE: MarketTapeBasket = {
   label: "Fund Benchmark Tape",
   items: [

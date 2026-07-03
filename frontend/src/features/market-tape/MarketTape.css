@@ -142,6 +142,15 @@
   line-height: 1;
 }
 
+.portfolio-app .market-tape-move,
+.events-dashboard-shell .market-tape-move,
+.news-article-shell .market-tape-move,
+.ai-answer-shell .market-tape-move {
+  font-family: Manrope, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 .market-tape-item.up .market-tape-move {
   border-color: rgba(87, 221, 151, 0.36);
   color: #8df0bb;

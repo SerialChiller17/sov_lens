@@ -12,6 +12,12 @@ def test_health() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_cors_allows_running_vite_dev_origin() -> None:
+    response = client.get("/api/global-pulse", headers={"Origin": "http://127.0.0.1:5177"})
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5177"
+
+
 def test_countries_include_full_sidebar_data() -> None:
     response = client.get("/api/countries")
     assert response.status_code == 200

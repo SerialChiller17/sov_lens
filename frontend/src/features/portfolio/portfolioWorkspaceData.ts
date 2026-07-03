@@ -34,6 +34,18 @@ export interface SectorPerformanceItem {
   sector: string;
   move: number;
   breadth: string;
+  gainers: number;
+  losers: number;
+}
+
+export interface MarketNewsItem {
+  id: string;
+  company: string;
+  ticker: string;
+  move: number;
+  summary: string;
+  timeAgo: string;
+  logoDomain?: string;
 }
 
 export interface MarketInsight {
@@ -113,21 +125,92 @@ export interface MarketStandout {
   points: number[];
 }
 
+export type EarningsDateGroup = "Today" | "This Week" | "Next Week" | "Recent";
+export type EarningsImpact = "High impact" | "Medium impact" | "Low impact";
+export type EarningsSourceStatus = "Desk context" | "Consensus context" | "Filed result" | "Market context";
+
+export interface EarningsMetric {
+  label: string;
+  value: string;
+  tone?: WorkspaceTone;
+}
+
+export interface EarningsResultSnapshot {
+  result: string;
+  revenueYoY: string;
+  patYoY: string;
+  margin: string;
+  priceReaction: number;
+  readThrough: string;
+}
+
 export interface EarningsEvent {
   id: string;
   company: string;
   ticker: string;
+  exchange: "NSE" | "BSE";
+  sector: string;
   dateLabel: string;
-  dateGroup: "Today" | "This Week" | "Next Week" | "Recent";
+  dateGroup: EarningsDateGroup;
   time: string;
+  callTime: string;
   quarter: string;
   status: "Upcoming" | "Reported";
+  impact: EarningsImpact;
+  portfolioRelevance: string;
+  watchlistRelevance: string;
   estimate: string;
   actual?: string;
   surprise?: number;
   revenueGrowth: number;
   profitGrowth: number;
+  expectedMove: string;
+  actualMove?: number;
+  thesis: string;
+  whyItMatters: string;
+  watchFor: string;
+  streetFocus: string;
+  readThrough: string;
+  evidenceLabel: string;
+  sourceStatus: EarningsSourceStatus;
+  tags: string[];
+  consensusMetrics: EarningsMetric[];
+  resultSnapshot?: EarningsResultSnapshot;
   notes: string[];
+}
+
+export interface EarningsDay {
+  day: string;
+  date: string;
+  calls: number;
+  totalResults: number;
+  highImpact: number;
+  portfolioWatchlist: number;
+  reported: number;
+  upcoming: number;
+  intensity: number;
+  active?: boolean;
+}
+
+export interface EarningsTheme {
+  id: string;
+  title: string;
+  summary: string;
+  sectors: string[];
+  tickers: string[];
+  tone: WorkspaceTone;
+}
+
+export interface EarningsForceName {
+  ticker: string;
+  company: string;
+  exchange: "NSE" | "BSE";
+  price: number;
+  move: number;
+  expectedMove: string;
+  volume: string;
+  reason: string;
+  points: number[];
 }
 
 export interface ScreenerRow {
@@ -298,13 +381,66 @@ export const MARKET_MOVERS = {
 };
 
 export const SECTOR_PERFORMANCE: SectorPerformanceItem[] = [
-  { sector: "Financials", move: 2.18, breadth: "68% advancing" },
-  { sector: "Auto", move: 1.42, breadth: "62% advancing" },
-  { sector: "Capital Goods", move: 1.05, breadth: "59% advancing" },
-  { sector: "Healthcare", move: 0.74, breadth: "55% advancing" },
-  { sector: "Energy", move: -0.66, breadth: "42% advancing" },
-  { sector: "IT Services", move: -0.31, breadth: "46% advancing" },
-  { sector: "FMCG", move: -0.22, breadth: "44% advancing" },
+  { sector: "Financials", move: 2.18, breadth: "68% advancing", gainers: 24, losers: 13 },
+  { sector: "Auto", move: 1.42, breadth: "62% advancing", gainers: 18, losers: 7 },
+  { sector: "Capital Goods", move: 1.05, breadth: "59% advancing", gainers: 16, losers: 8 },
+  { sector: "Healthcare", move: 0.74, breadth: "55% advancing", gainers: 14, losers: 10 },
+  { sector: "Energy", move: -0.66, breadth: "42% advancing", gainers: 9, losers: 16 },
+  { sector: "IT Services", move: -0.31, breadth: "46% advancing", gainers: 11, losers: 15 },
+  { sector: "FMCG", move: -0.22, breadth: "44% advancing", gainers: 8, losers: 12 },
+];
+
+export const STOCKS_IN_NEWS: MarketNewsItem[] = [
+  {
+    id: "bpcl-rating-pressure",
+    company: "BPCL",
+    ticker: "BPCL",
+    move: -0.39,
+    summary:
+      "JM Financial keeps BPCL under pressure after an asset-related hit, with LPG margin worries still clouding the near-term setup.",
+    timeAgo: "28 minutes ago",
+    logoDomain: "bharatpetroleum.in",
+  },
+  {
+    id: "nykaa-fresh-peak",
+    company: "Nykaa",
+    ticker: "NYKAA",
+    move: -0.89,
+    summary:
+      "Nykaa cools from a fresh peak as bulls point to retail momentum while bears flag a possible correction after the rally.",
+    timeAgo: "28 minutes ago",
+    logoDomain: "nykaa.com",
+  },
+  {
+    id: "varun-beverages-contract",
+    company: "Varun Beverages",
+    ticker: "VBL",
+    move: 3.2,
+    summary:
+      "Varun Beverages extends gains after investors react to a long-duration bottling contract and stronger volume visibility.",
+    timeAgo: "28 minutes ago",
+    logoDomain: "varunbeverages.com",
+  },
+  {
+    id: "parle-industries-upper-circuit",
+    company: "Parle Industries",
+    ticker: "PARLEIND",
+    move: 4.9,
+    summary:
+      "Parle Industries remains locked near the upper circuit as momentum traders chase a third consecutive session of strength.",
+    timeAgo: "28 minutes ago",
+    logoDomain: "parleindustries.com",
+  },
+  {
+    id: "tata-motors-ev-watch",
+    company: "Tata Motors",
+    ticker: "TATAMOTORS",
+    move: -1.18,
+    summary:
+      "Tata Motors trades softer as investors weigh EV margin pressure against resilient domestic passenger-vehicle demand.",
+    timeAgo: "42 minutes ago",
+    logoDomain: "tatamotors.com",
+  },
 ];
 
 export const MARKET_INSIGHTS: MarketInsight[] = [
@@ -843,13 +979,13 @@ export const MARKET_STANDOUTS: MarketStandout[] = [
   },
 ];
 
-export const EARNINGS_DAYS = [
-  { day: "Mon", date: "May 4", calls: 25 },
-  { day: "Tue", date: "May 5", calls: 19 },
-  { day: "Wed", date: "May 6", calls: 21, active: true },
-  { day: "Thu", date: "May 7", calls: 29 },
-  { day: "Fri", date: "May 8", calls: 36 },
-  { day: "Mon", date: "May 11", calls: 18 },
+export const EARNINGS_DAYS: EarningsDay[] = [
+  { day: "Mon", date: "May 4", calls: 25, totalResults: 42, highImpact: 4, portfolioWatchlist: 3, reported: 14, upcoming: 28, intensity: 62 },
+  { day: "Tue", date: "May 5", calls: 19, totalResults: 37, highImpact: 3, portfolioWatchlist: 4, reported: 18, upcoming: 19, intensity: 55 },
+  { day: "Wed", date: "May 6", calls: 21, totalResults: 46, highImpact: 5, portfolioWatchlist: 6, reported: 22, upcoming: 24, intensity: 78, active: true },
+  { day: "Thu", date: "May 7", calls: 29, totalResults: 58, highImpact: 7, portfolioWatchlist: 5, reported: 16, upcoming: 42, intensity: 86 },
+  { day: "Fri", date: "May 8", calls: 36, totalResults: 63, highImpact: 6, portfolioWatchlist: 7, reported: 20, upcoming: 43, intensity: 92 },
+  { day: "Mon", date: "May 11", calls: 18, totalResults: 34, highImpact: 3, portfolioWatchlist: 4, reported: 8, upcoming: 26, intensity: 48 },
 ];
 
 export const EARNINGS_EVENTS: EarningsEvent[] = [
@@ -857,75 +993,524 @@ export const EARNINGS_EVENTS: EarningsEvent[] = [
     id: "reliance-q4",
     company: "Reliance Industries",
     ticker: "RELIANCE",
+    exchange: "NSE",
+    sector: "Energy / Consumer",
     dateLabel: "Today",
     dateGroup: "Today",
-    time: "4:00 PM",
+    time: "4:00 PM IST",
+    callTime: "6:00 PM IST",
     quarter: "Q4 FY26",
     status: "Upcoming",
+    impact: "High impact",
+    portfolioRelevance: "High portfolio overlap",
+    watchlistRelevance: "Tracked energy bellwether",
     estimate: "PAT +8.4% YoY",
     revenueGrowth: 7.8,
     profitGrowth: 8.4,
-    notes: ["Refining margin and retail commentary are the key swing factors.", "Jio ARPU and subscriber quality remain the cleaner read-through."],
+    expectedMove: "+/-2.4%",
+    thesis: "A cleaner O2C print can offset concern around retail margin normalization.",
+    whyItMatters: "Reliance can move portfolio returns through crude, refining, retail, and Jio commentary at the same time.",
+    watchFor: "Refining spread, retail margin, and Jio ARPU.",
+    streetFocus: "O2C EBITDA, retail margin bridge, Jio ARPU, net debt.",
+    readThrough: "OMCs, telecom ARPU names, broad index heavyweights.",
+    evidenceLabel: "Desk setup",
+    sourceStatus: "Desk context",
+    tags: ["Portfolio", "Watchlist", "Index weight"],
+    consensusMetrics: [
+      { label: "O2C EBITDA", value: "+5.8% YoY", tone: "positive" },
+      { label: "Retail margin", value: "flat QoQ", tone: "neutral" },
+      { label: "Jio ARPU", value: "INR 184", tone: "positive" },
+    ],
+    notes: ["Refining spread and retail commentary are the key swing factors.", "Jio ARPU and subscriber quality remain the cleaner read-through."],
   },
   {
     id: "tcs-q4",
     company: "Tata Consultancy Services",
     ticker: "TCS",
-    dateLabel: "This week",
+    exchange: "NSE",
+    sector: "IT Services",
+    dateLabel: "Thu",
     dateGroup: "This Week",
-    time: "6:30 PM",
+    time: "6:30 PM IST",
+    callTime: "7:30 PM IST",
     quarter: "Q4 FY26",
     status: "Upcoming",
+    impact: "High impact",
+    portfolioRelevance: "Portfolio IT exposure",
+    watchlistRelevance: "Sector bellwether",
     estimate: "EPS 2.8% above consensus",
     revenueGrowth: 5.6,
     profitGrowth: 7.2,
+    expectedMove: "+/-1.9%",
+    thesis: "The result needs stronger order commentary to overcome cautious US discretionary spending.",
+    whyItMatters: "TCS sets the demand tone for Indian IT and helps confirm whether currency support is enough.",
+    watchFor: "Order book, BFSI demand, and margin guidance.",
+    streetFocus: "Large deals, BFSI run-rate, attrition, margin band.",
+    readThrough: "Infosys, HCL Tech, Wipro, midcap IT.",
+    evidenceLabel: "Consensus setup",
+    sourceStatus: "Consensus context",
+    tags: ["IT demand", "Portfolio", "Bellwether"],
+    consensusMetrics: [
+      { label: "CC growth", value: "+1.1% QoQ", tone: "neutral" },
+      { label: "EBIT margin", value: "25.1%", tone: "positive" },
+      { label: "Deal TCV", value: "INR 820B", tone: "neutral" },
+    ],
     notes: ["Watch order book, BFSI demand, and margin guidance.", "Rupee softness can help reported margins if demand holds."],
   },
   {
     id: "hdfc-bank-q4",
     company: "HDFC Bank",
     ticker: "HDFCBANK",
-    dateLabel: "Next week",
+    exchange: "NSE",
+    sector: "Private Banks",
+    dateLabel: "Next Mon",
     dateGroup: "Next Week",
-    time: "3:30 PM",
+    time: "3:30 PM IST",
+    callTime: "5:00 PM IST",
     quarter: "Q4 FY26",
     status: "Upcoming",
+    impact: "High impact",
+    portfolioRelevance: "Core bank holding",
+    watchlistRelevance: "Bank Nifty confirmation",
     estimate: "NIM stabilisation",
     revenueGrowth: 11.4,
     profitGrowth: 9.2,
+    expectedMove: "+/-2.0%",
+    thesis: "Deposit-cost commentary decides whether private-bank leadership can broaden.",
+    whyItMatters: "HDFC Bank can confirm whether bank leadership is durable or only index-heavy.",
+    watchFor: "Deposit growth, NIM stability, and asset quality.",
+    streetFocus: "CASA share, credit growth, merged-book margin, slippages.",
+    readThrough: "ICICI Bank, SBI, Bank Nifty breadth.",
+    evidenceLabel: "Bank setup",
+    sourceStatus: "Desk context",
+    tags: ["Banks", "Portfolio", "Next week"],
+    consensusMetrics: [
+      { label: "NIM", value: "3.55%", tone: "neutral" },
+      { label: "Credit growth", value: "+13% YoY", tone: "positive" },
+      { label: "GNPA", value: "1.2%", tone: "positive" },
+    ],
     notes: ["Deposit growth and net interest margin are the key investor questions.", "Asset quality is expected to remain stable."],
   },
   {
-    id: "infosys-recent",
+    id: "infosys-today",
     company: "Infosys",
     ticker: "INFY",
-    dateLabel: "Apr 24",
-    dateGroup: "Recent",
-    time: "5:00 PM",
+    exchange: "NSE",
+    sector: "IT Services",
+    dateLabel: "Today",
+    dateGroup: "Today",
+    time: "5:00 PM IST",
+    callTime: "6:15 PM IST",
     quarter: "Q4 FY26",
     status: "Reported",
+    impact: "Medium impact",
+    portfolioRelevance: "Portfolio IT exposure",
+    watchlistRelevance: "Guidance watch",
     estimate: "EPS 4.28",
     actual: "EPS 5.03",
     surprise: 17.5,
     revenueGrowth: 6.4,
     profitGrowth: 8.1,
+    expectedMove: "+/-2.1%",
+    actualMove: 1.35,
+    thesis: "The beat was useful, but cautious guidance keeps the upgrade path selective.",
+    whyItMatters: "Infosys is the cleaner check on whether deal wins can offset cautious guidance.",
+    watchFor: "BFSI spending recovery and large deal conversion.",
+    streetFocus: "FY27 growth band, BFSI budgets, margin bridge.",
+    readThrough: "TCS setup, midcap IT demand, rupee-sensitive exporters.",
+    evidenceLabel: "Reported result",
+    sourceStatus: "Filed result",
+    tags: ["Reported today", "IT", "Portfolio"],
+    consensusMetrics: [
+      { label: "EPS", value: "5.03", tone: "positive" },
+      { label: "Revenue YoY", value: "+6.4%", tone: "positive" },
+      { label: "Guidance", value: "cautious", tone: "neutral" },
+    ],
+    resultSnapshot: {
+      result: "Beat",
+      revenueYoY: "+6.4%",
+      patYoY: "+8.1%",
+      margin: "+40 bps",
+      priceReaction: 1.35,
+      readThrough: "Deal wins improved, but discretionary US demand still needs confirmation.",
+    },
     notes: ["Guidance remained cautious but deal wins improved sequentially.", "The stock reaction depends on whether BFSI spending recovery broadens."],
+  },
+  {
+    id: "icici-bank-q4",
+    company: "ICICI Bank",
+    ticker: "ICICIBANK",
+    exchange: "NSE",
+    sector: "Private Banks",
+    dateLabel: "Fri",
+    dateGroup: "This Week",
+    time: "3:45 PM IST",
+    callTime: "5:30 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "High impact",
+    portfolioRelevance: "Private-bank concentration",
+    watchlistRelevance: "Tracked bank leader",
+    estimate: "PAT +10.6% YoY",
+    revenueGrowth: 12.1,
+    profitGrowth: 10.6,
+    expectedMove: "+/-1.8%",
+    thesis: "A stable NIM and benign credit cost would keep the bank leadership trade intact.",
+    whyItMatters: "ICICI Bank is the market's cleaner private-bank quality check after HDFC Bank.",
+    watchFor: "Deposit pricing, loan mix, credit cost, and unsecured asset quality.",
+    streetFocus: "NIM, retail growth, provisions, branch productivity.",
+    readThrough: "HDFC Bank, Axis Bank, Bank Nifty leadership.",
+    evidenceLabel: "Bank setup",
+    sourceStatus: "Desk context",
+    tags: ["Banks", "Watchlist", "Concentration"],
+    consensusMetrics: [
+      { label: "NIM", value: "4.25%", tone: "positive" },
+      { label: "Credit cost", value: "54 bps", tone: "positive" },
+      { label: "PAT YoY", value: "+10.6%", tone: "positive" },
+    ],
+    notes: ["NIM delivery and credit cost can confirm private-bank leadership.", "Unsecured book commentary is the main risk check."],
+  },
+  {
+    id: "sbi-q4",
+    company: "State Bank of India",
+    ticker: "SBIN",
+    exchange: "NSE",
+    sector: "Public Banks",
+    dateLabel: "Fri",
+    dateGroup: "This Week",
+    time: "2:30 PM IST",
+    callTime: "4:30 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "Medium impact",
+    portfolioRelevance: "Bank sector read-through",
+    watchlistRelevance: "PSU bank breadth",
+    estimate: "PAT +6.0% YoY",
+    revenueGrowth: 8.8,
+    profitGrowth: 6.0,
+    expectedMove: "+/-2.2%",
+    thesis: "Credit cost and treasury gains decide whether PSU-bank beta extends.",
+    whyItMatters: "SBI can shift the read from private-bank quality to broader banking risk appetite.",
+    watchFor: "Slippages, deposit growth, treasury income, loan growth.",
+    streetFocus: "NII growth, provisions, CASA mix, corporate book.",
+    readThrough: "PSU banks, credit cycle beta, domestic cyclicals.",
+    evidenceLabel: "Bank setup",
+    sourceStatus: "Desk context",
+    tags: ["Banks", "PSU beta", "This week"],
+    consensusMetrics: [
+      { label: "NII", value: "+8.8% YoY", tone: "positive" },
+      { label: "GNPA", value: "2.3%", tone: "neutral" },
+      { label: "Treasury", value: "watch", tone: "neutral" },
+    ],
+    notes: ["Treasury income can flatter the print.", "Asset quality commentary matters more than headline profit."],
+  },
+  {
+    id: "maruti-q4",
+    company: "Maruti Suzuki",
+    ticker: "MARUTI",
+    exchange: "NSE",
+    sector: "Auto",
+    dateLabel: "Thu",
+    dateGroup: "This Week",
+    time: "1:45 PM IST",
+    callTime: "4:00 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "High impact",
+    portfolioRelevance: "Auto-cycle read",
+    watchlistRelevance: "High-impact auto setup",
+    estimate: "PAT +15.0% YoY",
+    revenueGrowth: 13.2,
+    profitGrowth: 15.0,
+    expectedMove: "+/-2.7%",
+    thesis: "Premium mix and commodity relief need to offset softer small-car demand.",
+    whyItMatters: "Maruti is the clearest read on domestic auto demand, premiumization, and rural recovery.",
+    watchFor: "Volume mix, commodity costs, discounting, and EV commentary.",
+    streetFocus: "UV mix, realization, raw material costs, export commentary.",
+    readThrough: "Auto ancillaries, Tata Motors domestic PV, two-wheeler demand.",
+    evidenceLabel: "Auto setup",
+    sourceStatus: "Desk context",
+    tags: ["Auto", "Watchlist", "High impact"],
+    consensusMetrics: [
+      { label: "Volume", value: "+7.6% YoY", tone: "positive" },
+      { label: "EBITDA margin", value: "12.4%", tone: "positive" },
+      { label: "Discounts", value: "rising", tone: "negative" },
+    ],
+    notes: ["Volume mix, commodity costs, and EV commentary are the swing variables.", "UV demand must stay firm for the premium valuation to hold."],
+  },
+  {
+    id: "bharti-airtel-q4",
+    company: "Bharti Airtel",
+    ticker: "BHARTIARTL",
+    exchange: "NSE",
+    sector: "Telecom",
+    dateLabel: "Fri",
+    dateGroup: "This Week",
+    time: "6:00 PM IST",
+    callTime: "7:00 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "Medium impact",
+    portfolioRelevance: "Defensive growth read",
+    watchlistRelevance: "Tracked telecom leader",
+    estimate: "ARPU +3.5% QoQ",
+    revenueGrowth: 10.4,
+    profitGrowth: 12.8,
+    expectedMove: "+/-1.7%",
+    thesis: "ARPU resilience can keep the telecom upgrade cycle alive.",
+    whyItMatters: "Airtel connects defensive earnings growth with tariff and subscriber-quality expectations.",
+    watchFor: "ARPU, churn, 5G capex, tariff action signals.",
+    streetFocus: "India mobile ARPU, Africa margins, capex intensity.",
+    readThrough: "Telecom towers, digital infrastructure, consumer defensives.",
+    evidenceLabel: "Telecom setup",
+    sourceStatus: "Desk context",
+    tags: ["Telecom", "Watchlist", "ARPU"],
+    consensusMetrics: [
+      { label: "ARPU", value: "INR 218", tone: "positive" },
+      { label: "Churn", value: "stable", tone: "neutral" },
+      { label: "EBITDA", value: "+11.2% YoY", tone: "positive" },
+    ],
+    notes: ["ARPU and tariff language matter more than headline revenue.", "Capex commentary can affect free-cash-flow expectations."],
+  },
+  {
+    id: "lt-q4",
+    company: "Larsen & Toubro",
+    ticker: "LT",
+    exchange: "NSE",
+    sector: "Capital Goods",
+    dateLabel: "Next Tue",
+    dateGroup: "Next Week",
+    time: "5:15 PM IST",
+    callTime: "6:30 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "Medium impact",
+    portfolioRelevance: "Capex cycle exposure",
+    watchlistRelevance: "Industrial order watch",
+    estimate: "Order inflow +12% YoY",
+    revenueGrowth: 14.8,
+    profitGrowth: 12.2,
+    expectedMove: "+/-1.6%",
+    thesis: "Execution quality needs to validate the long-cycle capex trade.",
+    whyItMatters: "L&T is the key listed proxy for domestic capex, infrastructure, and industrial execution.",
+    watchFor: "Order inflow, core margins, working capital, Middle East exposure.",
+    streetFocus: "Core E&C margin, order book, hydrocarbon orders.",
+    readThrough: "Capital goods, cement demand, infra lenders.",
+    evidenceLabel: "Capex setup",
+    sourceStatus: "Desk context",
+    tags: ["Capex", "Next week", "Industrials"],
+    consensusMetrics: [
+      { label: "Order inflow", value: "+12% YoY", tone: "positive" },
+      { label: "Core margin", value: "8.9%", tone: "neutral" },
+      { label: "Working cap", value: "watch", tone: "neutral" },
+    ],
+    notes: ["Order inflow quality matters more than headline backlog.", "Middle East execution and working capital are the risk checks."],
   },
   {
     id: "tatamotors-recent",
     company: "Tata Motors",
     ticker: "TATAMOTORS",
+    exchange: "NSE",
+    sector: "Auto / Exports",
     dateLabel: "Apr 30",
     dateGroup: "Recent",
-    time: "4:30 PM",
+    time: "4:30 PM IST",
+    callTime: "5:45 PM IST",
     quarter: "Q4 FY26",
     status: "Reported",
+    impact: "High impact",
+    portfolioRelevance: "Momentum holding",
+    watchlistRelevance: "Tracked auto leader",
     estimate: "PAT +12.0% YoY",
     actual: "PAT +18.6% YoY",
     surprise: 6.6,
     revenueGrowth: 14.2,
     profitGrowth: 18.6,
+    expectedMove: "+/-3.0%",
+    actualMove: 2.25,
+    thesis: "JLR margin strength kept the momentum case alive, but export sensitivity remains high.",
+    whyItMatters: "Tata Motors is a major upside contributor, but the read depends on JLR margins holding.",
+    watchFor: "JLR margin, EV volume, and commodity cost pressure.",
+    streetFocus: "JLR EBIT margin, domestic PV demand, EV profitability.",
+    readThrough: "Auto exporters, EV supply chain, premium discretionary demand.",
+    evidenceLabel: "Reported result",
+    sourceStatus: "Filed result",
+    tags: ["Reported", "Auto", "Momentum"],
+    consensusMetrics: [
+      { label: "JLR margin", value: "8.9%", tone: "positive" },
+      { label: "PAT YoY", value: "+18.6%", tone: "positive" },
+      { label: "EV commentary", value: "better", tone: "positive" },
+    ],
+    resultSnapshot: {
+      result: "Beat",
+      revenueYoY: "+14.2%",
+      patYoY: "+18.6%",
+      margin: "+90 bps",
+      priceReaction: 2.25,
+      readThrough: "JLR strength supports the auto momentum basket, but export demand remains the swing factor.",
+    },
     notes: ["JLR margins were stronger than expected.", "EV commentary improved, but export sensitivity remains high."],
+  },
+  {
+    id: "hul-q4",
+    company: "Hindustan Unilever",
+    ticker: "HINDUNILVR",
+    exchange: "NSE",
+    sector: "FMCG",
+    dateLabel: "Next Wed",
+    dateGroup: "Next Week",
+    time: "4:00 PM IST",
+    callTime: "5:30 PM IST",
+    quarter: "Q4 FY26",
+    status: "Upcoming",
+    impact: "Medium impact",
+    portfolioRelevance: "Consumer defensive read",
+    watchlistRelevance: "Staples margin watch",
+    estimate: "Volume +4.0% YoY",
+    revenueGrowth: 5.8,
+    profitGrowth: 6.2,
+    expectedMove: "+/-1.4%",
+    thesis: "Rural volume recovery must show up before staples can regain leadership.",
+    whyItMatters: "HUL tests whether FMCG defensives can move from margin support back to volume-led growth.",
+    watchFor: "Rural demand, premium mix, ad spend, raw material benefits.",
+    streetFocus: "Underlying volume growth, gross margin, category pricing.",
+    readThrough: "FMCG, rural consumption, paint and discretionary demand.",
+    evidenceLabel: "Staples setup",
+    sourceStatus: "Desk context",
+    tags: ["FMCG", "Next week", "Defensive"],
+    consensusMetrics: [
+      { label: "UVG", value: "+4.0%", tone: "neutral" },
+      { label: "Gross margin", value: "+70 bps", tone: "positive" },
+      { label: "Ad spend", value: "rising", tone: "neutral" },
+    ],
+    notes: ["Rural volume and premium mix decide the quality of the print.", "Margin recovery alone may not be enough for a rerating."],
+  },
+  {
+    id: "sunpharma-q4",
+    company: "Sun Pharmaceutical Industries",
+    ticker: "SUNPHARMA",
+    exchange: "NSE",
+    sector: "Pharma",
+    dateLabel: "Thu",
+    dateGroup: "This Week",
+    time: "4:45 PM IST",
+    callTime: "6:00 PM IST",
+    quarter: "Q4 FY26",
+    status: "Reported",
+    impact: "Medium impact",
+    portfolioRelevance: "Healthcare read-through",
+    watchlistRelevance: "US pharma risk check",
+    estimate: "PAT +9.5% YoY",
+    actual: "PAT +7.4% YoY",
+    surprise: -2.1,
+    revenueGrowth: 8.9,
+    profitGrowth: 7.4,
+    expectedMove: "+/-1.8%",
+    actualMove: -0.85,
+    thesis: "Specialty growth remains intact, but US generics pricing pressure limits the clean upside read.",
+    whyItMatters: "Sun Pharma is the healthcare quality check for specialty pharma versus US generics pressure.",
+    watchFor: "US generics pricing, specialty sales, remediation costs, and margin recovery.",
+    streetFocus: "Specialty ramp, US generics erosion, R&D intensity.",
+    readThrough: "Dr Reddy's, Cipla, pharma margins, healthcare defensives.",
+    evidenceLabel: "Reported result",
+    sourceStatus: "Filed result",
+    tags: ["Pharma", "Reported", "US generics"],
+    consensusMetrics: [
+      { label: "Specialty", value: "+13% YoY", tone: "positive" },
+      { label: "PAT YoY", value: "+7.4%", tone: "neutral" },
+      { label: "US generics", value: "pressure", tone: "negative" },
+    ],
+    resultSnapshot: {
+      result: "Mixed",
+      revenueYoY: "+8.9%",
+      patYoY: "+7.4%",
+      margin: "-30 bps",
+      priceReaction: -0.85,
+      readThrough: "Specialty growth helps, but US generics pricing keeps the sector read selective.",
+    },
+    notes: ["US generics pricing kept the result from becoming a clean beat.", "Specialty sales are still the positive offset."],
+  },
+];
+
+export const EARNINGS_THEMES: EarningsTheme[] = [
+  {
+    id: "bank-margin-cost",
+    title: "Bank margins versus deposit cost",
+    summary: "Private banks need NIM stability and clean slippage commentary to keep Bank Nifty leadership credible.",
+    sectors: ["Private Banks", "Public Banks"],
+    tickers: ["HDFCBANK", "ICICIBANK", "SBIN"],
+    tone: "positive",
+  },
+  {
+    id: "it-demand-bfsi",
+    title: "IT demand and BFSI budgets",
+    summary: "TCS and Infosys need order conversion, not just rupee help, to revive a broader IT trade.",
+    sectors: ["IT Services"],
+    tickers: ["TCS", "INFY"],
+    tone: "neutral",
+  },
+  {
+    id: "auto-mix-margin",
+    title: "Auto mix and margin durability",
+    summary: "Maruti and Tata Motors are testing whether premium mix, JLR margins, and commodity relief can coexist.",
+    sectors: ["Auto"],
+    tickers: ["MARUTI", "TATAMOTORS"],
+    tone: "positive",
+  },
+  {
+    id: "defensive-quality",
+    title: "Defensive quality under scrutiny",
+    summary: "HUL, Sun Pharma, and Airtel need volume, specialty, and ARPU evidence rather than defensive status alone.",
+    sectors: ["FMCG", "Pharma", "Telecom"],
+    tickers: ["HINDUNILVR", "SUNPHARMA", "BHARTIARTL"],
+    tone: "neutral",
+  },
+];
+
+export const EARNINGS_FORCE_NAMES: EarningsForceName[] = [
+  {
+    ticker: "TATAMOTORS",
+    company: "Tata Motors",
+    exchange: "NSE",
+    price: 1016.4,
+    move: 2.25,
+    expectedMove: "+/-3.0%",
+    volume: "14.8M",
+    reason: "Post-result momentum stayed firm after the JLR margin beat.",
+    points: [22, 24, 23, 27, 31, 30, 34, 38, 42, 45, 47, 50],
+  },
+  {
+    ticker: "ICICIBANK",
+    company: "ICICI Bank",
+    exchange: "NSE",
+    price: 1194.8,
+    move: 1.86,
+    expectedMove: "+/-1.8%",
+    volume: "9.2M",
+    reason: "Bank leadership is being priced ahead of margin and credit-cost commentary.",
+    points: [28, 29, 31, 30, 33, 36, 35, 38, 41, 43, 46, 48],
+  },
+  {
+    ticker: "MARUTI",
+    company: "Maruti Suzuki",
+    exchange: "NSE",
+    price: 12780.5,
+    move: 1.12,
+    expectedMove: "+/-2.7%",
+    volume: "1.1M",
+    reason: "Options imply demand for a cleaner volume-mix and commodity-cost result.",
+    points: [35, 34, 36, 37, 39, 38, 40, 42, 41, 44, 46, 49],
+  },
+  {
+    ticker: "SUNPHARMA",
+    company: "Sun Pharmaceutical",
+    exchange: "NSE",
+    price: 1634.2,
+    move: -0.85,
+    expectedMove: "+/-1.8%",
+    volume: "3.6M",
+    reason: "Mixed specialty strength versus US generics pressure keeps positioning selective.",
+    points: [44, 43, 45, 42, 41, 39, 40, 38, 37, 36, 35, 34],
   },
 ];
 
@@ -1037,7 +1622,7 @@ export const WATCHLIST_ITEMS: WatchlistItem[] = getWatchlistItems().map((stock) 
   sixMonth: roundWorkspaceMetric(stock.oneYear * 0.46 + stock.oneMonth * 0.82),
   ytd: roundWorkspaceMetric(stock.oneYear * 0.36 + stock.oneMonth * 0.42),
   alert: WATCHLIST_ALERT_TICKERS.has(stock.ticker),
-  note: WATCHLIST_NOTES[stock.ticker] ?? `${stock.sector} constituent in the NIFTY 50 demo universe.`,
+  note: WATCHLIST_NOTES[stock.ticker] ?? `${stock.sector} constituent in the NIFTY 50 universe.`,
   points: stock.sparkline,
 }));
 
@@ -1108,12 +1693,47 @@ export const EARNINGS_EVENT_CONTEXT: Record<string, EarningsEventContext> = {
     whyItMatters: "HDFC Bank can confirm whether bank leadership is durable or only index-heavy.",
     watchFor: "Deposit growth, NIM stability, and asset quality.",
   },
-  "infosys-recent": {
+  "infosys-today": {
     importance: "Medium impact",
     relevance: ["Portfolio relevant", "Watchlist relevant"],
     theme: "IT services",
     whyItMatters: "Infosys is the cleaner check on whether deal wins can offset cautious guidance.",
     watchFor: "BFSI spending recovery and large deal conversion.",
+  },
+  "icici-bank-q4": {
+    importance: "High impact",
+    relevance: ["Portfolio relevant", "Watchlist relevant", "Bank leadership"],
+    theme: "Private banks",
+    whyItMatters: "ICICI Bank is the cleanest check on whether private-bank leadership can broaden.",
+    watchFor: "Deposit pricing, credit cost, and unsecured asset quality.",
+  },
+  "sbi-q4": {
+    importance: "Medium impact",
+    relevance: ["Sector relevant", "Bank breadth"],
+    theme: "Public banks",
+    whyItMatters: "SBI can shift the read from private-bank quality toward broader banking beta.",
+    watchFor: "Slippages, treasury income, and deposit growth.",
+  },
+  "maruti-q4": {
+    importance: "High impact",
+    relevance: ["Watchlist relevant", "Sector bellwether", "Auto demand"],
+    theme: "Auto",
+    whyItMatters: "Maruti is the direct read on domestic auto demand, premiumization, and rural recovery.",
+    watchFor: "Volume mix, commodity costs, discounts, and EV commentary.",
+  },
+  "bharti-airtel-q4": {
+    importance: "Medium impact",
+    relevance: ["Watchlist relevant", "Defensive growth"],
+    theme: "Telecom",
+    whyItMatters: "Airtel ties defensive earnings growth to tariff and subscriber-quality expectations.",
+    watchFor: "ARPU, churn, capex, and tariff language.",
+  },
+  "lt-q4": {
+    importance: "Medium impact",
+    relevance: ["Capex cycle", "Industrial read-through"],
+    theme: "Capital goods",
+    whyItMatters: "L&T is the key listed proxy for domestic capex and infrastructure execution.",
+    watchFor: "Order inflow, core margins, working capital, and Middle East exposure.",
   },
   "tatamotors-recent": {
     importance: "High impact",
@@ -1121,6 +1741,20 @@ export const EARNINGS_EVENT_CONTEXT: Record<string, EarningsEventContext> = {
     theme: "Auto / exports",
     whyItMatters: "Tata Motors is a major upside contributor, but the read depends on JLR margins holding.",
     watchFor: "JLR margin, EV volume, and commodity cost pressure.",
+  },
+  "hul-q4": {
+    importance: "Medium impact",
+    relevance: ["Consumer defensive", "Next week"],
+    theme: "FMCG",
+    whyItMatters: "HUL tests whether FMCG defensives can move from margin support back to volume-led growth.",
+    watchFor: "Rural demand, premium mix, ad spend, and raw material benefits.",
+  },
+  "sunpharma-q4": {
+    importance: "Medium impact",
+    relevance: ["Healthcare read-through", "Watchlist relevant"],
+    theme: "Pharma",
+    whyItMatters: "Sun Pharma is the healthcare quality check for specialty pharma versus US generics pressure.",
+    watchFor: "US generics pricing, specialty sales, remediation costs, and margin recovery.",
   },
 };
 

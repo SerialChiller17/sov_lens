@@ -1,6 +1,7 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { GlobalBrandNav, type GlobalBrandNavHandlers } from "../../app/GlobalBrandNav";
 import globeTextureUrl from "../../assets/globe-premium-dark.svg";
+import { AnimatedSearchPrompt } from "../../components/search/AnimatedSearchPrompt";
 import { MarketTape } from "../market-tape/MarketTape";
 import { EVENT_RISK_TAPE } from "../market-tape/marketTapeData";
 import type { BootstrapData, PulseAlert } from "../../types";
@@ -37,6 +38,7 @@ function archiveRowFromAlert(alert: PulseAlert, index: number): EventArchiveRow 
 }
 
 export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) {
+  const [eventSearchQuery, setEventSearchQuery] = useState("");
   const archiveRows = useMemo(
     () => [...data.globalPulse.alerts.map(archiveRowFromAlert), ...EVENT_ARCHIVE_ROWS],
     [data.globalPulse.alerts],
@@ -57,10 +59,22 @@ export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) 
       <MarketTape basket={EVENT_RISK_TAPE} includeGlobalItems={false} statusLabel="Event Tape" />
 
       <header className="events-dashboard-contextbar">
-        <p>Worldwide event analysis</p>
-        <label className="events-search">
+        <label className={`events-search has-animated-search-prompt${eventSearchQuery.trim() ? " has-search-value" : ""}`}>
           <span className="sr-only">Search events, regions, or topics</span>
-          <input type="search" placeholder="Search events, regions, or topics..." />
+          <input
+            type="search"
+            placeholder=" "
+            value={eventSearchQuery}
+            onChange={(event) => setEventSearchQuery(event.currentTarget.value)}
+          />
+          <AnimatedSearchPrompt
+            prompts={[
+              "Which events could move Indian equities today?",
+              "Show geopolitical risks affecting energy stocks",
+              "Find policy events with market impact",
+              "Which regions are driving risk sentiment?",
+            ]}
+          />
           <span className="events-search-icon" aria-hidden="true" />
         </label>
       </header>
@@ -68,7 +82,6 @@ export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) 
       <section className="events-panel events-history-panel" aria-label="Upcoming events">
         <div>
           <h2>Upcoming Events</h2>
-          <p>Significant global political or economic milestones to watch next</p>
         </div>
         <div className="upcoming-events-list">
           {HORIZON_EVENTS.map((event) => (
@@ -102,7 +115,6 @@ export function EventsDashboard({ data, ...navHandlers }: EventsDashboardProps) 
         <header>
           <div>
             <h2>Global Event Archive</h2>
-            <p>A comprehensive list of recent global events, from diplomatic summits to natural disasters</p>
           </div>
           <div className="archive-sort-controls" aria-label="Archive sort order">
             <button type="button">Newest</button>

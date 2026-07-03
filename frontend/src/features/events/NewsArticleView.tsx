@@ -40,7 +40,6 @@ export function NewsArticleView({
       <MarketTape basket={EVENT_RISK_TAPE} includeGlobalItems={false} statusLabel="Brief Tape" />
 
       <header className="news-article-contextbar">
-        <p>Intelligence brief</p>
         <button type="button" className="events-back-button" onClick={onOpenFeed}>
           News Feed
         </button>
